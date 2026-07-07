@@ -56,4 +56,9 @@ class Plan extends Model
     {
         return $query->where('status', 'Active');
     }
+
+    public function getRouteKey():string
+    {
+        return $this->plan_id;
+    }
 }
