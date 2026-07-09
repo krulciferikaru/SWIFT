@@ -17,14 +17,16 @@ class UpdatePlanRequest extends FormRequest
         $planId = $this->route('plan');
 
         return [
-            'plan_name'    => [
-                'sometimes', 'string', 'max:100',
+            'plan_name' => [
+                'sometimes',
+                'string',
+                'max:100',
                 Rule::unique('plan', 'plan_name')->ignore($planId, 'plan_id'),
             ],
             'monthly_rate' => ['sometimes', 'numeric', 'min:0'],
-            'description'  => ['nullable', 'string'],
-            'speed_mbps'   => ['nullable', 'integer', 'min:1'],
-            'status'       => ['sometimes', 'in:Active,Inactive'],
+            'description' => ['nullable', 'string'],
+            'speed_mbps' => ['nullable', 'integer', 'min:1'],
+            'status' => ['sometimes', 'in:Active,Inactive'],
         ];
     }
 }

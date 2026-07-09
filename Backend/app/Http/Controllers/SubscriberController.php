@@ -28,8 +28,8 @@ class SubscriberController extends Controller
         $query = Subscriber::with('plan')
             ->select([
                 'subscriber_id', 'plan_id', 'name', 'address',
-                'contact', 'email', 'mac_address',
-                'installation_date', 'status', 'created_at',
+                'contact_number', 'email', 'mac_address',
+                'connection_date', 'status', 'created_at',
             ]);
 
         // Search filter

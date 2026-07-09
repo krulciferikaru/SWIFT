@@ -73,7 +73,7 @@ class Subscriber extends Model
               ->orWhere('email', 'like', "%{$term}%")
               ->orWhere('address', 'like', "%{$term}%")
               ->orWhere('mac_address', 'like', "%{$term}%")
-              ->orWhere('contact', 'like', "%{$term}%");
+              ->orWhere('contact_number', 'like', "%{$term}%");
         });
     }
 }

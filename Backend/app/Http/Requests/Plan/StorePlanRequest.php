@@ -14,11 +14,11 @@ class StorePlanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'plan_name'    => ['required', 'string', 'max:100', 'unique:plan,plan_name'],
+            'plan_name' => ['required', 'string', 'max:100', 'unique:plan,plan_name'],
             'monthly_rate' => ['required', 'numeric', 'min:0'],
-            'description'  => ['nullable', 'string'],
-            'speed_mbps'   => ['nullable', 'integer', 'min:1'],
-            'status'       => ['sometimes', 'in:Active,Inactive'],
+            'description' => ['nullable', 'string'],
+            'speed_mbps' => ['nullable', 'integer', 'min:1'],
+            'status' => ['sometimes', 'in:Active,Inactive'],
         ];
     }
 

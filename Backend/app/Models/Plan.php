@@ -18,6 +18,7 @@ class Plan extends Model
         'monthly_rate',
         'description',
         'speed_mbps',
+        'status',
     ];
 
     protected function casts(): array
