@@ -14,9 +14,20 @@ class AuthController extends Controller
     // Public self-registration for subscribers only
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $requestData = $request->all();
+
+        if (empty($requestData)) {
+            $content = $request->getContent();
+            $requestData = $content ? json_decode($content, true) : [];
+
+            if (! is_array($requestData)) {
+                parse_str($content, $requestData);
+            }
+        }
+
+        $validator = Validator::make($requestData, [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
+            'email' => 'required|string|email|max:255|unique:users,email|unique:subscriber,email',
             'password' => 'required|string|min:8|confirmed',
             'contact_number' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
@@ -27,32 +38,35 @@ class AuthController extends Controller
         }
 
         $subscriber = Subscriber::create([
-            'name' => $request->name,
-            'address' => $request->address,
-            'contact_number' => $request->contact_number,
-            'email' => $request->email,
-            'status' => 'Unpaid',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'contact_number' => $request->contact_number,
-            'password' => Hash::make($request->password),
-            'role' => 'subscriber',
+            'name' => $requestData['name'],
+            'address' => $requestData['address'] ?? null,
+            'contact_number' => $requestData['contact_number'] ?? null,
+            'email' => $requestData['email'],
+            'password' => Hash::make($requestData['password']),
             'account_status' => 'pending',
-            'subscriber_id' => $subscriber->subscriber_id,
+            'status' => 'Unpaid',
         ]);
 
         return response()->json([
             'message' => 'Registration submitted. Awaiting approval.',
-            'user' => $user,
+            'subscriber' => $subscriber,
         ], 201);
     }
 
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $requestData = $request->all();
+
+        if (empty($requestData)) {
+            $content = $request->getContent();
+            $requestData = $content ? json_decode($content, true) : [];
+
+            if (! is_array($requestData)) {
+                parse_str($content, $requestData);
+            }
+        }
+
+        $validator = Validator::make($requestData, [
             'email' => 'required|email',
             'password' => 'required|string',
         ]);
@@ -61,9 +75,18 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $requestData['email'])->first();
+        $subscriber = Subscriber::where('email', $requestData['email'])->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($requestData['password'], $user->password)) {
+            if ($subscriber && $subscriber->account_status === 'pending') {
+                return response()->json(['message' => 'Your account is awaiting approval.'], 403);
+            }
+
+            if ($subscriber && $subscriber->account_status === 'rejected') {
+                return response()->json(['message' => 'Your account has been rejected.'], 403);
+            }
+
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import subscriberApi from '../../api/subscribers'
+import reportApi from '../../api/reports'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import StatusBadge from '../../components/StatusBadge'
@@ -26,6 +27,13 @@ export default function SubscribersPage() {
   const [formLoading, setFormLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [toast, setToast]             = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewHeaders, setPreviewHeaders] = useState([])
+  const [previewRows, setPreviewRows] = useState([])
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState(null)
+
+  const previewRowCount = previewRows.length
 
   // -----------------------------------------------------------------------
   // Data fetching
@@ -35,7 +43,9 @@ export default function SubscribersPage() {
     setLoading(true)
     setError(null)
     try {
+      const cacheBuster = Date.now()
       const params = { page, per_page: 15 }
+      params._ = cacheBuster
       if (search)           params.search = search
       if (status !== 'All') params.status = status
 
@@ -123,19 +133,122 @@ export default function SubscribersPage() {
   const handleDelete = async () => {
     setDeleteLoading(true)
     try {
-      await subscriberApi.delete(deleteTarget.subscriber_id)
+      const response = await subscriberApi.delete(deleteTarget.subscriber_id)
+
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error('Delete request was not successful.')
+      }
+
       setDeleteTarget(null)
       showToast('Subscriber deleted.', 'success')
-      fetchSubscribers()
-      fetchSummary()
+      await fetchSubscribers()
+      await fetchSummary()
     } catch (err) {
       const msg = err.response?.data?.message ?? 'Delete failed.'
       showToast(msg, 'error')
-      setDeleteTarget(null)
+      return
     } finally {
       setDeleteLoading(false)
     }
   }
+
+  const handleExportReport = async () => {
+    try {
+      const params = {}
+      if (search) params.search = search
+      if (status !== 'All') params.status = status
+
+      const res = await reportApi.downloadSubscribers(params)
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'subscribers_report.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      showToast('Report downloaded successfully.')
+    } catch {
+      showToast('Failed to download report.', 'error')
+    }
+  }
+
+  const parseCsvRows = (csvText) => {
+    const rows = []
+    let row = []
+    let field = ''
+    let inQuotes = false
+
+    for (let i = 0; i < csvText.length; i += 1) {
+      const char = csvText[i]
+      const next = csvText[i + 1]
+
+      if (char === '"') {
+        if (inQuotes && next === '"') {
+          field += '"'
+          i += 1
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (char === ',' && !inQuotes) {
+        row.push(field)
+        field = ''
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && next === '\n') {
+          i += 1
+        }
+        row.push(field)
+        rows.push(row)
+        row = []
+        field = ''
+      } else {
+        field += char
+      }
+    }
+
+    if (field !== '' || row.length > 0) {
+      row.push(field)
+      rows.push(row)
+    }
+
+    return rows
+  }
+
+  const fetchPreviewCsv = async () => {
+    setPreviewLoading(true)
+    setPreviewError(null)
+    setPreviewHeaders([])
+    setPreviewRows([])
+
+    try {
+      const params = {}
+      if (search) params.search = search
+      if (status !== 'All') params.status = status
+
+      const res = await reportApi.previewSubscribers(params)
+      const csvText = await res.data.text()
+      const rows = parseCsvRows(csvText)
+
+      if (rows.length > 0) {
+        setPreviewHeaders(rows[0])
+        setPreviewRows(rows.slice(1))
+      }
+    } catch {
+      setPreviewError('Unable to load report preview.')
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const openReportPreview = () => {
+    setShowPreview(true)
+  }
+
+  useEffect(() => {
+    if (showPreview) {
+      fetchPreviewCsv()
+    }
+  }, [showPreview, search, status])
 
   // -----------------------------------------------------------------------
   // Render
@@ -163,9 +276,10 @@ export default function SubscribersPage() {
 
         {/* Summary Cards */}
         {summary && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
             {[
               { label: 'Total',        value: summary.total,        color: 'text-gray-800' },
+              { label: 'Pending',      value: summary.pending,      color: 'text-blue-600' },
               { label: 'Active',       value: summary.active,       color: 'text-green-600' },
               { label: 'Unpaid',       value: summary.unpaid,       color: 'text-yellow-600' },
               { label: 'Disconnected', value: summary.disconnected, color: 'text-red-600' },
@@ -197,6 +311,14 @@ export default function SubscribersPage() {
           >
             {STATUSES.map((s) => <option key={s}>{s}</option>)}
           </select>
+
+          {/* Export button opens preview modal */}
+          <button
+            onClick={openReportPreview}
+            className="bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 whitespace-nowrap"
+          >
+            Export CSV
+          </button>
 
           {/* Add button */}
           <button
@@ -288,6 +410,88 @@ export default function SubscribersPage() {
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title="CSV Preview" size="xl">
+        <div className="space-y-4 rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+          <div className="bg-slate-950 px-4 py-3 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-slate-400">CSV Viewer</p>
+              <p className="text-lg font-semibold">subscribers_report.csv</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPreview(false)}
+                className="bg-slate-800 border border-slate-700 text-slate-200 px-4 py-2 rounded-md hover:bg-slate-900"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleExportReport}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+              >
+                Download CSV
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white p-4">
+            <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-500">Preview</p>
+                <p className="text-sm text-slate-700">CSV file contents shown as rows and columns</p>
+              </div>
+              <div className="text-xs text-gray-500">{previewRowCount} row{previewRowCount === 1 ? '' : 's'}</div>
+            </div>
+
+            {previewError && (
+              <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {previewError}
+              </div>
+            )}
+
+            {previewLoading ? (
+              <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">Loading preview…</div>
+            ) : previewRows.length === 0 ? (
+              <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">No preview data available.</div>
+            ) : (
+              <div className="overflow-auto max-h-[60vh] rounded-lg border border-slate-200">
+                <table className="min-w-full text-xs border-collapse">
+                  <thead className="bg-slate-100 sticky top-0 z-10">
+                    <tr>
+                      {previewHeaders.map((header, index) => (
+                        <th
+                          key={index}
+                          className="border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-700"
+                        >
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewRows.map((row, rowIndex) => (
+                      <tr
+                        key={rowIndex}
+                        className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'}
+                      >
+                        {previewHeaders.map((_, colIndex) => (
+                          <td
+                            key={`${rowIndex}-${colIndex}`}
+                            className="border-b border-slate-100 px-3 py-2 align-top text-slate-800 whitespace-pre-wrap"
+                          >
+                            {row[colIndex] ?? ''}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
 
       {/* Add Modal */}
       <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Subscriber" size="lg">

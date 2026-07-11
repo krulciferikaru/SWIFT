@@ -28,7 +28,7 @@ export default function Approvals() {
     setActionLoading(id)
     try {
       await api.patch(`/subscribers/${id}/approve`)
-      setPending((prev) => prev.filter((u) => u.id !== id))
+      setPending((prev) => prev.filter((subscriber) => subscriber.subscriber_id !== id))
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to approve subscriber.')
     } finally {
@@ -40,7 +40,7 @@ export default function Approvals() {
     setActionLoading(id)
     try {
       await api.patch(`/subscribers/${id}/reject`)
-      setPending((prev) => prev.filter((u) => u.id !== id))
+      setPending((prev) => prev.filter((subscriber) => subscriber.subscriber_id !== id))
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reject subscriber.')
     } finally {
@@ -69,39 +69,35 @@ export default function Approvals() {
           <table className="min-w-full text-sm">
             <thead className="bg-gray-100 text-left">
               <tr>
-                <th className="px-4 py-3">ID</th>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Contact Number</th>
-                <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Registered On</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {pending.map((user) => (
-                <tr key={user.id} className="border-t">
-                  <td className="px-4 py-3">{user.id}</td>
-                  <td className="px-4 py-3">{user.name}</td>
-                  <td className="px-4 py-3">{user.email}</td>
-                  <td className="px-4 py-3">{user.contact_number || '—'}</td>
-                  <td className="px-4 py-3 capitalize">{user.role}</td>
-                  <td className="px-4 py-3 capitalize">{user.account_status}</td>
+              {pending.map((subscriber) => (
+                <tr key={subscriber.subscriber_id} className="border-t">
+                  <td className="px-4 py-3">{subscriber.name}</td>
+                  <td className="px-4 py-3">{subscriber.email}</td>
+                  <td className="px-4 py-3">{subscriber.contact_number || '—'}</td>
+                  <td className="px-4 py-3 capitalize">{subscriber.account_status}</td>
                   <td className="px-4 py-3">
-                    {new Date(user.created_at).toLocaleDateString()}
+                    {new Date(subscriber.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 space-x-2">
                     <button
-                      onClick={() => handleApprove(user.id)}
-                      disabled={actionLoading === user.id}
+                      onClick={() => handleApprove(subscriber.subscriber_id)}
+                      disabled={actionLoading === subscriber.subscriber_id}
                       className="px-3 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700 disabled:opacity-50"
                     >
                       Approve
                     </button>
                     <button
-                      onClick={() => handleReject(user.id)}
-                      disabled={actionLoading === user.id}
+                      onClick={() => handleReject(subscriber.subscriber_id)}
+                      disabled={actionLoading === subscriber.subscriber_id}
                       className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700 disabled:opacity-50"
                     >
                       Reject

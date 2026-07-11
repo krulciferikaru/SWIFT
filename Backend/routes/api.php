@@ -5,6 +5,7 @@ use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\SubscriberApprovalController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 // Health check
@@ -29,11 +30,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/subscribers/summary', [SubscriberController::class, 'summary'])
         ->middleware('role:admin,secretary');
 
+    Route::get('/reports/subscribers', [ReportController::class, 'subscribers'])
+        ->middleware('role:admin,secretary');
+
     // Secretary + Admin can approve/reject subscriber accounts.
     Route::middleware('role:admin,secretary')->group(function () {
         Route::get('/subscribers/pending', [SubscriberApprovalController::class, 'pending']);
-        Route::patch('/subscribers/{user}/approve', [SubscriberApprovalController::class, 'approve']);
-        Route::patch('/subscribers/{user}/reject', [SubscriberApprovalController::class, 'reject']);
+        Route::patch('/subscribers/{subscriber}/approve', [SubscriberApprovalController::class, 'approve']);
+        Route::patch('/subscribers/{subscriber}/reject', [SubscriberApprovalController::class, 'reject']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])

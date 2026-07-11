@@ -27,7 +27,10 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const response = await api.post('/register', form)
+      const payload = new URLSearchParams(form).toString()
+      const response = await api.post('/register', payload, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      })
       setMessage(response.data.message)
       setTimeout(() => navigate('/login'), 2000)
     } catch (err) {

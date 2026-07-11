@@ -20,9 +20,15 @@ class Subscriber extends Model
         'address',
         'contact_number',
         'email',
+        'password',
+        'account_status',
         'mac_address',
         'connection_date',
         'status',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     protected function casts(): array

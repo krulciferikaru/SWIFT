@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscriber\StoreSubscriberRequest;
 use App\Http\Requests\Subscriber\UpdateSubscriberRequest;
 use App\Models\Subscriber;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -29,8 +30,14 @@ class SubscriberController extends Controller
             ->select([
                 'subscriber_id', 'plan_id', 'name', 'address',
                 'contact_number', 'email', 'mac_address',
-                'connection_date', 'status', 'created_at',
+                'connection_date', 'status', 'created_at', 'account_status',
             ]);
+
+        if ($request->filled('account_status')) {
+            $query->where('account_status', $request->account_status);
+        } else {
+            $query->where('account_status', 'active');
+        }
 
         // Search filter
         if ($request->filled('search')) {
@@ -66,6 +73,7 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::create([
             ...$request->validated(),
+            'account_status' => 'active',
             'status' => $request->input('status', 'Active'),
         ]);
 
@@ -126,11 +134,9 @@ class SubscriberController extends Controller
      * the foreign key constraint will block the deletion — handle this in
      * the React UI by warning the user first.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Subscriber $subscriber): JsonResponse
     {
-        $subscriber = Subscriber::findOrFail($id);
-
-        // Block deletion if subscriber has payment records
+        // Block deletion if subscriber has payment records.
         if ($subscriber->payments()->exists()) {
             return response()->json([
                 'success' => false,
@@ -138,7 +144,14 @@ class SubscriberController extends Controller
             ], 422);
         }
 
-        $subscriber->delete();
+        try {
+            $subscriber->delete();
+        } catch (QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to delete subscriber. It may be linked to other records.',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
@@ -179,11 +192,14 @@ class SubscriberController extends Controller
      */
     public function summary(): JsonResponse
     {
+        $baseQuery = Subscriber::query();
+
         $summary = [
-            'total'        => Subscriber::count(),
-            'active'       => Subscriber::where('status', 'Active')->count(),
-            'unpaid'       => Subscriber::where('status', 'Unpaid')->count(),
-            'disconnected' => Subscriber::where('status', 'Disconnected')->count(),
+            'pending'      => (clone $baseQuery)->where('account_status', 'pending')->count(),
+            'total'        => (clone $baseQuery)->where('account_status', 'active')->count(),
+            'active'       => (clone $baseQuery)->where('account_status', 'active')->where('status', 'Active')->count(),
+            'unpaid'       => (clone $baseQuery)->where('account_status', 'active')->where('status', 'Unpaid')->count(),
+            'disconnected' => (clone $baseQuery)->where('account_status', 'active')->where('status', 'Disconnected')->count(),
         ];
 
         return response()->json([

@@ -15,7 +15,10 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const response = await api.post('/login', { email, password })
+      const payload = new URLSearchParams({ email, password }).toString()
+      const response = await api.post('/login', payload, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      })
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('user', JSON.stringify(response.data.user))
       navigate('/dashboard')
