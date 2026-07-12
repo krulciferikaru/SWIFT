@@ -1,11 +1,20 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { useState, useEffect } from 'react'
 import reportApi from '../../api/reports'
 import Modal from '../../components/Modal'
-import ConfirmDialog from '../../components/ConfirmDialog'
 import StatusBadge from '../../components/StatusBadge'
 import SubscriberForm from './SubscriberForm'
 import CsvPreviewTable from '../../components/CsvPreviewTable'
@@ -152,8 +161,8 @@ export default function SubscribersPage() {
   // Render
   // -----------------------------------------------------------------------
 
-return (
-    <div className="min-h-screen bg-gray-50">
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
           toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
@@ -164,28 +173,28 @@ return (
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Subscribers</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage all cable TV subscribers for Palayan Branch.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Subscribers</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage all cable TV subscribers for Palayan Branch.</p>
         </div>
 
         {summary && (
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
             {[
-              { label: 'Total', value: summary.total, color: 'text-gray-800' },
-              { label: 'Pending', value: summary.pending, color: 'text-blue-600' },
-              { label: 'Active', value: summary.active, color: 'text-green-600' },
-              { label: 'Unpaid', value: summary.unpaid, color: 'text-yellow-600' },
-              { label: 'Disconnected', value: summary.disconnected, color: 'text-red-600' },
+              { label: 'Total', value: summary.total, color: 'text-gray-800 dark:text-gray-200' },
+              { label: 'Pending', value: summary.pending, color: 'text-blue-600 dark:text-blue-400' },
+              { label: 'Active', value: summary.active, color: 'text-green-600 dark:text-green-400' },
+              { label: 'Unpaid', value: summary.unpaid, color: 'text-yellow-600 dark:text-yellow-400' },
+              { label: 'Disconnected', value: summary.disconnected, color: 'text-red-600 dark:text-red-400' },
             ].map((card) => (
-              <div key={card.label} className="bg-white rounded-lg border border-gray-200 px-4 py-3">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">{card.label}</p>
+              <div key={card.label} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.label}</p>
                 <p className={`text-2xl font-bold mt-1 ${card.color}`}>{card.value}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Toolbar — now using shadcn Input, Select, Button */}
+        {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <Input
             type="text"
@@ -218,14 +227,14 @@ return (
           </Button>
         </div>
 
-        {/* Table — now using shadcn Table components */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {/* Table */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
-            <div className="text-center py-16 text-sm text-gray-400">Loading subscribers…</div>
+            <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">Loading subscribers…</div>
           ) : error ? (
-            <div className="text-center py-16 text-sm text-red-500">{error}</div>
+            <div className="text-center py-16 text-sm text-red-500 dark:text-red-400">{error}</div>
           ) : subscribers.length === 0 ? (
-            <div className="text-center py-16 text-sm text-gray-400">
+            <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">
               No subscribers found.{search || status !== 'All' ? ' Try adjusting your filters.' : ''}
             </div>
           ) : (
@@ -244,11 +253,11 @@ return (
               <TableBody>
                 {subscribers.map((sub) => (
                   <TableRow key={sub.subscriber_id}>
-                    <TableCell className="font-medium text-gray-900">{sub.name}</TableCell>
-                    <TableCell className="text-gray-600">{sub.plan?.plan_name ?? '—'}</TableCell>
-                    <TableCell className="text-gray-600">{sub.email}</TableCell>
-                    <TableCell className="text-gray-600">{sub.contact || sub.contact_number || '—'}</TableCell>
-                    <TableCell className="text-gray-500 font-mono text-xs">{sub.mac_address || '—'}</TableCell>
+                    <TableCell className="font-medium text-gray-900 dark:text-gray-100">{sub.name}</TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400">{sub.plan?.plan_name ?? '—'}</TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400">{sub.email}</TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400">{sub.contact || sub.contact_number || '—'}</TableCell>
+                    <TableCell className="text-gray-500 dark:text-gray-500 font-mono text-xs">{sub.mac_address || '—'}</TableCell>
                     <TableCell>
                       <StatusBadge status={sub.status} />
                     </TableCell>
@@ -258,7 +267,7 @@ return (
                           variant="link"
                           size="sm"
                           onClick={() => setEditTarget(sub)}
-                          className="h-auto p-0 text-blue-600 hover:text-blue-800"
+                          className="h-auto p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                         >
                           Edit
                         </Button>
@@ -266,7 +275,7 @@ return (
                           variant="link"
                           size="sm"
                           onClick={() => setDeleteTarget(sub)}
-                          className="h-auto p-0 text-red-500 hover:text-red-700"
+                          className="h-auto p-0 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         >
                           Delete
                         </Button>
@@ -279,9 +288,9 @@ return (
           )}
         </div>
 
-        {/* Pagination — now using shadcn Button */}
+        {/* Pagination */}
         {meta && meta.last_page > 1 && (
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+          <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
             <span>Showing {meta.from}–{meta.to} of {meta.total} subscribers</span>
             <div className="flex gap-2">
               <Button
@@ -307,7 +316,7 @@ return (
       </div>
 
       <Modal isOpen={showPreview} onClose={() => setShowPreview(false)} title="CSV Preview" size="xl">
-        <div className="space-y-4 rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+        <div className="space-y-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
           <div className="bg-slate-950 px-4 py-3 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-wider text-slate-400">CSV Viewer</p>
@@ -330,7 +339,7 @@ return (
             </div>
           </div>
 
-          <div className="bg-white p-4">
+          <div className="bg-white dark:bg-gray-900 p-4">
             <CsvPreviewTable
               headers={previewHeaders}
               rows={previewRows}
@@ -365,14 +374,26 @@ return (
         )}
       </Modal>
 
-      <ConfirmDialog
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        loading={deleteLoading}
-        title="Delete Subscriber"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This cannot be undone.`}
-      />
+<AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete Subscriber</AlertDialogTitle>
+      <AlertDialogDescription>
+        Are you sure you want to delete "{deleteTarget?.name}"? This cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={handleDelete}
+        disabled={deleteLoading}
+        className="bg-red-600 hover:bg-red-700"
+      >
+        {deleteLoading ? 'Deleting...' : 'Delete Subscriber'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
     </div>
   )
 }

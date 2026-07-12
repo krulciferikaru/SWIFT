@@ -70,7 +70,7 @@ export default function Approvals() {
   }
 
   if (loading) {
-    return <p className="text-gray-500">Loading pending approvals...</p>
+    return <p className="text-gray-500 dark:text-gray-400">Loading pending approvals...</p>
   }
 
   return (
@@ -83,18 +83,18 @@ export default function Approvals() {
         </div>
       )}
 
-      <h1 className="text-2xl font-semibold mb-6">Pending Approvals</h1>
+      <h1 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Pending Approvals</h1>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
           {error}
         </div>
       )}
 
       {pending.length === 0 ? (
-        <p className="text-gray-500">No pending subscribers.</p>
+        <p className="text-gray-500 dark:text-gray-400">No pending subscribers.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -109,15 +109,15 @@ export default function Approvals() {
             <TableBody>
               {pending.map((subscriber) => (
                 <TableRow key={subscriber.subscriber_id}>
-                  <TableCell className="font-medium text-gray-900">{subscriber.name}</TableCell>
-                  <TableCell className="text-gray-600">{subscriber.email}</TableCell>
-                  <TableCell className="text-gray-600">{subscriber.contact_number || '—'}</TableCell>
+                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">{subscriber.name}</TableCell>
+                  <TableCell className="text-gray-600 dark:text-gray-400">{subscriber.email}</TableCell>
+                  <TableCell className="text-gray-600 dark:text-gray-400">{subscriber.contact_number || '—'}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 capitalize">
+                    <Badge variant="outline" className="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900 capitalize">
                       {subscriber.account_status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-gray-600">
+                  <TableCell className="text-gray-600 dark:text-gray-400">
                     {new Date(subscriber.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>

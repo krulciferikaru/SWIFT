@@ -26,15 +26,18 @@ export default function SubscriberForm({ initial = null, onSubmit, onCancel, loa
   const [form, setForm] = useState(initial ?? EMPTY_FORM)
   const [plans, setPlans] = useState([])
   const [errors, setErrors] = useState({})
+  const selectedPlan = plans.find((p) => String(p.plan_id) === String(form.plan_id))
 
   useEffect(() => {
     planApi.getAll()
       .then((res) => {
-        const responseData = res.data.data
-        const list = Array.isArray(responseData) ? responseData : (responseData?.data ?? [])
+        const responseData = res.data
+        const list = Array.isArray(responseData)
+          ? responseData
+          : (responseData?.data?.data ?? responseData?.data ?? [])
         setPlans(list)
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   useEffect(() => {
@@ -51,7 +54,10 @@ export default function SubscriberForm({ initial = null, onSubmit, onCancel, loa
     e.preventDefault()
     setErrors({})
     try {
-      await onSubmit(form)
+      await onSubmit({
+        ...form,
+        plan_id: form.plan_id ? Number(form.plan_id) : '',
+      })
     } catch (err) {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {})
@@ -81,7 +87,11 @@ export default function SubscriberForm({ initial = null, onSubmit, onCancel, loa
         <Label>Service Plan</Label>
         <Select value={form.plan_id} onValueChange={setValue('plan_id')}>
           <SelectTrigger className={errors.plan_id ? 'border-red-400 w-full' : 'w-full'}>
-            <SelectValue placeholder="Select a plan" />
+            <SelectValue placeholder="Select a plan">
+              {selectedPlan
+                ? `${selectedPlan.plan_name} — ₱${Number(selectedPlan.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+                : null}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {plans.map((p) => (

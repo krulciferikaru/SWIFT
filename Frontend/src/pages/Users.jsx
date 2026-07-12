@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import usersApi from '../api/users'
-// import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/AuthContext'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -27,14 +27,14 @@ import { useToast } from '../hooks/useToast'
 const ROLES = ['admin', 'secretary', 'subscriber']
 const ROLE_FILTERS = ['All', ...ROLES]
 const STATUS_STYLES = {
-  active: 'bg-green-100 text-green-700 border-green-200',
-  pending: 'bg-amber-100 text-amber-700 border-amber-200',
-  rejected: 'bg-red-100 text-red-700 border-red-200',
+  active: 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900',
+  pending: 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900',
+  rejected: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900',
 }
 const ROLE_STYLES = {
-  admin: 'bg-blue-100 text-blue-700 border-blue-200',
-  secretary: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  subscriber: 'bg-gray-100 text-gray-600 border-gray-200',
+  admin: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900',
+  secretary: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900',
+  subscriber: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700',
 }
 
 export default function Users() {
@@ -127,8 +127,8 @@ export default function Users() {
       )}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manage Roles</h1>
-        <p className="text-sm text-gray-500 mt-1">Control staff and subscriber account access.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Manage Roles</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Control staff and subscriber account access.</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -152,14 +152,14 @@ export default function Users() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">{error}</div>
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="text-center py-16 text-sm text-gray-400">Loading users…</div>
+          <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">Loading users…</div>
         ) : users.length === 0 ? (
-          <div className="text-center py-16 text-sm text-gray-400">No users found.</div>
+          <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">No users found.</div>
         ) : (
           <Table>
             <TableHeader>
@@ -175,11 +175,11 @@ export default function Users() {
                 const isSelf = currentUser && user.id === currentUser.id
                 return (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium text-gray-900">
+                    <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       {user.name}
-                      {isSelf && <span className="ml-2 text-xs text-gray-400">(you)</span>}
+                      {isSelf && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(you)</span>}
                     </TableCell>
-                    <TableCell className="text-gray-600">{user.email}</TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400">{user.email}</TableCell>
                     <TableCell>
                       {isSelf ? (
                         <Badge variant="outline" className={`capitalize ${ROLE_STYLES[user.role]}`}>
@@ -233,7 +233,7 @@ export default function Users() {
       </div>
 
       {meta && meta.last_page > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+        <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Showing {meta.from}–{meta.to} of {meta.total} users</span>
           <div className="flex gap-2">
             <Button

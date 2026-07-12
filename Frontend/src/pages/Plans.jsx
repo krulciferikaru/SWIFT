@@ -129,7 +129,7 @@ export default function Plans() {
   }
 
   if (loading) {
-    return <p className="text-gray-500">Loading plans...</p>
+    return <p className="text-gray-500 dark:text-gray-400">Loading plans...</p>
   }
 
   return (
@@ -143,20 +143,20 @@ export default function Plans() {
       )}
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Service Plans</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
         <Button onClick={openAddModal}>Add Plan</Button>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
           {error}
         </div>
       )}
 
       {plans.length === 0 ? (
-        <p className="text-gray-500">No plans yet.</p>
+        <p className="text-gray-500 dark:text-gray-400">No plans yet.</p>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -171,18 +171,18 @@ export default function Plans() {
             <TableBody>
               {plans.map((plan) => (
                 <TableRow key={plan.plan_id}>
-                  <TableCell className="font-medium text-gray-900">{plan.plan_name}</TableCell>
-                  <TableCell className="text-gray-600">
+                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">{plan.plan_name}</TableCell>
+                  <TableCell className="text-gray-600 dark:text-gray-400">
                     ₱{Number(plan.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </TableCell>
-                  <TableCell className="text-gray-600">{plan.speed_mbps || '—'}</TableCell>
-                  <TableCell className="text-gray-600 max-w-xs truncate">{plan.description || '—'}</TableCell>
+                  <TableCell className="text-gray-600 dark:text-gray-400">{plan.speed_mbps || '—'}</TableCell>
+                  <TableCell className="text-gray-600 dark:text-gray-400 max-w-xs truncate">{plan.description || '—'}</TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
                       className={plan.status === 'Active'
-                        ? 'bg-green-100 text-green-700 border-green-200'
-                        : 'bg-gray-100 text-gray-600 border-gray-200'}
+                        ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'}
                     >
                       {plan.status}
                     </Badge>
@@ -248,7 +248,7 @@ export default function Plans() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="description">Description</Label>
-              <span className="text-xs text-gray-400">{form.description.length}/200</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{form.description.length}/200</span>
             </div>
             <Textarea
               id="description"
