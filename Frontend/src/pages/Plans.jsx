@@ -1,5 +1,30 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
+import Modal from '../components/Modal'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
+import { useToast } from '../hooks/useToast'
 
 const emptyForm = { plan_name: '', monthly_rate: '', description: '', speed_mbps: '', status: 'Active' }
 
@@ -12,6 +37,10 @@ export default function Plans() {
   const [form, setForm] = useState(emptyForm)
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const { toast, showToast } = useToast()
 
   const fetchPlans = async () => {
     setLoading(true)
@@ -54,6 +83,10 @@ export default function Plans() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  const setFieldValue = (field) => (value) => {
+    setForm({ ...form, [field]: value })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -62,8 +95,10 @@ export default function Plans() {
     try {
       if (editingId) {
         await api.patch(`/plans/${editingId}`, form)
+        showToast('Plan updated successfully.')
       } else {
         await api.post('/plans', form)
+        showToast('Plan created successfully.')
       }
       setShowModal(false)
       fetchPlans()
@@ -71,20 +106,25 @@ export default function Plans() {
       if (err.response?.status === 422) {
         setFormErrors(err.response.data.errors)
       } else {
-        setError(err.response?.data?.message || 'Failed to save plan.')
+        showToast(err.response?.data?.message || 'Failed to save plan.', 'error')
       }
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (planId) => {
-    if (!confirm('Delete this plan?')) return
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
     try {
-      await api.delete(`/plans/${planId}`)
-      setPlans((prev) => prev.filter((p) => p.plan_id !== planId))
+      await api.delete(`/plans/${deleteTarget.plan_id}`)
+      setPlans((prev) => prev.filter((p) => p.plan_id !== deleteTarget.plan_id))
+      showToast(`"${deleteTarget.plan_name}" was deleted.`)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete plan.')
+      showToast(err.response?.data?.message || 'Failed to delete plan.', 'error')
+    } finally {
+      setDeleteLoading(false)
+      setDeleteTarget(null)
     }
   }
 
@@ -94,14 +134,17 @@ export default function Plans() {
 
   return (
     <div>
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
+          toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Service Plans</h1>
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-        >
-          Add Plan
-        </button>
+        <Button onClick={openAddModal}>Add Plan</Button>
       </div>
 
       {error && (
@@ -113,146 +156,156 @@ export default function Plans() {
       {plans.length === 0 ? (
         <p className="text-gray-500">No plans yet.</p>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-lg shadow">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-left">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Rate</th>
-                <th className="px-4 py-3">Speed (Mbps)</th>
-                <th className="px-4 py-3">Description</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Rate</TableHead>
+                <TableHead>Speed (Mbps)</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {plans.map((plan) => (
-                <tr key={plan.plan_id} className="border-t">
-                  <td className="px-4 py-3">{plan.plan_name}</td>
-                  <td className="px-4 py-3">₱{Number(plan.monthly_rate).toFixed(2)}</td>
-                  <td className="px-4 py-3">{plan.speed_mbps || '—'}</td>
-                  <td className="px-4 py-3 max-w-xs truncate">{plan.description || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      plan.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                    }`}>
+                <TableRow key={plan.plan_id}>
+                  <TableCell className="font-medium text-gray-900">{plan.plan_name}</TableCell>
+                  <TableCell className="text-gray-600">
+                    ₱{Number(plan.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-gray-600">{plan.speed_mbps || '—'}</TableCell>
+                  <TableCell className="text-gray-600 max-w-xs truncate">{plan.description || '—'}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={plan.status === 'Active'
+                        ? 'bg-green-100 text-green-700 border-green-200'
+                        : 'bg-gray-100 text-gray-600 border-gray-200'}
+                    >
                       {plan.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 space-x-2">
-                    <button
-                      onClick={() => openEditModal(plan)}
-                      className="px-3 py-1 bg-gray-600 text-white rounded-md text-xs hover:bg-gray-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(plan.plan_id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEditModal(plan)}>
+                        Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)}>
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">
-              {editingId ? 'Edit Plan' : 'Add Plan'}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
-                <input
-                  name="plan_name"
-                  value={form.plan_name}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {formErrors.plan_name && (
-                  <p className="text-red-600 text-xs mt-1">{formErrors.plan_name[0]}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rate</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="monthly_rate"
-                  value={form.monthly_rate}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {formErrors.monthly_rate && (
-                  <p className="text-red-600 text-xs mt-1">{formErrors.monthly_rate[0]}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Speed (Mbps)</label>
-                <input
-                  type="number"
-                  name="speed_mbps"
-                  value={form.speed_mbps}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  name="status"
-                  value={form.status}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </form>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingId ? 'Edit Plan' : 'Add Plan'} size="md">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="plan_name">Plan Name</Label>
+            <Input
+              id="plan_name"
+              name="plan_name"
+              value={form.plan_name}
+              onChange={handleChange}
+              required
+              className={formErrors.plan_name ? 'border-red-400' : ''}
+            />
+            {formErrors.plan_name && <p className="text-red-500 text-xs">{formErrors.plan_name[0]}</p>}
           </div>
-        </div>
-      )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="monthly_rate">Monthly Rate</Label>
+            <Input
+              id="monthly_rate"
+              type="number"
+              step="0.01"
+              name="monthly_rate"
+              value={form.monthly_rate}
+              onChange={handleChange}
+              required
+              className={formErrors.monthly_rate ? 'border-red-400' : ''}
+            />
+            {formErrors.monthly_rate && <p className="text-red-500 text-xs">{formErrors.monthly_rate[0]}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="speed_mbps">Speed (Mbps)</Label>
+            <Input
+              id="speed_mbps"
+              type="number"
+              name="speed_mbps"
+              value={form.speed_mbps}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="description">Description</Label>
+              <span className="text-xs text-gray-400">{form.description.length}/200</span>
+            </div>
+            <Textarea
+              id="description"
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              rows={3}
+              maxLength={200}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={setFieldValue('status')}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>You're about to delete <strong>"{deleteTarget.plan_name}"</strong>. If subscribers are currently assigned to this plan, this action may fail or affect their records. This cannot be undone.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? 'Deleting...' : 'Delete Plan'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

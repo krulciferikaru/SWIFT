@@ -1,11 +1,28 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
+import { useToast } from '../hooks/useToast'
 
 export default function Approvals() {
   const [pending, setPending] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState(null)
+  const [rejectTarget, setRejectTarget] = useState(null)
+
+  const { toast, showToast } = useToast()
 
   const fetchPending = async () => {
     setLoading(true)
@@ -24,27 +41,31 @@ export default function Approvals() {
     fetchPending()
   }, [])
 
-  const handleApprove = async (id) => {
-    setActionLoading(id)
+  const handleApprove = async (subscriber) => {
+    setActionLoading(subscriber.subscriber_id)
     try {
-      await api.patch(`/subscribers/${id}/approve`)
-      setPending((prev) => prev.filter((subscriber) => subscriber.subscriber_id !== id))
+      await api.patch(`/subscribers/${subscriber.subscriber_id}/approve`)
+      setPending((prev) => prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id))
+      showToast(`${subscriber.name} approved.`)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to approve subscriber.')
+      showToast(err.response?.data?.message || 'Failed to approve subscriber.', 'error')
     } finally {
       setActionLoading(null)
     }
   }
 
-  const handleReject = async (id) => {
-    setActionLoading(id)
+  const confirmReject = async () => {
+    if (!rejectTarget) return
+    setActionLoading(rejectTarget.subscriber_id)
     try {
-      await api.patch(`/subscribers/${id}/reject`)
-      setPending((prev) => prev.filter((subscriber) => subscriber.subscriber_id !== id))
+      await api.patch(`/subscribers/${rejectTarget.subscriber_id}/reject`)
+      setPending((prev) => prev.filter((s) => s.subscriber_id !== rejectTarget.subscriber_id))
+      showToast(`${rejectTarget.name}'s application was rejected.`)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reject subscriber.')
+      showToast(err.response?.data?.message || 'Failed to reject subscriber.', 'error')
     } finally {
       setActionLoading(null)
+      setRejectTarget(null)
     }
   }
 
@@ -54,6 +75,14 @@ export default function Approvals() {
 
   return (
     <div>
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
+          toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       <h1 className="text-2xl font-semibold mb-6">Pending Approvals</h1>
 
       {error && (
@@ -65,50 +94,80 @@ export default function Approvals() {
       {pending.length === 0 ? (
         <p className="text-gray-500">No pending subscribers.</p>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-lg shadow">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-left">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Contact Number</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Registered On</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Contact Number</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Registered On</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pending.map((subscriber) => (
-                <tr key={subscriber.subscriber_id} className="border-t">
-                  <td className="px-4 py-3">{subscriber.name}</td>
-                  <td className="px-4 py-3">{subscriber.email}</td>
-                  <td className="px-4 py-3">{subscriber.contact_number || '—'}</td>
-                  <td className="px-4 py-3 capitalize">{subscriber.account_status}</td>
-                  <td className="px-4 py-3">
+                <TableRow key={subscriber.subscriber_id}>
+                  <TableCell className="font-medium text-gray-900">{subscriber.name}</TableCell>
+                  <TableCell className="text-gray-600">{subscriber.email}</TableCell>
+                  <TableCell className="text-gray-600">{subscriber.contact_number || '—'}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 capitalize">
+                      {subscriber.account_status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-gray-600">
                     {new Date(subscriber.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 space-x-2">
-                    <button
-                      onClick={() => handleApprove(subscriber.subscriber_id)}
-                      disabled={actionLoading === subscriber.subscriber_id}
-                      className="px-3 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700 disabled:opacity-50"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleReject(subscriber.subscriber_id)}
-                      disabled={actionLoading === subscriber.subscriber_id}
-                      className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700 disabled:opacity-50"
-                    >
-                      Reject
-                    </button>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(subscriber)}
+                        disabled={actionLoading === subscriber.subscriber_id}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setRejectTarget(subscriber)}
+                        disabled={actionLoading === subscriber.subscriber_id}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
+
+      <AlertDialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) setRejectTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject this application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {rejectTarget && (
+                <>You're about to reject <strong>{rejectTarget.name}</strong>'s subscriber application. This cannot be undone, and they'll need to re-apply if this was a mistake.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmReject}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Reject Application
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

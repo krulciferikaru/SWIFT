@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Layout from './components/Layout.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Plans from './pages/Plans.jsx'
+import Users from './pages/Users.jsx'
 
 export default function App() {
   return (
@@ -46,6 +47,14 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <Plans />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+                <Route path="/users" element={
+          <ProtectedRoute>
+            <Layout>
+              <Users />
             </Layout>
           </ProtectedRoute>
         } />
