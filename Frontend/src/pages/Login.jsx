@@ -1,13 +1,28 @@
 import { useState } from 'react'
+import { useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import api from '../api/axios'
+import { useAuth } from '../context/AuthContext'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { login, isAuthenticated, loading: authLoading } = useAuth()
+
+useEffect(() => {
+  if (!authLoading && isAuthenticated) {
+    navigate('/dashboard', { replace: true })
+  }
+}, [authLoading, isAuthenticated, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -19,9 +34,8 @@ export default function Login() {
       const response = await api.post('/login', payload, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
-      localStorage.setItem('token', response.data.token)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
-      navigate('/dashboard')
+      login(response.data.token, response.data.user)
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.')
     } finally {
@@ -30,59 +44,69 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-semibold mb-6 text-center">Log In</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center space-y-1">
+          <div className="text-2xl font-bold text-primary mb-2">SWIFT</div>
+          <CardTitle>Welcome back</CardTitle>
+          <CardDescription>Log in to manage your cable TV account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+              {error}
+            </div>
+          )}
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded text-sm">
-            {error}
-          </div>
-        )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Logging in...' : 'Log In'}
+            </Button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Logging in...' : 'Log In'}
-          </button>
-        </form>
-
-        <p className="mt-4 text-sm text-center text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Register
-          </Link>
-        </p>
-      </div>
+          <p className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-primary hover:underline font-medium">
+              Register
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

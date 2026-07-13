@@ -11,6 +11,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { useState, useEffect } from 'react'
 import reportApi from '../../api/reports'
@@ -76,6 +77,7 @@ export default function SubscribersPage() {
       setEditTarget(null)
       showToast('Subscriber updated successfully.')
       refetch()
+      refetchSummary()
     } finally {
       setFormLoading(false)
     }
@@ -162,23 +164,22 @@ export default function SubscribersPage() {
   // -----------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="space-y-6">
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-          toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+          }`}>
           {toast.message}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="space-y-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Subscribers</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage all cable TV subscribers for Palayan Branch.</p>
         </div>
 
-        {summary && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+        {summary ? (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
               { label: 'Total', value: summary.total, color: 'text-gray-800 dark:text-gray-200' },
               { label: 'Pending', value: summary.pending, color: 'text-blue-600 dark:text-blue-400' },
@@ -192,45 +193,88 @@ export default function SubscribersPage() {
               </div>
             ))}
           </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-7 w-10" />
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <Input
-            type="text"
-            placeholder="Search by name, email, address, MAC…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1"
-          />
+        {loading ? (
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <Skeleton className="h-9 flex-1" />
+            <Skeleton className="h-9 w-full sm:w-40" />
+            <Skeleton className="h-9 w-full sm:w-32" />
+            <Skeleton className="h-9 w-full sm:w-36" />
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <Input
+              type="text"
+              placeholder="Search by name, email, address, MAC…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1"
+            />
 
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Button
-            onClick={() => setShowPreview(true)}
-            className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
-          >
-            Export CSV
-          </Button>
+            <Button
+              onClick={() => setShowPreview(true)}
+              className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+            >
+              Export CSV
+            </Button>
 
-          <Button onClick={() => setShowAdd(true)} className="whitespace-nowrap">
-            + Add Subscriber
-          </Button>
-        </div>
+            <Button onClick={() => setShowAdd(true)} className="whitespace-nowrap">
+              Add Subscriber
+            </Button>
+          </div>
+        )}
 
         {/* Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
-            <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">Loading subscribers…</div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead><Skeleton className="h-4 w-12" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-10" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-500 dark:text-red-400">{error}</div>
           ) : subscribers.length === 0 ? (
@@ -290,7 +334,7 @@ export default function SubscribersPage() {
 
         {/* Pagination */}
         {meta && meta.last_page > 1 && (
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
             <span>Showing {meta.from}–{meta.to} of {meta.total} subscribers</span>
             <div className="flex gap-2">
               <Button
@@ -374,26 +418,26 @@ export default function SubscribersPage() {
         )}
       </Modal>
 
-<AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Delete Subscriber</AlertDialogTitle>
-      <AlertDialogDescription>
-        Are you sure you want to delete "{deleteTarget?.name}"? This cannot be undone.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel>Cancel</AlertDialogCancel>
-      <AlertDialogAction
-        onClick={handleDelete}
-        disabled={deleteLoading}
-        className="bg-red-600 hover:bg-red-700"
-      >
-        {deleteLoading ? 'Deleting...' : 'Delete Subscriber'}
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Subscriber</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteTarget?.name}"? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? 'Deleting...' : 'Delete Subscriber'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

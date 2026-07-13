@@ -22,6 +22,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '../hooks/useToast'
 
 const ROLES = ['admin', 'secretary', 'subscriber']
@@ -119,9 +120,8 @@ export default function Users() {
   return (
     <div>
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-          toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+          }`}>
           {toast.message}
         </div>
       )}
@@ -157,7 +157,26 @@ export default function Users() {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">Loading users…</div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Account Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-36 rounded-md" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-32 rounded-md" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         ) : users.length === 0 ? (
           <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">No users found.</div>
         ) : (

@@ -13,7 +13,9 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '../hooks/useToast'
+import { useApprovals } from '@/context/ApprovalContext'
 
 export default function Approvals() {
   const [pending, setPending] = useState([])
@@ -21,7 +23,7 @@ export default function Approvals() {
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState(null)
   const [rejectTarget, setRejectTarget] = useState(null)
-
+  const { refreshPendingCount } = useApprovals()
   const { toast, showToast } = useToast()
 
   const fetchPending = async () => {
@@ -47,6 +49,7 @@ export default function Approvals() {
       await api.patch(`/subscribers/${subscriber.subscriber_id}/approve`)
       setPending((prev) => prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id))
       showToast(`${subscriber.name} approved.`)
+      refreshPendingCount()
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to approve subscriber.', 'error')
     } finally {
@@ -61,6 +64,7 @@ export default function Approvals() {
       await api.patch(`/subscribers/${rejectTarget.subscriber_id}/reject`)
       setPending((prev) => prev.filter((s) => s.subscriber_id !== rejectTarget.subscriber_id))
       showToast(`${rejectTarget.name}'s application was rejected.`)
+      refreshPendingCount()
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to reject subscriber.', 'error')
     } finally {
@@ -70,15 +74,44 @@ export default function Approvals() {
   }
 
   if (loading) {
-    return <p className="text-gray-500 dark:text-gray-400">Loading pending approvals...</p>
+    return (
+      <div>
+        <h1 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Pending Approvals</h1>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-28" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div>
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-          toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+          }`}>
           {toast.message}
         </div>
       )}

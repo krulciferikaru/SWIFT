@@ -13,6 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import {
   AlertDialog,
@@ -129,15 +130,56 @@ export default function Plans() {
   }
 
   if (loading) {
-    return <p className="text-gray-500 dark:text-gray-400">Loading plans...</p>
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          {loading ? (
+            <>
+              <Skeleton className="h-8 w-40" />
+              <Skeleton className="h-9 w-28" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
+              <Button onClick={openAddModal}>Add Plan</Button>
+            </>
+          )}
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-10" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div>
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-          toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+          }`}>
           {toast.message}
         </div>
       )}
