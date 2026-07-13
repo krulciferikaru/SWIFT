@@ -127,29 +127,45 @@ export default function Users() {
       )}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Manage Roles</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Control staff and subscriber account access.</p>
+        {loading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Manage Roles</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Control staff and subscriber account access.</p>
+          </>
+        )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <Input
-          type="text"
-          placeholder="Search by name or email…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1"
-        />
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ROLE_FILTERS.map((r) => (
-              <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {loading ? (
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <Skeleton className="h-9 flex-1" />
+          <Skeleton className="h-9 w-full sm:w-40" />
+        </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <Input
+            type="text"
+            placeholder="Search by name or email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1"
+          />
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ROLE_FILTERS.map((r) => (
+                <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
@@ -160,10 +176,10 @@ export default function Users() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Account Status</TableHead>
+                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-10" /></TableHead>
+                <TableHead><Skeleton className="h-4 w-28" /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

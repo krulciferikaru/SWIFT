@@ -76,7 +76,11 @@ export default function Approvals() {
   if (loading) {
     return (
       <div>
-        <h1 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Pending Approvals</h1>
+        {loading ? (
+          <Skeleton className="h-8 w-52 mb-6" />
+        ) : (
+          <h1 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Pending Approvals</h1>
+        )}
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>

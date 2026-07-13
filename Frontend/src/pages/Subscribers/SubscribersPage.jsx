@@ -174,8 +174,17 @@ export default function SubscribersPage() {
 
       <div className="space-y-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Subscribers</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage all cable TV subscribers for Palayan Branch.</p>
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-40" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Subscribers</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage all cable TV subscribers for Palayan Branch.</p>
+            </>
+          )}
         </div>
 
         {summary ? (
