@@ -9,11 +9,20 @@ use Illuminate\Support\Facades\Hash;
 
 class SubscriberApprovalController extends Controller
 {
-    public function pending()
+    public function pending(Request $request)
     {
-        return response()->json(
-            Subscriber::where('account_status', 'pending')->get()
-        );
+        $query = Subscriber::where('account_status', 'pending');
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+            $query->where(function ($nested) use ($search) {
+                $nested->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('contact_number', 'like', "%{$search}%");
+            });
+        }
+
+        return response()->json($query->get());
     }
 
     public function approve(Subscriber $subscriber)
@@ -39,5 +48,34 @@ class SubscriberApprovalController extends Controller
     {
         $subscriber->update(['account_status' => 'rejected']);
         return response()->json(['message' => 'Subscriber rejected.', 'subscriber' => $subscriber->fresh()]);
+    }
+
+    public function pendingClaims()
+    {
+        return response()->json(
+            User::where('account_status', 'pending')
+                ->whereNotNull('subscriber_id')
+                ->with('subscriber') // assumes a `subscriber()` relationship exists on User model
+                ->get()
+        );
+    }
+
+    public function approveClaim(User $user)
+    {
+        $user->update(['account_status' => 'active']);
+
+        return response()->json([
+            'message' => 'Account claim approved.',
+            'user' => $user->fresh(),
+        ]);
+    }
+
+    public function rejectClaim(User $user)
+    {
+        // Use a query delete to bypass the User model's cascade-delete-subscriber hook,
+        // since we want to reject the claim WITHOUT touching the original Subscriber record.
+        User::where('id', $user->id)->delete();
+
+        return response()->json(['message' => 'Account claim rejected. The original subscriber record was not affected.']);
     }
 }

@@ -25,9 +25,16 @@ class AuthController extends Controller
             }
         }
 
+        $existingSubscriber = Subscriber::where('email', $requestData['email'] ?? null)->first();
+
+        // If claiming an existing subscriber record, relax the email-uniqueness rule for that table
+        $emailRule = $existingSubscriber
+            ? 'required|string|email|max:255|unique:users,email'
+            : 'required|string|email|max:255|unique:users,email|unique:subscriber,email';
+
         $validator = Validator::make($requestData, [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email|unique:subscriber,email',
+            'email' => $emailRule,
             'password' => 'required|string|min:8|confirmed',
             'contact_number' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
@@ -35,6 +42,32 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($existingSubscriber) {
+            // Claiming an existing subscriber record — don't create a new Subscriber row.
+            // Instead, create a pending User linked to the existing subscriber_id for staff to verify.
+            if (User::where('subscriber_id', $existingSubscriber->subscriber_id)->exists()) {
+                return response()->json([
+                    'errors' => ['email' => ['An account for this subscriber already exists. Please contact support if you cannot log in.']],
+                ], 422);
+            }
+
+            $user = User::create([
+                'subscriber_id' => $existingSubscriber->subscriber_id,
+                'name' => $requestData['name'],
+                'email' => $requestData['email'],
+                'contact_number' => $requestData['contact_number'] ?? $existingSubscriber->contact_number,
+                'password' => Hash::make($requestData['password']),
+                'role' => 'subscriber',
+                'account_status' => 'pending',
+            ]);
+
+            return response()->json([
+                'message' => 'Registration submitted. Since this email matches an existing subscriber record, our staff will verify your identity before approving your account.',
+                'claim' => true,
+                'user' => $user,
+            ], 201);
         }
 
         $subscriber = Subscriber::create([
@@ -94,8 +127,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account is awaiting approval.'], 403);
         }
 
-        if ($user->account_status === 'rejected') {
-            return response()->json(['message' => 'Your account has been rejected.'], 403);
+        if ($user->account_status === 'inactive') {
+            return response()->json(['message' => 'Your account has been deactivated. Contact a secretary or an administrator.'], 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;

@@ -12,8 +12,8 @@ class UserController extends Controller
     public function index(Request $request): JsonResponse
     {
         $users = User::query()
-            ->when($request->filled('role'), fn ($query) => $query->where('role', $request->role))
-            ->when($request->filled('account_status'), fn ($query) => $query->where('account_status', $request->account_status))
+            ->when($request->filled('role'), fn($query) => $query->where('role', $request->role))
+            ->when($request->filled('account_status'), fn($query) => $query->where('account_status', $request->account_status))
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
@@ -34,7 +34,7 @@ class UserController extends Controller
     public function updateRole(Request $request, User $user): JsonResponse
     {
         $validated = $request->validate([
-            'role' => ['required', Rule::in(['admin', 'secretary', 'subscriber'])],
+            'role' => ['required', Rule::in(['secretary', 'subscriber'])],
         ]);
 
         $user->update($validated);
@@ -48,7 +48,7 @@ class UserController extends Controller
     public function updateStatus(Request $request, User $user): JsonResponse
     {
         $validated = $request->validate([
-            'account_status' => ['required', Rule::in(['pending', 'active', 'rejected'])],
+            'account_status' => ['required', Rule::in(['pending', 'active', 'inactive'])],
         ]);
 
         $user->update($validated);

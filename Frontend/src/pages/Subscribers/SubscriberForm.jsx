@@ -22,11 +22,10 @@ const EMPTY_FORM = {
   status: 'Active',
 }
 
-export default function SubscriberForm({ initial = null, onSubmit, onCancel, loading }) {
+export default function SubscriberForm({ initial = null, onSubmit, onCancel, loading, formId = 'subscriber-form' }) {
   const [form, setForm] = useState(initial ?? EMPTY_FORM)
   const [plans, setPlans] = useState([])
   const [errors, setErrors] = useState({})
-  const selectedPlan = plans.find((p) => String(p.plan_id) === String(form.plan_id))
 
   useEffect(() => {
     planApi.getAll()
@@ -37,7 +36,7 @@ export default function SubscriberForm({ initial = null, onSubmit, onCancel, loa
           : (responseData?.data?.data ?? responseData?.data ?? [])
         setPlans(list)
       })
-      .catch(() => { })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -65,9 +64,14 @@ export default function SubscriberForm({ initial = null, onSubmit, onCancel, loa
     }
   }
 
-  const field = (label, key, type = 'text', extra = {}) => (
+  const selectedPlan = plans.find((p) => String(p.plan_id) === String(form.plan_id))
+
+  const field = (label, key, type = 'text', extra = {}, required = false) => (
     <div className="space-y-1.5">
-      <Label htmlFor={key}>{label}</Label>
+      <Label htmlFor={key}>
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </Label>
       <Input
         id={key}
         type={type}
@@ -81,59 +85,74 @@ export default function SubscriberForm({ initial = null, onSubmit, onCancel, loa
   )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Plan */}
-      <div className="space-y-1.5">
-        <Label>Service Plan</Label>
-        <Select value={form.plan_id} onValueChange={setValue('plan_id')}>
-          <SelectTrigger className={errors.plan_id ? 'border-red-400 w-full' : 'w-full'}>
-            <SelectValue placeholder="Select a plan">
-              {selectedPlan
-                ? `${selectedPlan.plan_name} — ₱${Number(selectedPlan.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
-                : null}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {plans.map((p) => (
-              <SelectItem key={p.plan_id} value={String(p.plan_id)}>
-                {p.plan_name} — ₱{Number(p.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.plan_id && <p className="text-red-500 text-xs">{errors.plan_id[0]}</p>}
+    <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+      {/* Section: Plan & Status */}
+      <div className="space-y-4">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          Service Plan & Status
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>
+              Service Plan<span className="text-red-500 ml-0.5">*</span>
+            </Label>
+            <Select value={form.plan_id} onValueChange={setValue('plan_id')}>
+              <SelectTrigger className={errors.plan_id ? 'border-red-400 w-full' : 'w-full'}>
+                <SelectValue placeholder="Select a plan">
+                  {selectedPlan
+                    ? `${selectedPlan.plan_name} — ₱${Number(selectedPlan.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+                    : null}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {plans.map((p) => (
+                  <SelectItem key={p.plan_id} value={String(p.plan_id)}>
+                    {p.plan_name} — ₱{Number(p.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.plan_id && <p className="text-red-500 text-xs">{errors.plan_id[0]}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={setValue('status')}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Unpaid">Unpaid</SelectItem>
+                <SelectItem value="Disconnected">Disconnected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
-      {field('Full Name', 'name', 'text', { required: true, placeholder: 'e.g. Juan Dela Cruz' })}
-      {field('Address', 'address', 'text', { required: true, placeholder: 'e.g. Palayan City, Nueva Ecija' })}
-      {field('Contact Number', 'contact_number', 'text', { placeholder: '09XX-XXX-XXXX' })}
-      {field('Email Address', 'email', 'email', { required: true })}
-      {field('MAC Address', 'mac_address', 'text', { placeholder: 'XX:XX:XX:XX:XX:XX' })}
-      {field('Connection Date', 'connection_date', 'date', { required: true })}
-
-      {/* Status */}
-      <div className="space-y-1.5">
-        <Label>Status</Label>
-        <Select value={form.status} onValueChange={setValue('status')}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Unpaid">Unpaid</SelectItem>
-            <SelectItem value="Disconnected">Disconnected</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Section: Subscriber Information */}
+      <div className="space-y-4">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          Subscriber Information
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field('Full Name', 'name', 'text', { placeholder: 'e.g. Juan Dela Cruz' }, true)}
+          {field('Contact Number', 'contact_number', 'text', { placeholder: '09XX-XXX-XXXX' })}
+        </div>
+        {field('Email Address', 'email', 'email', {}, true)}
+        {field('Address', 'address', 'text', { placeholder: 'e.g. Palayan City, Nueva Ecija' }, true)}
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : 'Save'}
-        </Button>
+      {/* Section: Connection Details */}
+      <div className="space-y-4">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          Connection Details
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {field('MAC Address', 'mac_address', 'text', { placeholder: 'XX:XX:XX:XX:XX:XX' })}
+          {field('Connection Date', 'connection_date', 'date', {}, true)}
+        </div>
       </div>
     </form>
   )

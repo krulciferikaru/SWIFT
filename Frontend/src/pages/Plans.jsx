@@ -246,10 +246,29 @@ export default function Plans() {
         </div>
       )}
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingId ? 'Edit Plan' : 'Add Plan'} size="md">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingId ? 'Edit Plan' : 'Add Plan'}
+        description={editingId ? "Update this plan's details." : 'Set up a new service plan.'}
+        size="md"
+        confirmClose
+        footer={(requestClose) => (
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={requestClose}>
+              Cancel
+            </Button>
+            <Button type="submit" form="plan-form" disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        )}
+      >
+        <form id="plan-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="plan_name">Plan Name</Label>
+            <Label htmlFor="plan_name">
+              Plan Name<span className="text-red-500 ml-0.5">*</span>
+            </Label>
             <Input
               id="plan_name"
               name="plan_name"
@@ -261,30 +280,34 @@ export default function Plans() {
             {formErrors.plan_name && <p className="text-red-500 text-xs">{formErrors.plan_name[0]}</p>}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="monthly_rate">Monthly Rate</Label>
-            <Input
-              id="monthly_rate"
-              type="number"
-              step="0.01"
-              name="monthly_rate"
-              value={form.monthly_rate}
-              onChange={handleChange}
-              required
-              className={formErrors.monthly_rate ? 'border-red-400' : ''}
-            />
-            {formErrors.monthly_rate && <p className="text-red-500 text-xs">{formErrors.monthly_rate[0]}</p>}
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="monthly_rate">
+                Monthly Rate<span className="text-red-500 ml-0.5">*</span>
+              </Label>
+              <Input
+                id="monthly_rate"
+                type="number"
+                step="0.01"
+                name="monthly_rate"
+                value={form.monthly_rate}
+                onChange={handleChange}
+                required
+                className={formErrors.monthly_rate ? 'border-red-400' : ''}
+              />
+              {formErrors.monthly_rate && <p className="text-red-500 text-xs">{formErrors.monthly_rate[0]}</p>}
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="speed_mbps">Speed (Mbps)</Label>
-            <Input
-              id="speed_mbps"
-              type="number"
-              name="speed_mbps"
-              value={form.speed_mbps}
-              onChange={handleChange}
-            />
+            <div className="space-y-1.5">
+              <Label htmlFor="speed_mbps">Speed (Mbps)</Label>
+              <Input
+                id="speed_mbps"
+                type="number"
+                name="speed_mbps"
+                value={form.speed_mbps}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -313,15 +336,6 @@ export default function Plans() {
                 <SelectItem value="Inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save'}
-            </Button>
           </div>
         </form>
       </Modal>

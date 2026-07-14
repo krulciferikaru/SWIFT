@@ -9,7 +9,7 @@ use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 // Health check
-Route::get('/health', fn () => response()->json([
+Route::get('/health', fn() => response()->json([
     'status'  => 'ok',
     'system'  => 'SWIFT API',
     'version' => '1.0.0',
@@ -38,6 +38,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscribers/pending', [SubscriberApprovalController::class, 'pending']);
         Route::patch('/subscribers/{subscriber}/approve', [SubscriberApprovalController::class, 'approve']);
         Route::patch('/subscribers/{subscriber}/reject', [SubscriberApprovalController::class, 'reject']);
+        Route::get('/subscribers/pending-claims', [SubscriberApprovalController::class, 'pendingClaims']);
+        Route::patch('/subscribers/claims/{user}/approve', [SubscriberApprovalController::class, 'approveClaim']);
+        Route::patch('/subscribers/claims/{user}/reject', [SubscriberApprovalController::class, 'rejectClaim']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])

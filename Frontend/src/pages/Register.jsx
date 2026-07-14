@@ -27,11 +27,11 @@ export default function Register() {
   const { isAuthenticated, loading: authLoading } = useAuth()
   const navigate = useNavigate()
 
-useEffect(() => {
-  if (!authLoading && isAuthenticated) {
-    navigate('/dashboard', { replace: true })
-  }
-}, [authLoading, isAuthenticated, navigate])
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [authLoading, isAuthenticated, navigate])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -50,7 +50,6 @@ useEffect(() => {
       })
       setMessage(response.data.message)
       setSubmitted(true)
-      setTimeout(() => navigate('/login'), 3000)
     } catch (err) {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors)
@@ -74,7 +73,9 @@ useEffect(() => {
                 {message || 'Your registration is awaiting approval from our staff.'}
               </p>
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Redirecting you to login…</p>
+            <Button onClick={() => navigate('/login')} className="w-full">
+              Go to Login
+            </Button>
           </CardContent>
         </Card>
       </div>

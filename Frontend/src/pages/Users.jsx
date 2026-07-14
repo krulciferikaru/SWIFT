@@ -25,12 +25,12 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '../hooks/useToast'
 
-const ROLES = ['admin', 'secretary', 'subscriber']
+const ROLES = ['secretary', 'subscriber']
 const ROLE_FILTERS = ['All', ...ROLES]
 const STATUS_STYLES = {
   active: 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900',
   pending: 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900',
-  rejected: 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900',
+  inactive: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700',
 }
 const ROLE_STYLES = {
   admin: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900',
@@ -254,7 +254,7 @@ export default function Users() {
                           <SelectContent>
                             <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
                           </SelectContent>
                         </Select>
                       )}

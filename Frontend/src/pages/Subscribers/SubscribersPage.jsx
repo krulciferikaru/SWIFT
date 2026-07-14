@@ -403,13 +403,48 @@ export default function SubscribersPage() {
         </div>
       </Modal>
 
-      <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="Add Subscriber" size="lg">
-        <SubscriberForm onSubmit={handleAdd} onCancel={() => setShowAdd(false)} loading={formLoading} />
+      <Modal
+        isOpen={showAdd}
+        onClose={() => setShowAdd(false)}
+        title="Add Subscriber"
+        description="Fill in the subscriber's details below."
+        size="lg"
+        confirmClose
+        footer={(requestClose) => (
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={requestClose}>
+              Cancel
+            </Button>
+            <Button type="submit" form="add-subscriber-form" disabled={formLoading}>
+              {formLoading ? 'Saving...' : 'Save Subscriber'}
+            </Button>
+          </div>
+        )}
+      >
+        <SubscriberForm formId="add-subscriber-form" onSubmit={handleAdd} onCancel={() => setShowAdd(false)} loading={formLoading} />
       </Modal>
 
-      <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Subscriber" size="lg">
+      <Modal
+        isOpen={!!editTarget}
+        onClose={() => setEditTarget(null)}
+        title="Edit Subscriber"
+        description="Update the subscriber's details below."
+        size="lg"
+        confirmClose
+        footer={(requestClose) => (
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={requestClose}>
+              Cancel
+            </Button>
+            <Button type="submit" form="edit-subscriber-form" disabled={formLoading}>
+              {formLoading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        )}
+      >
         {editTarget && (
           <SubscriberForm
+            formId="edit-subscriber-form"
             initial={{
               plan_id: editTarget.plan_id ?? '',
               name: editTarget.name ?? '',
