@@ -49,8 +49,7 @@ class Subscriber extends Model
 
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class, 'subscriber_id', 'subscriber_id')
-                    ->latest('payment_date');
+        return $this->hasMany(Payment::class, 'subscriber_id', 'subscriber_id');
     }
 
     // -----------------------------------------------------------------------
