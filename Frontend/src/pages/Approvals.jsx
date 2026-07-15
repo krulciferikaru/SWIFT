@@ -21,10 +21,13 @@ import { useApprovals } from '@/context/ApprovalContext'
 
 export default function Approvals() {
   const [tab, setTab] = useState('pending') // 'pending' | 'rejected' | 'claims'
+  const [claimsSubTab, setClaimsSubTab] = useState('pending') // 'pending' | 'rejected'
   const [pending, setPending] = useState([])
   const [rejected, setRejected] = useState([])
   const [claims, setClaims] = useState([])
+  const [rejectedClaims, setRejectedClaims] = useState([])
   const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [actionLoading, setActionLoading] = useState(null)
@@ -43,6 +46,7 @@ export default function Approvals() {
       setError(err.response?.data?.message || 'Failed to load pending subscribers.')
     } finally {
       setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -58,6 +62,7 @@ export default function Approvals() {
       setError(err.response?.data?.message || 'Failed to load rejected subscribers.')
     } finally {
       setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -71,14 +76,30 @@ export default function Approvals() {
       setError(err.response?.data?.message || 'Failed to load account claims.')
     } finally {
       setLoading(false)
+      setInitialLoading(false)
+    }
+  }
+
+  const fetchRejectedClaims = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.get('/subscribers/rejected-claims')
+      setRejectedClaims(res.data)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load rejected claims.')
+    } finally {
+      setLoading(false)
+      setInitialLoading(false)
     }
   }
 
   useEffect(() => {
     if (tab === 'pending') fetchPending()
     else if (tab === 'rejected') fetchRejected()
-    else fetchClaims()
-  }, [tab])
+    else if (claimsSubTab === 'pending') fetchClaims()
+    else fetchRejectedClaims()
+  }, [tab, claimsSubTab])
 
   const handleApprove = async (subscriber) => {
     setActionLoading(subscriber.subscriber_id)
@@ -127,6 +148,19 @@ export default function Approvals() {
     }
   }
 
+  const handleReapproveClaim = async (claimUser) => {
+    setActionLoading(claimUser.id)
+    try {
+      await api.patch(`/subscribers/claims/${claimUser.id}/approve`)
+      setRejectedClaims((prev) => prev.filter((c) => c.id !== claimUser.id))
+      showToast(`${claimUser.name}'s account claim approved.`)
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to approve claim.', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const confirmRejectClaim = async () => {
     if (!rejectClaimTarget) return
     setActionLoading(rejectClaimTarget.id)
@@ -142,7 +176,10 @@ export default function Approvals() {
     }
   }
 
-  const baseList = tab === 'pending' ? pending : tab === 'rejected' ? rejected : claims
+  const baseList =
+    tab === 'pending' ? pending :
+    tab === 'rejected' ? rejected :
+    claimsSubTab === 'pending' ? claims : rejectedClaims
 
   const list = search
     ? baseList.filter((s) => {
@@ -155,6 +192,11 @@ export default function Approvals() {
       })
     : baseList
 
+  const emptyMessage =
+    tab === 'pending' ? 'No pending subscribers.' :
+    tab === 'rejected' ? 'No rejected subscribers.' :
+    claimsSubTab === 'pending' ? 'No pending account claims.' : 'No rejected account claims.'
+
   return (
     <div>
       {toast && (
@@ -164,53 +206,95 @@ export default function Approvals() {
         </div>
       )}
 
-      <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Approvals</h1>
+      {initialLoading ? (
+        <>
+          <Skeleton className="h-8 w-40 mb-4" />
+          <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </>
+      ) : (
+        <>
+          <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Approvals</h1>
 
-      <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setTab('pending')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'pending'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-          }`}
-        >
-          Pending
-        </button>
-        <button
-          onClick={() => setTab('rejected')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'rejected'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-          }`}
-        >
-          Rejected
-        </button>
-        <button
-          onClick={() => setTab('claims')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === 'claims'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-          }`}
-        >
-          Account Claims
-          {claims.length > 0 && (
-            <Badge variant="outline" className="ml-2 h-5 px-1.5 text-xs bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900">
-              {claims.length}
-            </Badge>
-          )}
-        </button>
-      </div>
+          <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setTab('pending')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'pending'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setTab('rejected')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'rejected'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Rejected
+            </button>
+            <button
+              onClick={() => setTab('claims')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'claims'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              Account Claims
+              {claims.length > 0 && (
+                <Badge variant="outline" className="ml-2 h-5 px-1.5 text-xs bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900">
+                  {claims.length}
+                </Badge>
+              )}
+            </button>
+          </div>
+        </>
+      )}
 
-      <Input
-        type="text"
-        placeholder="Search by name, email, or contact number…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 max-w-sm"
-      />
+      {tab === 'claims' && !initialLoading && (
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setClaimsSubTab('pending')}
+            className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
+              claimsSubTab === 'pending'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            Pending Claims
+          </button>
+          <button
+            onClick={() => setClaimsSubTab('rejected')}
+            className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
+              claimsSubTab === 'rejected'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            Rejected Claims
+          </button>
+        </div>
+      )}
+
+      {initialLoading ? (
+        <Skeleton className="h-9 w-full max-w-sm mb-4" />
+      ) : (
+        <Input
+          type="text"
+          placeholder="Search by name, email, or contact number…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="mb-4 max-w-sm"
+        />
+      )}
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
@@ -218,7 +302,7 @@ export default function Approvals() {
         </div>
       )}
 
-      {tab === 'claims' && list.length > 0 && (
+      {tab === 'claims' && claimsSubTab === 'pending' && list.length > 0 && (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded text-sm text-amber-800 dark:text-amber-400">
           These are new login registrations using an email that matches an existing subscriber record. Verify the person's identity (name, contact number, address on file) before approving — approving links this login to the existing subscriber's account.
         </div>
@@ -229,32 +313,60 @@ export default function Approvals() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Contact Number</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>{tab === 'claims' ? 'Requested On' : 'Registered On'}</TableHead>
-                <TableHead>Actions</TableHead>
+                {tab === 'claims' ? (
+                  <>
+                    <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-12" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-40" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+                  </>
+                ) : (
+                  <>
+                    <TableHead><Skeleton className="h-4 w-12" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-12" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+                  </>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {Array.from({ length: 4 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                  {tab === 'claims' ? (
+                    <>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-3 w-32" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-36" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-32" /></TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       ) : list.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400">
-          {tab === 'pending' ? 'No pending subscribers.' : tab === 'rejected' ? 'No rejected subscribers.' : 'No pending account claims.'}
-        </p>
+        <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
       ) : tab === 'claims' ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
@@ -286,22 +398,35 @@ export default function Approvals() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleApproveClaim(claimUser)}
-                        disabled={actionLoading === claimUser.id}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setRejectClaimTarget(claimUser)}
-                        disabled={actionLoading === claimUser.id}
-                      >
-                        Reject
-                      </Button>
+                      {claimsSubTab === 'pending' ? (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApproveClaim(claimUser)}
+                            disabled={actionLoading === claimUser.id}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setRejectClaimTarget(claimUser)}
+                            disabled={actionLoading === claimUser.id}
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleReapproveClaim(claimUser)}
+                          disabled={actionLoading === claimUser.id}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          Re-approve
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -397,7 +522,7 @@ export default function Approvals() {
             <AlertDialogTitle>Reject this account claim?</AlertDialogTitle>
             <AlertDialogDescription>
               {rejectClaimTarget && (
-                <>This will delete the pending login request for <strong>{rejectClaimTarget.name}</strong>. The original subscriber record on file will not be affected.</>
+                <>This will mark the login request for <strong>{rejectClaimTarget.name}</strong> as rejected. You can find it later in the Rejected Claims tab, and the original subscriber record on file will not be affected.</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

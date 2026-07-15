@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\SubscriberApprovalController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 // Health check
@@ -41,6 +42,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscribers/pending-claims', [SubscriberApprovalController::class, 'pendingClaims']);
         Route::patch('/subscribers/claims/{user}/approve', [SubscriberApprovalController::class, 'approveClaim']);
         Route::patch('/subscribers/claims/{user}/reject', [SubscriberApprovalController::class, 'rejectClaim']);
+        Route::get('/subscribers/rejected-claims', [SubscriberApprovalController::class, 'rejectedClaims']);
+        Route::get('/subscribers/{subscriber}/billing', [PaymentController::class, 'billing']);
+Route::get('/subscribers/{subscriber}/payments', [PaymentController::class, 'index']);
+Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])

@@ -2,46 +2,39 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
-    protected $table = 'payment';
-
-    protected $primaryKey = 'payment_id';
+    use HasFactory;
 
     protected $fillable = [
         'subscriber_id',
         'amount',
         'payment_date',
-        'month_paid',
+        'or_number',
         'payment_method',
+        'notes',
+        'recorded_by',
     ];
 
     protected function casts(): array
     {
         return [
             'payment_date' => 'date',
-            'amount'       => 'decimal:2',
+            'amount' => 'decimal:2',
         ];
     }
-
-    // -----------------------------------------------------------------------
-    // Relationships
-    // -----------------------------------------------------------------------
 
     public function subscriber(): BelongsTo
     {
         return $this->belongsTo(Subscriber::class, 'subscriber_id', 'subscriber_id');
     }
 
-    // -----------------------------------------------------------------------
-    // Accessors
-    // -----------------------------------------------------------------------
-
-    public function getFormattedAmountAttribute(): string
+    public function recordedBy(): BelongsTo
     {
-        return '₱' . number_format($this->amount, 2);
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 }

@@ -55,7 +55,19 @@ class SubscriberApprovalController extends Controller
         return response()->json(
             User::where('account_status', 'pending')
                 ->whereNotNull('subscriber_id')
-                ->with('subscriber') // assumes a `subscriber()` relationship exists on User model
+                ->with('subscriber')
+                ->latest()
+                ->get()
+        );
+    }
+
+    public function rejectedClaims()
+    {
+        return response()->json(
+            User::where('account_status', 'inactive')
+                ->whereNotNull('subscriber_id')
+                ->with('subscriber')
+                ->latest()
                 ->get()
         );
     }
@@ -72,10 +84,10 @@ class SubscriberApprovalController extends Controller
 
     public function rejectClaim(User $user)
     {
-        // Use a query delete to bypass the User model's cascade-delete-subscriber hook,
-        // since we want to reject the claim WITHOUT touching the original Subscriber record.
-        User::where('id', $user->id)->delete();
+        // Soft-mark as inactive instead of deleting, so rejected claims remain visible as history.
+        // Uses a direct query update (not $user->update()) to be explicit this bypasses no model events.
+        User::where('id', $user->id)->update(['account_status' => 'inactive']);
 
-        return response()->json(['message' => 'Account claim rejected. The original subscriber record was not affected.']);
+        return response()->json(['message' => 'Account claim rejected.']);
     }
 }
