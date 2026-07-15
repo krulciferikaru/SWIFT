@@ -27,6 +27,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Wallet,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,7 @@ const navItemsByRole = {
     { label: 'Subscribers', path: '/subscribers', icon: Users2 },
     { label: 'Pending Approvals', path: '/approvals', icon: ClipboardCheck, showBadge: true },
     { label: 'Service Plans', path: '/plans', icon: Wifi },
+    { label: 'Payments', path: '/payments', icon: Wallet },
     { label: 'Manage Roles', path: '/users', icon: ShieldCheck },
     { label: 'Settings', path: '/settings', icon: SettingsIcon },
   ],
@@ -45,6 +47,7 @@ const navItemsByRole = {
     { label: 'Subscribers', path: '/subscribers', icon: Users2 },
     { label: 'Pending Approvals', path: '/approvals', icon: ClipboardCheck, showBadge: true },
     { label: 'Service Plans', path: '/plans', icon: Wifi },
+    { label: 'Payments', path: '/payments', icon: Wallet },
     { label: 'Settings', path: '/settings', icon: SettingsIcon },
   ],
   subscriber: [
