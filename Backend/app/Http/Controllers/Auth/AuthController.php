@@ -128,7 +128,7 @@ class AuthController extends Controller
         }
 
         if ($user->account_status === 'inactive') {
-            return response()->json(['message' => 'Your account has been deactivated. Contact a secretary or an administrator.'], 403);
+            return response()->json(['message' => 'Your account has been rejected or deactivated. Contact a secretary or an administrator.'], 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;

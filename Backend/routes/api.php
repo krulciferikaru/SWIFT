@@ -23,6 +23,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
+    Route::get('/me/billing', [PaymentController::class, 'myBilling']);
+    Route::get('/me/payments', [PaymentController::class, 'myPayments']);
+    
     Route::get('/plans', [PlanController::class, 'index'])
         ->middleware('role:admin,secretary,subscriber');
     Route::get('/plans/{plan}', [PlanController::class, 'show'])
@@ -44,8 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/subscribers/claims/{user}/reject', [SubscriberApprovalController::class, 'rejectClaim']);
         Route::get('/subscribers/rejected-claims', [SubscriberApprovalController::class, 'rejectedClaims']);
         Route::get('/subscribers/{subscriber}/billing', [PaymentController::class, 'billing']);
-Route::get('/subscribers/{subscriber}/payments', [PaymentController::class, 'index']);
-Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store']);
+        Route::get('/subscribers/{subscriber}/payments', [PaymentController::class, 'index']);
+        Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store']);
+        Route::get('/subscribers/check-duplicate', [SubscriberController::class, 'checkDuplicate']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])
@@ -59,7 +63,7 @@ Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'st
     Route::patch('/subscribers/{subscriber}/status', [SubscriberController::class, 'updateStatus'])
         ->middleware('role:admin,secretary');
     Route::delete('/subscribers/{subscriber}', [SubscriberController::class, 'destroy'])
-        ->middleware('role:admin');
+        ->middleware('role:admin,secretary');
 
     // Admin-only management.
     Route::middleware('role:admin')->group(function () {

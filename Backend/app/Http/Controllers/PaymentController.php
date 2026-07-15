@@ -66,4 +66,42 @@ class PaymentController extends Controller
             ],
         ], 201);
     }
+
+    /**
+     * GET /api/me/billing — the logged-in subscriber's own billing breakdown.
+     */
+    public function myBilling(Request $request): JsonResponse
+    {
+        $subscriberId = $request->user()->subscriber_id;
+
+        if (!$subscriberId) {
+            return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
+        }
+
+        $subscriber = Subscriber::findOrFail($subscriberId);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->billing->getBreakdown($subscriber),
+        ]);
+    }
+
+    /**
+     * GET /api/me/payments — the logged-in subscriber's own payment history.
+     */
+    public function myPayments(Request $request): JsonResponse
+    {
+        $subscriberId = $request->user()->subscriber_id;
+
+        if (!$subscriberId) {
+            return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
+        }
+
+        $payments = Payment::where('subscriber_id', $subscriberId)
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $payments]);
+    }
 }

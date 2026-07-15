@@ -43,6 +43,8 @@ const subscriberApi = {
    */
   delete: (id) =>
     api.delete(`/subscribers/${id}`),
+
+  checkDuplicate: (name) => api.get('/subscribers/check-duplicate', { params: { name } }),
 }
 
 export default subscriberApi

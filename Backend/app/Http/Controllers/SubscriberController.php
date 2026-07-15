@@ -28,9 +28,17 @@ class SubscriberController extends Controller
     {
         $query = Subscriber::with('plan')
             ->select([
-                'subscriber_id', 'plan_id', 'name', 'address',
-                'contact_number', 'email', 'mac_address',
-                'connection_date', 'status', 'created_at', 'account_status',
+                'subscriber_id',
+                'plan_id',
+                'name',
+                'address',
+                'contact_number',
+                'email',
+                'mac_address',
+                'connection_date',
+                'status',
+                'created_at',
+                'account_status',
             ]);
 
         if ($request->filled('account_status')) {
@@ -96,7 +104,7 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::with([
             'plan',
-            'payments' => fn ($q) => $q->latest('payment_date')->limit(12),
+            'payments' => fn($q) => $q->latest('payment_date')->limit(12),
         ])->findOrFail($id);
 
         return response()->json([
@@ -206,5 +214,27 @@ class SubscriberController extends Controller
             'success' => true,
             'data'    => $summary,
         ]);
+    }
+
+    /**
+     * GET /api/subscribers/check-duplicate?name=...
+     *
+     * Returns any existing active subscribers with a similar name, so staff
+     * can be warned before creating what might be an accidental duplicate.
+     */
+    public function checkDuplicate(Request $request): JsonResponse
+    {
+        $name = $request->string('name')->toString();
+
+        if (strlen($name) < 3) {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $matches = Subscriber::where('account_status', 'active')
+            ->where('name', 'like', "%{$name}%")
+            ->limit(5)
+            ->get(['subscriber_id', 'name', 'email', 'contact_number', 'status']);
+
+        return response()->json(['success' => true, 'data' => $matches]);
     }
 }
