@@ -36,6 +36,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/reports/subscribers', [ReportController::class, 'subscribers'])
         ->middleware('role:admin,secretary');
+    Route::get('/reports/collections', [ReportController::class, 'collections'])
+        ->middleware('role:admin,secretary');
+    Route::get('/reports/collections/pdf', [ReportController::class, 'collectionsPdf'])
+        ->middleware('role:admin,secretary');
+    Route::get('/reports/collections/xlsx', [ReportController::class, 'collectionsXlsx'])
+        ->middleware('role:admin,secretary');
+    Route::get('/reports/financial-statement', [ReportController::class, 'financialStatement'])
+        ->middleware('role:admin,secretary');
+    Route::get('/reports/financial-statement/pdf', [ReportController::class, 'financialStatementPdf'])
+        ->middleware('role:admin,secretary');
+    Route::get('/reports/financial-statement/xlsx', [ReportController::class, 'financialStatementXlsx'])
+        ->middleware('role:admin,secretary');
 
     // Secretary + Admin can approve/reject subscriber accounts.
     Route::middleware('role:admin,secretary')->group(function () {

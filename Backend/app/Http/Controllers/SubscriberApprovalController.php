@@ -33,7 +33,7 @@ class SubscriberApprovalController extends Controller
                 'name' => $subscriber->name,
                 'email' => $subscriber->email,
                 'contact_number' => $subscriber->contact_number,
-                'password' => $subscriber->password,
+                'password' => $subscriber->password ?: Hash::make('password'),
                 'role' => 'subscriber',
                 'account_status' => 'active',
             ]

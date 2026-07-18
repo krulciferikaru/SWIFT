@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Plans from "./pages/Plans.jsx";
 import Users from "./pages/Users.jsx";
 import Payments from "./pages/Payments.jsx";
+import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 
 export default function App() {
@@ -75,6 +76,17 @@ export default function App() {
                   <ProtectedRoute allowedRoles={["admin", "secretary"]}>
                     <Layout>
                       <Payments />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                    <Layout>
+                      <Reports />
                     </Layout>
                   </ProtectedRoute>
                 }

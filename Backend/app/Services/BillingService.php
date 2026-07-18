@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Subscriber;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 
 class BillingService
 {
@@ -25,12 +26,13 @@ class BillingService
      *   'months_behind' => int, // count of months not fully paid
      * ]
      */
-    public function getBreakdown(Subscriber $subscriber): array
+    public function getBreakdown(Subscriber $subscriber, CarbonInterface|string|null $asOf = null): array
     {
         $rate = (float) ($subscriber->plan->monthly_rate ?? 0);
 
         $start = Carbon::parse($subscriber->connection_date)->startOfMonth();
-        $now = Carbon::now()->startOfMonth();
+        $cutoff = $asOf ? Carbon::parse($asOf) : Carbon::now();
+        $now = $cutoff->copy()->startOfMonth();
 
         $months = [];
         $cursor = $start->copy();
@@ -44,10 +46,15 @@ class BillingService
             $cursor->addMonth();
         }
 
-        $payments = $subscriber->payments()
+        $paymentsQuery = $subscriber->payments()
             ->orderBy('payment_date')
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
+
+        if ($asOf) {
+            $paymentsQuery->whereDate('payment_date', '<=', $cutoff->toDateString());
+        }
+
+        $payments = $paymentsQuery->get();
 
         $pool = (float) $payments->sum('amount');
 

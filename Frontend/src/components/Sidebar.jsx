@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   Users2,
   ClipboardCheck,
+  FileText,
   Wifi,
   ShieldCheck,
   Settings as SettingsIcon,
@@ -44,6 +45,7 @@ const navItemsByRole = {
     },
     { label: "Service Plans", path: "/plans", icon: Wifi },
     { label: "Payments", path: "/payments", icon: Wallet },
+    { label: "Reports", path: "/reports", icon: FileText },
     { label: "Manage Roles", path: "/users", icon: ShieldCheck },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
   ],
@@ -58,6 +60,7 @@ const navItemsByRole = {
     },
     { label: "Service Plans", path: "/plans", icon: Wifi },
     { label: "Payments", path: "/payments", icon: Wallet },
+    { label: "Reports", path: "/reports", icon: FileText },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
   ],
   subscriber: [

@@ -33,5 +33,7 @@ class DatabaseSeeder extends Seeder
             'role' => 'secretary',
             'account_status' => 'active',
         ]);
+
+        $this->call(SampleReportDataSeeder::class);
     }
 }
