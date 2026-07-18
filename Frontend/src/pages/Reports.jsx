@@ -424,19 +424,6 @@ export default function Reports() {
         </Card>
       </div>
 
-      {!loading && collections && statement && (
-        <Card className="border-dashed">
-          <CardContent className="pt-6 flex items-start gap-3">
-            <Table2 className="size-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-medium text-gray-900 dark:text-gray-100">Ready to test</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                This month is {month}. The report data reflects the seeded July sample records.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
