@@ -36,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/reports/subscribers', [ReportController::class, 'subscribers'])
         ->middleware('role:admin,secretary');
+    Route::get('/reports/subscribers/xlsx', [ReportController::class, 'subscribersXlsx'])
+        ->middleware('role:admin,secretary');
     Route::get('/reports/collections', [ReportController::class, 'collections'])
         ->middleware('role:admin,secretary');
     Route::get('/reports/collections/pdf', [ReportController::class, 'collectionsPdf'])

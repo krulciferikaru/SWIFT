@@ -115,7 +115,7 @@
 
     <div class="summary-grid">
         <div class="summary-card"><div class="card"><div class="card-label">Subscribers</div><div class="card-value">{{ number_format($summary['subscriber_count']) }}</div></div></div>
-        <div class="summary-card"><div class="card"><div class="card-label">Total Owed</div><div class="card-value">₱{{ number_format($summary['total_owed'], 2) }}</div></div></div>
+        <div class="summary-card"><div class="card"><div class="card-label">Total Receivables</div><div class="card-value">₱{{ number_format($summary['total_owed'], 2) }}</div></div></div>
         <div class="summary-card"><div class="card"><div class="card-label">Total Paid</div><div class="card-value">₱{{ number_format($summary['total_paid'], 2) }}</div></div></div>
         <div class="summary-card"><div class="card"><div class="card-label">Outstanding</div><div class="card-value">₱{{ number_format($summary['total_outstanding'], 2) }}</div></div></div>
         <div class="summary-card"><div class="card"><div class="card-label">Credit</div><div class="card-value">₱{{ number_format($summary['total_advance_credit'], 2) }}</div></div></div>
@@ -150,7 +150,7 @@
                 <tr>
                     <th>Plan</th>
                     <th class="right">Subscribers</th>
-                    <th class="right">Owed</th>
+                    <th class="right">Receivables</th>
                     <th class="right">Paid</th>
                     <th class="right">Outstanding</th>
                     <th class="right">Credit</th>
@@ -184,7 +184,7 @@
                     <th>Plan</th>
                     <th>Status</th>
                     <th class="right">Monthly Rate</th>
-                    <th class="right">Owed</th>
+                    <th class="right">Receivables</th>
                     <th class="right">Paid</th>
                     <th class="right">Balance</th>
                     <th class="right">Credit</th>

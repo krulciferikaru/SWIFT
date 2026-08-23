@@ -42,3 +42,30 @@ export function parseCsvRows(csvText) {
 
   return rows
 }
+
+function stripBom(cell) {
+  if (typeof cell !== 'string') return cell
+  return cell.replace(new RegExp(`^${String.fromCharCode(0xfeff)}`), '').trim()
+}
+
+export function extractCsvTableData(csvText) {
+  const rawRows = parseCsvRows(csvText)
+    .map((row) => row.map((cell) => stripBom(cell)))
+    .filter((row) => row.some((cell) => cell !== ''))
+
+  const headerIndex = rawRows.findIndex((row) =>
+    row.some((cell) => /subscriber id|name|plan|status/i.test(cell))
+  )
+
+  if (headerIndex === -1) {
+    return {
+      headers: rawRows[0] ?? [],
+      rows: rawRows.slice(1),
+    }
+  }
+
+  return {
+    headers: rawRows[headerIndex],
+    rows: rawRows.slice(headerIndex + 1),
+  }
+}

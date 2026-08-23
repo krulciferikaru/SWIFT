@@ -11,6 +11,9 @@ const reportApi = {
   downloadSubscribers: (params = {}) =>
     api.get('/reports/subscribers', { params, responseType: 'blob' }),
 
+  downloadSubscribersXlsx: (params = {}) =>
+    api.get('/reports/subscribers/xlsx', { params, responseType: 'blob' }),
+
   downloadCollectionsPdf: (params = {}) =>
     api.get('/reports/collections/pdf', { params, responseType: 'blob' }),
 
