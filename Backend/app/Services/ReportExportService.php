@@ -41,7 +41,13 @@ class ReportExportService
 
         foreach ($lines as $line) {
             $text = (string) $line;
-            $wrapped = wordwrap($text, 96, "\n", true);
+
+            if (str_contains($text, ' | ')) {
+                $wrappedLines[] = $text;
+                continue;
+            }
+
+            $wrapped = wordwrap($text, 82, "\n", true);
 
             foreach (explode("\n", $wrapped) as $wrappedLine) {
                 $wrappedLines[] = $wrappedLine;
@@ -54,23 +60,24 @@ class ReportExportService
 
         $pages = array_chunk($wrappedLines, 44);
         $pageCount = count($pages);
-        $pagesObjectId = (2 * $pageCount) + 2;
+        $pagesObjectId = (2 * $pageCount) + 3;
         $catalogObjectId = $pagesObjectId + 1;
 
         $objects = [];
         $objects[1] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+        $objects[2] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>';
 
         foreach ($pages as $index => $pageLines) {
-            $contentObjectId = $index + 2;
-            $pageObjectId = $pageCount + $index + 2;
+            $contentObjectId = $index + 3;
+            $pageObjectId = $pageCount + $index + 3;
             $content = $this->buildPdfPageContent($pageLines);
             $objects[$contentObjectId] = '<< /Length ' . strlen($content) . " >>\nstream\n" . $content . "\nendstream";
-            $objects[$pageObjectId] = '<< /Type /Page /Parent ' . $pagesObjectId . ' 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents ' . $contentObjectId . ' 0 R >>';
+            $objects[$pageObjectId] = '<< /Type /Page /Parent ' . $pagesObjectId . ' 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents ' . $contentObjectId . ' 0 R >>';
         }
 
         $kids = [];
         for ($pageIndex = 0; $pageIndex < $pageCount; $pageIndex++) {
-            $kids[] = ($pageCount + $pageIndex + 2) . ' 0 R';
+            $kids[] = ($pageCount + $pageIndex + 3) . ' 0 R';
         }
 
         $objects[$pagesObjectId] = '<< /Type /Pages /Kids [' . implode(' ', $kids) . '] /Count ' . $pageCount . ' >>';
@@ -104,18 +111,72 @@ class ReportExportService
 
     private function buildPdfPageContent(array $lines): string
     {
-        $content = "BT\n/F1 10 Tf\n14 TL\n50 780 Td\n";
+        $content = '';
+        $y = 720;
+        $leftMargin = 72;
+        $rightEdge = 540;
 
-        foreach ($lines as $index => $line) {
-            $escaped = $this->pdfEscape((string) $line);
-            $content .= '(' . $escaped . ') Tj';
+        foreach ($lines as $line) {
+            $text = trim((string) $line);
 
-            if ($index < count($lines) - 1) {
-                $content .= "\nT*\n";
+            if ($text === '') {
+                $y -= 18;
+                continue;
             }
-        }
 
-        $content .= "\nET";
+            if (str_contains($text, ' | ')) {
+                $cells = array_map('trim', explode(' | ', $text));
+                $positions = count($cells) > 6
+                    ? [72, 130, 182, 238, 294, 348, 405, 462, 520]
+                    : [72, 148, 220, 292, 364, 440];
+                $isHeader = strtolower((string) $cells[0]) === 'plan'
+                    || strtolower((string) $cells[0]) === 'subscriber'
+                    || strtolower((string) $cells[0]) === 'date'
+                    || strtolower((string) $cells[0]) === 'method'
+                    || strtolower((string) $cells[0]) === 'status'
+                    || strtolower((string) $cells[0]) === 'monthly rate';
+
+                foreach ($cells as $cellIndex => $cell) {
+                    $x = $positions[min($cellIndex, count($positions) - 1)];
+                    $font = $isHeader ? 'F2' : 'F1';
+                    $size = $isHeader ? 8.5 : 8.0;
+                    $content .= "BT\n/{$font} {$size} Tf\n1 0 0 1 {$x} {$y} Tm\n(" . $this->pdfEscape($cell) . ") Tj\nET\n";
+                }
+
+                if ($isHeader) {
+                    $content .= "0.7 w\n{$leftMargin} " . ($y - 4) . " m {$rightEdge} " . ($y - 4) . " l S\n";
+                }
+
+                $y -= 18;
+                continue;
+            }
+
+            $font = 'F1';
+            $fontSize = 10;
+            $x = $leftMargin;
+            $leading = 14;
+
+            if (preg_match('/^(Financial Statement|Monthly Collection Report)$/i', $text)) {
+                $font = 'F2';
+                $fontSize = 18;
+                $leading = 22;
+            } elseif (preg_match('/^(Summary|Status Snapshot|Collections by Plan|Collections by Method|Payment Ledger|Financial Position by Plan|Subscriber Ledger)$/i', $text)) {
+                $font = 'F2';
+                $fontSize = 13;
+                $leading = 18;
+            } elseif (preg_match('/^(Payments:|Paying Subscribers:|Total Collected:|Subscribers:|Total Receivables:|Total Paid:|Outstanding:|Credit:|Active:|Unpaid:|Disconnected:|Months Behind:)/i', $text)) {
+                $font = 'F2';
+                $fontSize = 10;
+                $leading = 16;
+            } elseif (str_starts_with($text, 'Period:')) {
+                $font = 'F1';
+                $fontSize = 10;
+                $leading = 16;
+            }
+
+            $content .= "BT\n/{$font} {$fontSize} Tf\n1 0 0 1 {$x} {$y} Tm\n(" . $this->pdfEscape($text) . ") Tj\nET\n";
+            $y -= $leading;
+        }
 
         return $content;
     }
@@ -212,8 +273,20 @@ class ReportExportService
     private function buildColumnsXml(array $rows): string
     {
         $widths = [];
+        $headerWidthOverrides = [
+            'subscriber id' => 12,
+            'name' => 16,
+            'plan' => 14,
+            'address' => 22,
+            'contact number' => 16,
+            'email' => 24,
+            'mac address' => 18,
+            'connection date' => 16,
+            'status' => 12,
+            'created at' => 18,
+        ];
 
-        foreach ($rows as $row) {
+        foreach ($rows as $rowIndex => $row) {
             foreach ($row as $columnIndex => $value) {
                 if ($value === null || $value === '') {
                     continue;
@@ -221,6 +294,13 @@ class ReportExportService
 
                 $displayValue = $this->normalizeCellValue($value);
                 $displayLength = $this->measureDisplayWidth($displayValue);
+
+                $columnKey = strtolower(trim($displayValue));
+                $overrideWidth = $headerWidthOverrides[$columnKey] ?? null;
+
+                if ($rowIndex === 0 && $overrideWidth !== null) {
+                    $displayLength = max($displayLength, $overrideWidth);
+                }
 
                 if (! isset($widths[$columnIndex]) || $displayLength > $widths[$columnIndex]) {
                     $widths[$columnIndex] = $displayLength;
@@ -236,7 +316,8 @@ class ReportExportService
 
         foreach ($widths as $columnIndex => $width) {
             $columnNumber = $columnIndex + 1;
-            $adjustedWidth = min(max($width + 2, 10), 60);
+            $baseWidth = min(max($width + 2, 10), 28);
+            $adjustedWidth = round($baseWidth, 2);
             $columnsXml .= '<col min="' . $columnNumber . '" max="' . $columnNumber . '" width="' . number_format($adjustedWidth, 2, '.', '') . '" customWidth="1"/>';
         }
 

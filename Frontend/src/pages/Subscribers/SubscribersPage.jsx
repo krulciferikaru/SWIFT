@@ -34,7 +34,7 @@ import SubscriberForm from "./SubscriberForm";
 import CsvPreviewTable from "../../components/CsvPreviewTable";
 import { useSubscribers } from "../../hooks/useSubscribers";
 import { useToast } from "../../hooks/useToast";
-import { parseCsvRows } from "../../utils/csvParser";
+import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
 import { useNavigate } from "react-router-dom";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
@@ -132,11 +132,11 @@ export default function SubscribersPage() {
       if (search) params.search = search;
       if (status !== "All") params.status = status;
 
-      const res = await reportApi.downloadSubscribers(params);
+      const res = await reportApi.downloadSubscribersXlsx(params);
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "subscribers_report.csv");
+      link.setAttribute("download", "subscribers_report.xlsx");
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -160,11 +160,11 @@ export default function SubscribersPage() {
 
       const res = await reportApi.previewSubscribers(params);
       const csvText = await res.data.text();
-      const rows = parseCsvRows(csvText);
+      const { headers, rows } = extractCsvTableData(csvText);
 
-      if (rows.length > 0) {
-        setPreviewHeaders(rows[0]);
-        setPreviewRows(rows.slice(1));
+      if (headers.length > 0) {
+        setPreviewHeaders(headers);
+        setPreviewRows(rows);
       }
     } catch {
       setPreviewError("Unable to load report preview.");

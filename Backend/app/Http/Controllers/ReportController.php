@@ -48,9 +48,12 @@ class ReportController extends Controller
         $subscribers = $query->orderBy('name')->get();
 
         $filename = 'subscribers_report_' . now()->format('Ymd_His') . '.csv';
+        $generatedAt = now()->format('F j, Y h:i A');
 
         return response()->streamDownload(function () use ($subscribers): void {
             $handle = fopen('php://output', 'w');
+
+            fwrite($handle, pack('C*', 0xEF, 0xBB, 0xBF));
 
             fputcsv($handle, [
                 'Subscriber ID',
@@ -84,6 +87,43 @@ class ReportController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    public function subscribersXlsx(Request $request)
+    {
+        $query = Subscriber::with('plan')
+            ->select([
+                'subscriber_id',
+                'plan_id',
+                'name',
+                'address',
+                'contact_number',
+                'email',
+                'mac_address',
+                'connection_date',
+                'status',
+                'created_at',
+            ]);
+
+        if ($request->filled('search')) {
+            $query->search($request->search);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('plan_id')) {
+            $query->where('plan_id', $request->plan_id);
+        }
+
+        $subscribers = $query->orderBy('name')->get();
+
+        return $this->exports->downloadXlsx(
+            'subscribers_report_' . now()->format('Ymd_His') . '.xlsx',
+            'Subscribers',
+            $this->buildSubscribersXlsxRows($subscribers)
+        );
     }
 
     public function collections(Request $request): JsonResponse
@@ -349,6 +389,30 @@ class ReportController extends Controller
         return $prefix . '_' . $period['month'] . '.' . $extension;
     }
 
+    private function buildSubscribersXlsxRows($subscribers): array
+    {
+        $rows = [
+            ['Subscriber ID', 'Name', 'Plan', 'Address', 'Contact Number', 'Email', 'MAC Address', 'Connection Date', 'Status', 'Created At'],
+        ];
+
+        foreach ($subscribers as $subscriber) {
+            $rows[] = [
+                $subscriber->subscriber_id,
+                $subscriber->name,
+                $subscriber->plan?->plan_name ?? '—',
+                $subscriber->address ?? '—',
+                $subscriber->contact_number ?? '—',
+                $subscriber->email ?? '—',
+                $subscriber->mac_address ?? '—',
+                $subscriber->connection_date?->format('Y-m-d') ?? '—',
+                $subscriber->status,
+                $subscriber->created_at?->format('Y-m-d H:i:s') ?? '—',
+            ];
+        }
+
+        return $rows;
+    }
+
     private function buildCollectionsPdfLines(array $data): array
     {
         $lines = [
@@ -457,7 +521,7 @@ class ReportController extends Controller
             '',
             'Summary',
             'Subscribers: ' . number_format($data['summary']['subscriber_count']),
-            'Total Owed: PHP ' . number_format($data['summary']['total_owed'], 2),
+            'Total Receivables: PHP ' . number_format($data['summary']['total_owed'], 2),
             'Total Paid: PHP ' . number_format($data['summary']['total_paid'], 2),
             'Outstanding: PHP ' . number_format($data['summary']['total_outstanding'], 2),
             'Credit: PHP ' . number_format($data['summary']['total_advance_credit'], 2),
@@ -466,7 +530,7 @@ class ReportController extends Controller
             'Active: ' . number_format($data['summary']['active_subscribers']) . ' | Unpaid: ' . number_format($data['summary']['unpaid_subscribers']) . ' | Disconnected: ' . number_format($data['summary']['disconnected_subscribers']) . ' | Months Behind: ' . number_format($data['summary']['total_months_behind']),
             '',
             'Financial Position by Plan',
-            'Plan | Subscribers | Owed | Paid | Outstanding | Credit',
+            'Plan | Subscribers | Receivables | Paid | Outstanding | Credit',
         ];
 
         foreach ($data['by_plan'] as $plan) {
@@ -475,7 +539,7 @@ class ReportController extends Controller
 
         $lines[] = '';
         $lines[] = 'Subscriber Ledger';
-        $lines[] = 'Subscriber | Plan | Status | Monthly Rate | Owed | Paid | Balance | Credit | Months Behind';
+        $lines[] = 'Subscriber | Plan | Status | Monthly Rate | Receivables | Paid | Balance | Credit | Months Behind';
 
         foreach ($data['subscribers'] as $subscriber) {
             $lines[] = implode(' | ', [
@@ -502,7 +566,7 @@ class ReportController extends Controller
             [],
             ['Summary'],
             ['Subscribers', $data['summary']['subscriber_count']],
-            ['Total Owed', $data['summary']['total_owed']],
+            ['Total Receivables', $data['summary']['total_owed']],
             ['Total Paid', $data['summary']['total_paid']],
             ['Outstanding', $data['summary']['total_outstanding']],
             ['Credit', $data['summary']['total_advance_credit']],
@@ -514,7 +578,7 @@ class ReportController extends Controller
             ['Months Behind', $data['summary']['total_months_behind']],
             [],
             ['Financial Position by Plan'],
-            ['Plan', 'Subscribers', 'Owed', 'Paid', 'Outstanding', 'Credit'],
+            ['Plan', 'Subscribers', 'Receivables', 'Paid', 'Outstanding', 'Credit'],
         ];
 
         foreach ($data['by_plan'] as $plan) {
@@ -530,7 +594,7 @@ class ReportController extends Controller
 
         $rows[] = [];
         $rows[] = ['Subscriber Ledger'];
-        $rows[] = ['Subscriber', 'Plan', 'Status', 'Monthly Rate', 'Owed', 'Paid', 'Balance', 'Credit', 'Months Behind'];
+        $rows[] = ['Subscriber', 'Plan', 'Status', 'Monthly Rate', 'Receivables', 'Paid', 'Balance', 'Credit', 'Months Behind'];
 
         foreach ($data['subscribers'] as $subscriber) {
             $rows[] = [
