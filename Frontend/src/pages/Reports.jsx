@@ -130,10 +130,10 @@ export default function Reports() {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300">
+          {/* <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300">
             <FileText className="size-3.5" />
             Reports
-          </div>
+          </div> */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Monthly collections and financial statements
           </h1>

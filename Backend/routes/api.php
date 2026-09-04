@@ -7,6 +7,7 @@ use App\Http\Controllers\SubscriberApprovalController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SmsController;
 use Illuminate\Support\Facades\Route;
 
 // Health check
@@ -62,6 +63,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscribers/{subscriber}/payments', [PaymentController::class, 'index']);
         Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store']);
         Route::get('/subscribers/check-duplicate', [SubscriberController::class, 'checkDuplicate']);
+        Route::get('/reports/financial-summary', [PaymentController::class, 'financialSummary']);
+        Route::post('/sms/test', [SmsController::class, 'test']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])
@@ -80,7 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin-only management.
     Route::middleware('role:admin')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
-        Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);
+        Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
         Route::apiResource('plans', PlanController::class)->except(['index', 'show']);
     });

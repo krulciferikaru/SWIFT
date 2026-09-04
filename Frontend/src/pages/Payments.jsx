@@ -84,6 +84,7 @@ export default function Payments() {
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [billing, setBilling] = useState(null);
   const [history, setHistory] = useState([]);
@@ -124,6 +125,10 @@ export default function Payments() {
       .catch(() => setResults([]))
       .finally(() => setSearching(false));
   }, [search]);
+
+  useEffect(() => {
+    setLoading(false)
+  }, [])
 
   const loadDetail = useCallback(
     async (subscriber) => {
@@ -221,66 +226,81 @@ export default function Payments() {
     <div className="space-y-6">
       {toast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-            toast.type === "error" ? "bg-red-500" : "bg-green-500"
-          }`}
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === "error" ? "bg-red-500" : "bg-green-500"
+            }`}
         >
           {toast.message}
         </div>
       )}
 
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Payments
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Search for a subscriber to view their balance and record a payment.
-        </p>
-      </div>
-
-      <Card>
-        <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-            <Input
-              placeholder="Search by name, email, or MAC address…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+      {loading ? (
+        <>
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <Skeleton className="h-10 w-full" />
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Payments
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Search for a subscriber to view their balance and record a payment.
+            </p>
           </div>
 
-          {search && (
-            <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-100 dark:divide-gray-800 max-h-64 overflow-y-auto">
-              {searching ? (
-                <div className="p-3 space-y-2">
-                  <Skeleton className="h-4 w-40" />
-                  <Skeleton className="h-4 w-32" />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name, email, or MAC address…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {search && (
+                <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-100 dark:divide-gray-800 max-h-64 overflow-y-auto">
+                  {searching ? (
+                    <div className="p-3 space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  ) : results.length === 0 ? (
+                    <p className="p-3 text-sm text-gray-400 dark:text-gray-500">
+                      No subscribers found.
+                    </p>
+                  ) : (
+                    results.map((s) => (
+                      <button
+                        key={s.subscriber_id}
+                        onClick={() => selectSubscriber(s)}
+                        className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {s.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {s.email}
+                        </p>
+                      </button>
+                    ))
+                  )}
                 </div>
-              ) : results.length === 0 ? (
-                <p className="p-3 text-sm text-gray-400 dark:text-gray-500">
-                  No subscribers found.
-                </p>
-              ) : (
-                results.map((s) => (
-                  <button
-                    key={s.subscriber_id}
-                    onClick={() => selectSubscriber(s)}
-                    className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {s.name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {s.email}
-                    </p>
-                  </button>
-                ))
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {selected && (
         <>
@@ -368,13 +388,12 @@ export default function Payments() {
                       return (
                         <div
                           key={m.label}
-                          className={`flex items-center justify-between px-3 py-2 rounded-md ${
-                            isCurrent
-                              ? "ring-2 ring-blue-400 dark:ring-blue-600 bg-amber-50 dark:bg-amber-950/40"
-                              : isUnpaid
-                                ? "bg-red-50 dark:bg-red-950/30"
-                                : ""
-                          }`}
+                          className={`flex items-center justify-between px-3 py-2 rounded-md ${isCurrent
+                            ? "ring-2 ring-blue-400 dark:ring-blue-600 bg-amber-50 dark:bg-amber-950/40"
+                            : isUnpaid
+                              ? "bg-red-50 dark:bg-red-950/30"
+                              : ""
+                            }`}
                         >
                           <span className="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
                             {m.label}

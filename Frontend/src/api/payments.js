@@ -8,6 +8,7 @@ const paymentsApi = {
     api.post(`/subscribers/${subscriberId}/payments`, data),
   getMyBilling: () => api.get("/me/billing"),
   getMyPayments: () => api.get("/me/payments"),
+  getFinancialSummary: () => api.get('/reports/financial-summary'),
 };
 
 export default paymentsApi;

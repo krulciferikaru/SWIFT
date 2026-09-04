@@ -7,6 +7,7 @@ use App\Models\Subscriber;
 use App\Services\BillingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
@@ -103,5 +104,54 @@ class PaymentController extends Controller
             ->get();
 
         return response()->json(['success' => true, 'data' => $payments]);
+    }
+    /**
+     * GET /api/reports/financial-summary
+     * Lightweight dashboard-level financial snapshot.
+     */
+    public function financialSummary(): JsonResponse
+    {
+        $now = Carbon::now();
+
+        $collectedThisMonth = Payment::whereYear('payment_date', $now->year)
+            ->whereMonth('payment_date', $now->month)
+            ->sum('amount');
+
+        $totalOutstanding = 0;
+        Subscriber::where('account_status', 'active')
+            ->whereNotNull('plan_id')
+            ->chunk(100, function ($subscribers) use (&$totalOutstanding) {
+                foreach ($subscribers as $subscriber) {
+                    $totalOutstanding += $this->billing->getBreakdown($subscriber)['balance'];
+                }
+            });
+
+        // Revenue trend: last 6 months of collections, oldest first.
+        $trend = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = $now->copy()->subMonths($i);
+            $collected = Payment::whereYear('payment_date', $month->year)
+                ->whereMonth('payment_date', $month->month)
+                ->sum('amount');
+
+            $trend[] = [
+                'label' => $month->format('M Y'),
+                'collected' => round((float) $collected, 2),
+            ];
+        }
+
+        $collectionRate = ($collectedThisMonth + $totalOutstanding) > 0
+            ? round(($collectedThisMonth / ($collectedThisMonth + $totalOutstanding)) * 100, 1)
+            : 0;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'collected_this_month' => round((float) $collectedThisMonth, 2),
+                'total_outstanding' => round($totalOutstanding, 2),
+                'collection_rate' => $collectionRate,
+                'trend' => $trend,
+            ],
+        ]);
     }
 }
