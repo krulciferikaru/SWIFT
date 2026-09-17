@@ -6,12 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscriber\StoreSubscriberRequest;
 use App\Http\Requests\Subscriber\UpdateSubscriberRequest;
 use App\Models\Subscriber;
+use App\Services\BillingService;
+use App\Services\PhilSmsService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SubscriberController extends Controller
 {
+    private const STATUS_MESSAGES = [
+        'Active' => 'Hi %s, your internet service is now Active. - Jubal Brothers Cable TV Corp - Palayan Branch',
+        'Unpaid' => 'Hi %s, you currently have an unpaid balance. Please settle it to avoid disconnection. - Jubal Brothers Cable TV Corp - Palayan Branch',
+        'Disconnected' => 'Hi %s, your internet service has been disconnected due to non-payment. Please contact us to reconnect. - Jubal Brothers Cable TV Corp - Palayan Branch',
+    ];
+
+    public function __construct(private PhilSmsService $sms, private BillingService $billing) {}
+
     /**
      * GET /api/subscribers
      *
@@ -122,8 +132,12 @@ class SubscriberController extends Controller
     public function update(UpdateSubscriberRequest $request, int $id): JsonResponse
     {
         $subscriber = Subscriber::findOrFail($id);
+        $previousStatus = $subscriber->status;
+
         $subscriber->update($request->validated());
         $subscriber->load('plan');
+
+        $this->notifyStatusChange($subscriber, $previousStatus);
 
         return response()->json([
             'success' => true,
@@ -180,7 +194,10 @@ class SubscriberController extends Controller
         ]);
 
         $subscriber = Subscriber::findOrFail($id);
+        $previousStatus = $subscriber->status;
         $subscriber->update(['status' => $request->status]);
+
+        $this->notifyStatusChange($subscriber, $previousStatus);
 
         return response()->json([
             'success' => true,
@@ -189,6 +206,60 @@ class SubscriberController extends Controller
                 'subscriber_id' => $subscriber->subscriber_id,
                 'status'        => $subscriber->status,
             ],
+        ]);
+    }
+
+    /**
+     * Sends the subscriber an SMS when their status actually changed.
+     */
+    private function notifyStatusChange(Subscriber $subscriber, string $previousStatus): void
+    {
+        if ($subscriber->status !== $previousStatus && isset(self::STATUS_MESSAGES[$subscriber->status])) {
+            $this->sms->sendToSubscriber($subscriber, sprintf(self::STATUS_MESSAGES[$subscriber->status], $subscriber->name));
+        }
+    }
+
+    /**
+     * POST /api/subscribers/send-reminders
+     *
+     * Sends a balance-reminder SMS to every currently Unpaid subscriber.
+     * Manual, on-demand alternative to the daily due-date reminder job.
+     */
+    public function sendReminders(): JsonResponse
+    {
+        // Each SMS attempt is capped at ~10s by PhilSmsService, but sends run
+        // sequentially — give the whole batch room to finish on hosts with a
+        // stricter default execution limit than this box's unlimited one.
+        set_time_limit(120);
+
+        $sent = 0;
+        $failed = 0;
+
+        Subscriber::where('account_status', 'active')
+            ->where('status', 'Unpaid')
+            ->chunk(100, function ($subscribers) use (&$sent, &$failed) {
+                foreach ($subscribers as $subscriber) {
+                    $balance = $this->billing->getBreakdown($subscriber)['balance'];
+
+                    $result = $this->sms->sendToSubscriber($subscriber, sprintf(
+                        'Hi %s, this is a reminder that you have an outstanding balance of PHP %s. Please settle it as soon as possible to avoid service interruption. - Jubal Brothers Cable TV Corp - Palayan Branch',
+                        $subscriber->name,
+                        number_format((float) $balance, 2),
+                    ));
+
+                    $result['success'] ? $sent++ : $failed++;
+                }
+            });
+
+        $message = "Sent payment reminders to {$sent} subscriber(s).";
+        if ($failed > 0) {
+            $message .= " {$failed} failed to send.";
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => ['sent' => $sent, 'failed' => $failed],
         ]);
     }
 

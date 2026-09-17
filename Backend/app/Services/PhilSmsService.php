@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Subscriber;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class PhilSmsService
 {
-    protected string $endpoint = 'https://app.philsms.com/api/v3/sms/send';
+    protected string $endpoint = 'https://dashboard.philsms.com/api/v3/sms/send';
 
     public function send(string $recipient, string $message): array
     {
@@ -21,6 +22,8 @@ class PhilSmsService
         try {
             $response = Http::withToken($token)
                 ->acceptJson()
+                ->connectTimeout(5)
+                ->timeout(10)
                 ->post($this->endpoint, [
                     'recipient' => $recipient,
                     'sender_id' => config('services.philsms.sender_id'),
@@ -38,6 +41,20 @@ class PhilSmsService
             Log::error('PhilSMS send exception', ['error' => $e->getMessage()]);
             return ['success' => false, 'message' => 'SMS service is currently unavailable.'];
         }
+    }
+
+    /**
+     * Send a notification to a subscriber's contact number, if they have one.
+     * Silently no-ops (rather than failing the caller's request) when there's
+     * no number on file — subscriber notifications are best-effort.
+     */
+    public function sendToSubscriber(Subscriber $subscriber, string $message): array
+    {
+        if (!$subscriber->contact_number) {
+            return ['success' => false, 'message' => 'Subscriber has no contact number on file.'];
+        }
+
+        return $this->send(self::normalizeNumber($subscriber->contact_number), $message);
     }
 
     public static function normalizeNumber(string $number): string

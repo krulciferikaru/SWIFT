@@ -65,8 +65,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscribers/{subscriber}/payments', [PaymentController::class, 'index']);
         Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store']);
         Route::get('/subscribers/check-duplicate', [SubscriberController::class, 'checkDuplicate']);
+        Route::post('/subscribers/send-reminders', [SubscriberController::class, 'sendReminders']);
         Route::get('/reports/financial-summary', [PaymentController::class, 'financialSummary']);
-        Route::post('/sms/test', [SmsController::class, 'test']);
+        Route::post('/sms/send', [SmsController::class, 'send']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])

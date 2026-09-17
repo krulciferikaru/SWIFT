@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Subscriber;
 use App\Models\User;
+use App\Services\PhilSmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class SubscriberApprovalController extends Controller
 {
+    public function __construct(private PhilSmsService $sms) {}
+
     public function pending(Request $request)
     {
         $query = Subscriber::where('account_status', 'pending');
@@ -41,12 +44,23 @@ class SubscriberApprovalController extends Controller
 
         $subscriber->update(['account_status' => 'active']);
 
+        $this->sms->sendToSubscriber($subscriber, sprintf(
+            'Hi %s, your subscriber application has been approved. You may now log in. Welcome aboard! - Jubal Brothers Cable TV Corp - Palayan Branch',
+            $subscriber->name,
+        ));
+
         return response()->json(['message' => 'Subscriber approved.', 'subscriber' => $subscriber->fresh(), 'user' => $user->fresh()]);
     }
 
     public function reject(Subscriber $subscriber)
     {
         $subscriber->update(['account_status' => 'rejected']);
+
+        $this->sms->sendToSubscriber($subscriber, sprintf(
+            'Hi %s, your subscriber application was not approved at this time. Please contact us for more information. - Jubal Brothers Cable TV Corp - Palayan Branch',
+            $subscriber->name,
+        ));
+
         return response()->json(['message' => 'Subscriber rejected.', 'subscriber' => $subscriber->fresh()]);
     }
 

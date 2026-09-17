@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\Subscriber;
 use App\Services\BillingService;
+use App\Services\PhilSmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
-    public function __construct(private BillingService $billing) {}
+    public function __construct(private BillingService $billing, private PhilSmsService $sms) {}
 
     /**
      * GET /api/subscribers/{subscriber}/billing
@@ -56,14 +57,25 @@ class PaymentController extends Controller
             'recorded_by' => $request->user()->id,
         ]);
 
-        $this->billing->recalculateStatus($subscriber->fresh());
+        $subscriber = $subscriber->fresh();
+        $this->billing->recalculateStatus($subscriber);
+        $breakdown = $this->billing->getBreakdown($subscriber);
+
+        $this->sms->sendToSubscriber($subscriber, sprintf(
+            'Hi %s, we received your payment of PHP %s (OR# %s) on %s. Your remaining balance is PHP %s. Thank you! - Jubal Brothers Cable TV Corp - Palayan Branch',
+            $subscriber->name,
+            number_format((float) $payment->amount, 2),
+            $payment->or_number,
+            $payment->payment_date->format('M d, Y'),
+            number_format((float) $breakdown['balance'], 2),
+        ));
 
         return response()->json([
             'success' => true,
             'message' => 'Payment recorded successfully.',
             'data' => [
                 'payment' => $payment,
-                'billing' => $this->billing->getBreakdown($subscriber->fresh()),
+                'billing' => $breakdown,
             ],
         ], 201);
     }

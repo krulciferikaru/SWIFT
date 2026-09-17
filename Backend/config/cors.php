@@ -19,7 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    // FRONTEND_URL holds the deployed frontend's origin(s), comma-separated.
+    // Local dev origins are always included so `npm run dev` keeps working.
+    'allowed_origins' => array_values(array_filter(array_merge(
+        ['http://localhost:5173', 'http://127.0.0.1:5173'],
+        array_map('trim', explode(',', env('FRONTEND_URL', ''))),
+    ))),
 
     'allowed_origins_patterns' => [
         '/^http:\/\/localhost:\d+$/',

@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('subscribers:recalculate-status')->daily();
+Schedule::command('subscribers:send-due-reminders')->daily();

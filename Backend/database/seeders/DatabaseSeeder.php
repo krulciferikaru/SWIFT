@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@swift.test',
         ], [
             'name' => 'SWIFT Admin',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('abcd1234'),
             'role' => 'admin',
             'account_status' => 'active',
         ]);
@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'secretary@swift.test',
         ], [
             'name' => 'SWIFT Secretary',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('abcd1234'),
             'role' => 'secretary',
             'account_status' => 'active',
         ]);

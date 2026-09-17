@@ -45,6 +45,13 @@ const subscriberApi = {
     api.delete(`/subscribers/${id}`),
 
   checkDuplicate: (name) => api.get('/subscribers/check-duplicate', { params: { name } }),
+
+  /**
+   * Sends a balance-reminder SMS to every currently Unpaid subscriber.
+   * Longer timeout: matches the backend's set_time_limit(120) since sends
+   * run sequentially and can take a while with many Unpaid subscribers.
+   */
+  sendReminders: () => api.post('/subscribers/send-reminders', null, { timeout: 130000 }),
 }
 
 export default subscriberApi

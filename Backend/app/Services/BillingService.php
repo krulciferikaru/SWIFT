@@ -93,6 +93,29 @@ class BillingService
     }
 
     /**
+     * A subscriber's recurring due day is the day-of-month they connected on
+     * (capped to the last day of shorter months, e.g. a connection on the
+     * 31st is due on the 28th/29th/30th in months that don't have a 31st).
+     * Returns true if that due day falls tomorrow and this month isn't
+     * already fully paid.
+     */
+    public function isDueTomorrow(Subscriber $subscriber): bool
+    {
+        $tomorrow = Carbon::tomorrow();
+        $connectionDay = Carbon::parse($subscriber->connection_date)->day;
+        $dueDay = min($connectionDay, $tomorrow->daysInMonth);
+
+        if ($tomorrow->day !== $dueDay) {
+            return false;
+        }
+
+        $breakdown = $this->getBreakdown($subscriber, $tomorrow);
+        $currentMonth = collect($breakdown['months'])->firstWhere('label', $tomorrow->format('F Y'));
+
+        return $currentMonth && $currentMonth['status'] !== 'paid';
+    }
+
+    /**
      * Recomputes and persists the subscriber's status based on months_behind.
      * Never auto-changes a subscriber OUT of 'Disconnected' — that requires
      * manual staff action (simulating a technician reconnecting the line).
