@@ -26,6 +26,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
+import { useAuth } from '../context/AuthContext'
 
 const emptyForm = { plan_name: '', monthly_rate: '', description: '', speed_mbps: '', status: 'Active' }
 
@@ -42,6 +43,8 @@ export default function Plans() {
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const { toast, showToast } = useToast()
+  const { user } = useAuth()
+  const canDelete = user?.role === 'admin'
 
   const fetchPlans = async () => {
     setLoading(true)
@@ -234,9 +237,11 @@ export default function Plans() {
                       <Button variant="outline" size="sm" onClick={() => openEditModal(plan)}>
                         Edit
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)}>
-                        Delete
-                      </Button>
+                      {canDelete && (
+                        <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)}>
+                          Delete
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

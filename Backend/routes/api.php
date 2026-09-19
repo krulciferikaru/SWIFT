@@ -69,6 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/financial-summary', [PaymentController::class, 'financialSummary']);
         Route::post('/sms/send', [SmsController::class, 'send']);
         Route::post('/plans', [PlanController::class, 'store']);
+        Route::put('/plans/{plan}', [PlanController::class, 'update']);
+        Route::patch('/plans/{plan}', [PlanController::class, 'update']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])
@@ -89,6 +91,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
-        Route::apiResource('plans', PlanController::class)->except(['index', 'show', 'store']);
+        Route::apiResource('plans', PlanController::class)->except(['index', 'show', 'store', 'update']);
     });
 });
