@@ -47,46 +47,10 @@ class ReportController extends Controller
 
         $subscribers = $query->orderBy('name')->get();
 
-        $filename = 'subscribers_report_' . now()->format('Ymd_His') . '.csv';
-        $generatedAt = now()->format('F j, Y h:i A');
-
-        return response()->streamDownload(function () use ($subscribers): void {
-            $handle = fopen('php://output', 'w');
-
-            fwrite($handle, pack('C*', 0xEF, 0xBB, 0xBF));
-
-            fputcsv($handle, [
-                'Subscriber ID',
-                'Name',
-                'Plan',
-                'Address',
-                'Contact Number',
-                'Email',
-                'MAC Address',
-                'Connection Date',
-                'Status',
-                'Created At',
-            ]);
-
-            foreach ($subscribers as $subscriber) {
-                fputcsv($handle, [
-                    $subscriber->subscriber_id,
-                    $subscriber->name,
-                    $subscriber->plan?->plan_name ?? '—',
-                    $subscriber->address ?? '—',
-                    $subscriber->contact_number ?? '—',
-                    $subscriber->email ?? '—',
-                    $subscriber->mac_address ?? '—',
-                    $subscriber->connection_date?->format('Y-m-d') ?? '—',
-                    $subscriber->status,
-                    $subscriber->created_at?->format('Y-m-d H:i:s') ?? '—',
-                ]);
-            }
-
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+        return $this->exports->downloadCsv(
+            'subscribers_report_' . now()->format('Ymd_His') . '.csv',
+            $this->buildSubscribersXlsxRows($subscribers)
+        );
     }
 
     public function subscribersXlsx(Request $request)
@@ -121,7 +85,6 @@ class ReportController extends Controller
 
         return $this->exports->downloadXlsx(
             'subscribers_report_' . now()->format('Ymd_His') . '.xlsx',
-            'Subscribers',
             $this->buildSubscribersXlsxRows($subscribers)
         );
     }
@@ -155,7 +118,8 @@ class ReportController extends Controller
 
         return $this->exports->downloadPdf(
             $this->downloadFilename('collections_report', $period, 'pdf'),
-            $this->buildCollectionsPdfLines($data)
+            'reports.collections',
+            $data
         );
     }
 
@@ -166,7 +130,6 @@ class ReportController extends Controller
 
         return $this->exports->downloadXlsx(
             $this->downloadFilename('collections_report', $period, 'xlsx'),
-            'Collections',
             $this->buildCollectionsXlsxRows($data)
         );
     }
@@ -178,7 +141,8 @@ class ReportController extends Controller
 
         return $this->exports->downloadPdf(
             $this->downloadFilename('financial_statement', $period, 'pdf'),
-            $this->buildFinancialStatementPdfLines($data)
+            'reports.financial-statement',
+            $data
         );
     }
 
@@ -189,7 +153,6 @@ class ReportController extends Controller
 
         return $this->exports->downloadXlsx(
             $this->downloadFilename('financial_statement', $period, 'xlsx'),
-            'Financial Statement',
             $this->buildFinancialStatementXlsxRows($data)
         );
     }
@@ -413,51 +376,6 @@ class ReportController extends Controller
         return $rows;
     }
 
-    private function buildCollectionsPdfLines(array $data): array
-    {
-        $lines = [
-            $data['report_title'],
-            'Period: ' . $data['period_label'] . ' (' . $data['period']['start'] . ' to ' . $data['period']['end'] . ')',
-            '',
-            'Summary',
-            'Payments: ' . number_format($data['summary']['payment_count']),
-            'Paying Subscribers: ' . number_format($data['summary']['paying_subscribers']),
-            'Total Collected: PHP ' . number_format($data['summary']['total_collected'], 2),
-            '',
-            'Collections by Plan',
-            'Plan | Subscribers | Payments | Collected',
-        ];
-
-        foreach ($data['by_plan'] as $plan) {
-            $lines[] = $plan['plan_name'] . ' | ' . number_format($plan['subscriber_count']) . ' | ' . number_format($plan['payment_count']) . ' | PHP ' . number_format($plan['total_collected'], 2);
-        }
-
-        $lines[] = '';
-        $lines[] = 'Collections by Method';
-        $lines[] = 'Method | Subscribers | Payments | Collected';
-
-        foreach ($data['by_method'] as $method) {
-            $lines[] = $method['payment_method'] . ' | ' . number_format($method['subscriber_count']) . ' | ' . number_format($method['payment_count']) . ' | PHP ' . number_format($method['total_collected'], 2);
-        }
-
-        $lines[] = '';
-        $lines[] = 'Payment Ledger';
-        $lines[] = 'Date | Subscriber | Plan | OR Number | Method | Amount';
-
-        foreach ($data['payments'] as $payment) {
-            $lines[] = implode(' | ', [
-                $payment['payment_date'] ?? '—',
-                $payment['subscriber_name'] ?? '—',
-                $payment['plan_name'] ?? '—',
-                $payment['or_number'] ?? '—',
-                $payment['payment_method'] ?? '—',
-                'PHP ' . number_format($payment['amount'], 2),
-            ]);
-        }
-
-        return $lines;
-    }
-
     private function buildCollectionsXlsxRows(array $data): array
     {
         $rows = [
@@ -511,51 +429,6 @@ class ReportController extends Controller
         }
 
         return $rows;
-    }
-
-    private function buildFinancialStatementPdfLines(array $data): array
-    {
-        $lines = [
-            $data['report_title'],
-            'Period: ' . $data['period_label'] . ' (' . $data['period']['start'] . ' to ' . $data['period']['end'] . ')',
-            '',
-            'Summary',
-            'Subscribers: ' . number_format($data['summary']['subscriber_count']),
-            'Total Receivables: PHP ' . number_format($data['summary']['total_owed'], 2),
-            'Total Paid: PHP ' . number_format($data['summary']['total_paid'], 2),
-            'Outstanding: PHP ' . number_format($data['summary']['total_outstanding'], 2),
-            'Credit: PHP ' . number_format($data['summary']['total_advance_credit'], 2),
-            '',
-            'Status Snapshot',
-            'Active: ' . number_format($data['summary']['active_subscribers']) . ' | Unpaid: ' . number_format($data['summary']['unpaid_subscribers']) . ' | Disconnected: ' . number_format($data['summary']['disconnected_subscribers']) . ' | Months Behind: ' . number_format($data['summary']['total_months_behind']),
-            '',
-            'Financial Position by Plan',
-            'Plan | Subscribers | Receivables | Paid | Outstanding | Credit',
-        ];
-
-        foreach ($data['by_plan'] as $plan) {
-            $lines[] = $plan['plan_name'] . ' | ' . number_format($plan['subscriber_count']) . ' | PHP ' . number_format($plan['total_owed'], 2) . ' | PHP ' . number_format($plan['total_paid'], 2) . ' | PHP ' . number_format($plan['total_outstanding'], 2) . ' | PHP ' . number_format($plan['total_advance_credit'], 2);
-        }
-
-        $lines[] = '';
-        $lines[] = 'Subscriber Ledger';
-        $lines[] = 'Subscriber | Plan | Status | Monthly Rate | Receivables | Paid | Balance | Credit | Months Behind';
-
-        foreach ($data['subscribers'] as $subscriber) {
-            $lines[] = implode(' | ', [
-                $subscriber['name'] ?? '—',
-                $subscriber['plan_name'] ?? '—',
-                $subscriber['status'] ?? '—',
-                'PHP ' . number_format($subscriber['monthly_rate'], 2),
-                'PHP ' . number_format($subscriber['total_owed'], 2),
-                'PHP ' . number_format($subscriber['total_paid'], 2),
-                'PHP ' . number_format($subscriber['balance'], 2),
-                'PHP ' . number_format($subscriber['advance_credit'], 2),
-                number_format($subscriber['months_behind']),
-            ]);
-        }
-
-        return $lines;
     }
 
     private function buildFinancialStatementXlsxRows(array $data): array

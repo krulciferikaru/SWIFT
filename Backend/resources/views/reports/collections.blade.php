@@ -2,6 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>{{ $report_title }}</title>
+    <style>
+        @page { margin: 28px 30px; }
+        body { color: #243746; font-family: DejaVu Sans, sans-serif; font-size: 10px; }
+        h1 { color: #1f4e78; font-size: 21px; margin: 0 0 4px; }
+        h2 { border-bottom: 1px solid #b7c9d6; color: #1f4e78; font-size: 13px; margin: 18px 0 6px; padding-bottom: 3px; }
+        .period { color: #607482; margin-bottom: 14px; }
+        .summary { border-collapse: collapse; margin-bottom: 8px; width: 100%; }
+        .summary td { background: #edf4f8; border: 1px solid #d3e0e7; padding: 7px; width: 33%; }
+        .label { color: #607482; display: block; font-size: 8px; text-transform: uppercase; }
+        .value { color: #1f4e78; font-size: 13px; font-weight: bold; }
+        table.data { border-collapse: collapse; margin-bottom: 12px; width: 100%; }
+        table.data th { background: #5b7894; color: #fff; font-weight: bold; padding: 5px; text-align: left; }
+        table.data td { border-bottom: 1px solid #dbe4e9; padding: 4px 5px; }
+        table.data tr:nth-child(even) td { background: #f5f8fa; }
+        .number { text-align: right; }
+    </style>
+</head>
+<body>
+    <h1>{{ $report_title }}</h1>
+    <div class="period">Period: {{ $period_label }} ({{ $period['start'] }} to {{ $period['end'] }})</div>
+    <h2>Summary</h2>
+    <table class="summary"><tr>
+        <td><span class="label">Payments</span><span class="value">{{ number_format($summary['payment_count']) }}</span></td>
+        <td><span class="label">Paying Subscribers</span><span class="value">{{ number_format($summary['paying_subscribers']) }}</span></td>
+        <td><span class="label">Total Collected</span><span class="value">PHP {{ number_format($summary['total_collected'], 2) }}</span></td>
+    </tr></table>
+    <h2>Collections by Plan</h2>
+    <table class="data"><thead><tr><th>Plan</th><th>Subscribers</th><th>Payments</th><th>Collected</th></tr></thead><tbody>
+        @foreach ($by_plan as $plan)<tr><td>{{ $plan['plan_name'] }}</td><td class="number">{{ number_format($plan['subscriber_count']) }}</td><td class="number">{{ number_format($plan['payment_count']) }}</td><td class="number">PHP {{ number_format($plan['total_collected'], 2) }}</td></tr>@endforeach
+    </tbody></table>
+    <h2>Collections by Method</h2>
+    <table class="data"><thead><tr><th>Method</th><th>Subscribers</th><th>Payments</th><th>Collected</th></tr></thead><tbody>
+        @foreach ($by_method as $method)<tr><td>{{ $method['payment_method'] }}</td><td class="number">{{ number_format($method['subscriber_count']) }}</td><td class="number">{{ number_format($method['payment_count']) }}</td><td class="number">PHP {{ number_format($method['total_collected'], 2) }}</td></tr>@endforeach
+    </tbody></table>
+    <h2>Payment Ledger</h2>
+    <table class="data"><thead><tr><th>Date</th><th>Subscriber</th><th>Plan</th><th>OR Number</th><th>Method</th><th>Amount</th></tr></thead><tbody>
+        @foreach ($payments as $payment)<tr><td>{{ $payment['payment_date'] ?? '—' }}</td><td>{{ $payment['subscriber_name'] ?? '—' }}</td><td>{{ $payment['plan_name'] ?? '—' }}</td><td>{{ $payment['or_number'] ?? '—' }}</td><td>{{ $payment['payment_method'] ?? '—' }}</td><td class="number">PHP {{ number_format($payment['amount'], 2) }}</td></tr>@endforeach
+    </tbody></table>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>{{ $report_title }}</title>
     <style>

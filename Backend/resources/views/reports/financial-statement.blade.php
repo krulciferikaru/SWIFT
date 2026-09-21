@@ -2,6 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>{{ $report_title }}</title>
+    <style>
+        @page { margin: 28px 25px; }
+        body { color: #243746; font-family: DejaVu Sans, sans-serif; font-size: 9px; }
+        h1 { color: #1f4e78; font-size: 21px; margin: 0 0 4px; }
+        h2 { border-bottom: 1px solid #b7c9d6; color: #1f4e78; font-size: 13px; margin: 16px 0 6px; padding-bottom: 3px; }
+        .period { color: #607482; margin-bottom: 12px; }
+        .summary { border-collapse: collapse; width: 100%; }
+        .summary td { background: #edf4f8; border: 1px solid #d3e0e7; padding: 6px; width: 20%; }
+        .label { color: #607482; display: block; font-size: 7px; text-transform: uppercase; }
+        .value { color: #1f4e78; font-size: 11px; font-weight: bold; }
+        table.data { border-collapse: collapse; margin-bottom: 10px; width: 100%; }
+        table.data th { background: #5b7894; color: #fff; font-weight: bold; padding: 4px; text-align: left; }
+        table.data td { border-bottom: 1px solid #dbe4e9; padding: 3px 4px; }
+        table.data tr:nth-child(even) td { background: #f5f8fa; }
+        .number { text-align: right; }
+    </style>
+</head>
+<body>
+    <h1>{{ $report_title }}</h1>
+    <div class="period">Period: {{ $period_label }} ({{ $period['start'] }} to {{ $period['end'] }})</div>
+    <h2>Summary</h2>
+    <table class="summary"><tr>
+        <td><span class="label">Subscribers</span><span class="value">{{ number_format($summary['subscriber_count']) }}</span></td>
+        <td><span class="label">Receivables</span><span class="value">PHP {{ number_format($summary['total_owed'], 2) }}</span></td>
+        <td><span class="label">Paid</span><span class="value">PHP {{ number_format($summary['total_paid'], 2) }}</span></td>
+        <td><span class="label">Outstanding</span><span class="value">PHP {{ number_format($summary['total_outstanding'], 2) }}</span></td>
+        <td><span class="label">Credit</span><span class="value">PHP {{ number_format($summary['total_advance_credit'], 2) }}</span></td>
+    </tr></table>
+    <h2>Status Snapshot</h2>
+    <table class="data"><thead><tr><th>Active</th><th>Unpaid</th><th>Disconnected</th><th>Months Behind</th></tr></thead><tbody><tr><td>{{ number_format($summary['active_subscribers']) }}</td><td>{{ number_format($summary['unpaid_subscribers']) }}</td><td>{{ number_format($summary['disconnected_subscribers']) }}</td><td>{{ number_format($summary['total_months_behind']) }}</td></tr></tbody></table>
+    <h2>Financial Position by Plan</h2>
+    <table class="data"><thead><tr><th>Plan</th><th>Subscribers</th><th>Receivables</th><th>Paid</th><th>Outstanding</th><th>Credit</th></tr></thead><tbody>
+        @foreach ($by_plan as $plan)<tr><td>{{ $plan['plan_name'] }}</td><td class="number">{{ number_format($plan['subscriber_count']) }}</td><td class="number">PHP {{ number_format($plan['total_owed'], 2) }}</td><td class="number">PHP {{ number_format($plan['total_paid'], 2) }}</td><td class="number">PHP {{ number_format($plan['total_outstanding'], 2) }}</td><td class="number">PHP {{ number_format($plan['total_advance_credit'], 2) }}</td></tr>@endforeach
+    </tbody></table>
+    <h2>Subscriber Ledger</h2>
+    <table class="data"><thead><tr><th>Subscriber</th><th>Plan</th><th>Status</th><th>Monthly Rate</th><th>Receivables</th><th>Paid</th><th>Balance</th><th>Credit</th><th>Months Behind</th></tr></thead><tbody>
+        @foreach ($subscribers as $subscriber)<tr><td>{{ $subscriber['name'] ?? '—' }}</td><td>{{ $subscriber['plan_name'] ?? '—' }}</td><td>{{ $subscriber['status'] ?? '—' }}</td><td class="number">PHP {{ number_format($subscriber['monthly_rate'], 2) }}</td><td class="number">PHP {{ number_format($subscriber['total_owed'], 2) }}</td><td class="number">PHP {{ number_format($subscriber['total_paid'], 2) }}</td><td class="number">PHP {{ number_format($subscriber['balance'], 2) }}</td><td class="number">PHP {{ number_format($subscriber['advance_credit'], 2) }}</td><td class="number">{{ number_format($subscriber['months_behind']) }}</td></tr>@endforeach
+    </tbody></table>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>{{ $report_title }}</title>
     <style>
