@@ -23,6 +23,7 @@ import {
   Wifi,
   ShieldCheck,
   Settings as SettingsIcon,
+  HelpCircle,
   LogOut,
   Sun,
   Moon,
@@ -48,6 +49,7 @@ const navItemsByRole = {
     { label: "Reports", path: "/reports", icon: FileText },
     { label: "Manage Roles", path: "/users", icon: ShieldCheck },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
+    { label: "Guide", path: "/guide", icon: HelpCircle },
   ],
   secretary: [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -62,10 +64,12 @@ const navItemsByRole = {
     { label: "Payments", path: "/payments", icon: Wallet },
     { label: "Reports", path: "/reports", icon: FileText },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
+    { label: "Guide", path: "/guide", icon: HelpCircle },
   ],
   subscriber: [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
+    { label: "Guide", path: "/guide", icon: HelpCircle },
   ],
 };
 

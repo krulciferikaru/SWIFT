@@ -14,6 +14,7 @@ import Users from "./pages/Users.jsx";
 import Payments from "./pages/Payments.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
+import Guide from "./pages/Guide.jsx";
 
 export default function App() {
   return (
@@ -109,6 +110,17 @@ export default function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Settings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/guide"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Guide />
                     </Layout>
                   </ProtectedRoute>
                 }
