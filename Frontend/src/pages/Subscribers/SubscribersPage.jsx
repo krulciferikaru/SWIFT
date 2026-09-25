@@ -40,10 +40,17 @@ import { useNavigate } from "react-router-dom";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 
 export default function SubscribersPage() {
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+
+  // Debounce the search box so we don't refetch on every keystroke.
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   const {
     subscribers,
@@ -68,6 +75,14 @@ export default function SubscribersPage() {
   const [previewRows, setPreviewRows] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
+
+  // Only show skeleton placeholders on the very first load, not on every
+  // filter-triggered refetch — otherwise the toolbar (and its focused
+  // search input) gets unmounted and replaced on each keystroke.
+  const [initialLoading, setInitialLoading] = useState(true);
+  useEffect(() => {
+    if (!loading) setInitialLoading(false);
+  }, [loading]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -198,7 +213,7 @@ export default function SubscribersPage() {
 
       <div className="space-y-6">
         <div className="mb-6">
-          {loading ? (
+          {initialLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-8 w-40" />
               <Skeleton className="h-4 w-72" />
@@ -272,7 +287,7 @@ export default function SubscribersPage() {
         )}
 
         {/* Toolbar */}
-        {loading ? (
+        {initialLoading ? (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Skeleton className="h-9 flex-1" />
             <Skeleton className="h-9 w-full sm:w-40" />
@@ -284,8 +299,8 @@ export default function SubscribersPage() {
             <Input
               type="text"
               placeholder="Search by name, email, address, MAC…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1"
             />
 
