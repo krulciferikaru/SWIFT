@@ -26,7 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
-import { UserPlus } from 'lucide-react'
+import { UserPlus, KeyRound } from 'lucide-react'
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -67,6 +67,11 @@ export default function Users() {
   const [staffErrors, setStaffErrors] = useState({})
   const [creating, setCreating] = useState(false)
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
+
+  const [resetTarget, setResetTarget] = useState(null) // user being reset
+  const [resetForm, setResetForm] = useState({ password: '', password_confirmation: '' })
+  const [resetErrors, setResetErrors] = useState({})
+  const [resetting, setResetting] = useState(false)
 
   const { toast, showToast } = useToast()
 
@@ -151,6 +156,31 @@ export default function Users() {
       }
     } finally {
       setCreating(false)
+    }
+  }
+
+  const openResetModal = (user) => {
+    setResetTarget(user)
+    setResetForm({ password: '', password_confirmation: '' })
+    setResetErrors({})
+  }
+
+  const submitReset = async (e) => {
+    e.preventDefault()
+    setResetErrors({})
+    setResetting(true)
+    try {
+      await usersApi.resetPassword(resetTarget.id, resetForm)
+      showToast(`${resetTarget.name}'s password was reset.`)
+      setResetTarget(null)
+    } catch (err) {
+      if (err.response?.status === 422) {
+        setResetErrors(err.response.data.errors ?? {})
+      } else {
+        showToast(err.response?.data?.message || 'Failed to reset password.', 'error')
+      }
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -245,6 +275,7 @@ export default function Users() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Account Status</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -282,6 +313,19 @@ export default function Users() {
                             <SelectItem value="inactive">Inactive</SelectItem>
                           </SelectContent>
                         </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {!isSelf && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => openResetModal(user)}
+                        >
+                          <KeyRound className="size-3.5" />
+                          Reset Password
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -388,6 +432,51 @@ export default function Users() {
               name="password_confirmation"
               value={staffForm.password_confirmation}
               onChange={handleStaffFormChange}
+              required
+            />
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!resetTarget}
+        onClose={() => setResetTarget(null)}
+        title="Reset Password"
+        description={resetTarget ? `Set a new password for ${resetTarget.name} (${resetTarget.email}). They will need to use it on their next login.` : ''}
+        size="md"
+        confirmClose
+        footer={(requestClose) => (
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={requestClose}>
+              Cancel
+            </Button>
+            <Button type="submit" form="reset-password-form" disabled={resetting}>
+              {resetting ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </div>
+        )}
+      >
+        <form id="reset-password-form" onSubmit={submitReset} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="reset-password">New Password<span className="text-red-500 ml-0.5">*</span></Label>
+            <Input
+              id="reset-password"
+              type="password"
+              value={resetForm.password}
+              onChange={(e) => setResetForm({ ...resetForm, password: e.target.value })}
+              required
+              className={resetErrors.password ? 'border-red-400' : ''}
+            />
+            {resetErrors.password && <p className="text-red-500 text-xs">{resetErrors.password[0]}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="reset-password-confirm">Confirm New Password<span className="text-red-500 ml-0.5">*</span></Label>
+            <Input
+              id="reset-password-confirm"
+              type="password"
+              value={resetForm.password_confirmation}
+              onChange={(e) => setResetForm({ ...resetForm, password_confirmation: e.target.value })}
               required
             />
           </div>

@@ -91,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
+        Route::patch('/users/{user}/password', [UserController::class, 'resetPassword']);
         Route::apiResource('plans', PlanController::class)->except(['index', 'show', 'store', 'update']);
     });
 });

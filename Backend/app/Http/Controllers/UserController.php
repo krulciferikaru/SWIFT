@@ -77,4 +77,25 @@ class UserController extends Controller
             'user' => $user->fresh(),
         ]);
     }
+
+    /**
+     * PATCH /api/users/{user}/password
+     *
+     * Admin-only password reset. There is no self-service "forgot password"
+     * flow, so users must contact the Admin to have their password reset.
+     */
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json([
+            'message' => "{$user->name}'s password has been reset.",
+        ]);
+    }
 }
