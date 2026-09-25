@@ -8,6 +8,7 @@
     "require": {
         "barryvdh/laravel-dompdf": "^3.1",
         "ext-gd": "*",
+        "ext-zip": "*",
         "maatwebsite/excel": "^4.0",
         "php": "^8.3",
         "laravel/framework": "^13.8",
