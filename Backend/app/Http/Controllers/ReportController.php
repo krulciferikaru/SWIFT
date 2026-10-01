@@ -20,6 +20,7 @@ class ReportController extends Controller
     public function subscribers(Request $request)
     {
         $query = Subscriber::with('plan')
+            ->where('account_status', 'active')
             ->select([
                 'subscriber_id',
                 'plan_id',
@@ -56,6 +57,7 @@ class ReportController extends Controller
     public function subscribersXlsx(Request $request)
     {
         $query = Subscriber::with('plan')
+            ->where('account_status', 'active')
             ->select([
                 'subscriber_id',
                 'plan_id',
@@ -259,7 +261,7 @@ class ReportController extends Controller
 
     private function buildFinancialStatementData(array $period): array
     {
-        $subscribers = Subscriber::with('plan')->orderBy('name')->get();
+        $subscribers = Subscriber::with('plan')->where('account_status', 'active')->orderBy('name')->get();
 
         $rows = [];
         $planSummary = [];
