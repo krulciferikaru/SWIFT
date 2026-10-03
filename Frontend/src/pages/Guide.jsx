@@ -151,8 +151,6 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
-          <li><strong>Send SMS</strong> <em>(Admin/Secretary)</em> — send a one-off text message to any Philippine mobile number.</li>
-          <li><strong>Payment Reminders</strong> <em>(Admin/Secretary)</em> — sends a balance-reminder text to every subscriber currently marked Unpaid, in one click.</li>
         </ul>
       </>
     ),
