@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Sun, Moon, Send, BellRing } from 'lucide-react'
+import TourButton from "../components/TourButton.jsx";
 
 const SMS_MESSAGE_MAX = 300
 
@@ -83,12 +84,15 @@ export default function Settings() {
         </div>
       )}
 
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your preferences for SWIFT.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your preferences for SWIFT.</p>
+        </div>
+        <TourButton tour="settings" />
       </div>
 
-      <Card>
+      <Card data-tour="settings-appearance">
         <CardHeader>
           <CardTitle className="text-base">Appearance</CardTitle>
           <CardDescription>Customize how SWIFT looks on your device.</CardDescription>
@@ -117,7 +121,7 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-tour="settings-account">
         <CardHeader>
           <CardTitle className="text-base">Account</CardTitle>
           <CardDescription>Control confirmation prompts and account behavior.</CardDescription>
@@ -140,7 +144,7 @@ export default function Settings() {
       </Card>
 
       {canSendSms && (
-        <Card>
+        <Card data-tour="settings-sms">
           <CardHeader>
             <CardTitle className="text-base">Send SMS</CardTitle>
             <CardDescription>Send an ad-hoc SMS to any Philippine mobile number via PhilSMS.</CardDescription>
@@ -182,7 +186,7 @@ export default function Settings() {
       )}
 
       {canSendSms && (
-        <Card>
+        <Card data-tour="settings-reminders">
           <CardHeader>
             <CardTitle className="text-base">Payment Reminders</CardTitle>
             <CardDescription>

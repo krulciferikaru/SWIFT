@@ -36,6 +36,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
+import TourButton from "../components/TourButton.jsx";
 
 const STATUS_COLORS = {
   Active: "#305CDE",
@@ -187,12 +188,15 @@ export default function Dashboard() {
 
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Account</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, {user?.name}.</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Account</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, {user?.name}.</p>
+          </div>
+          <TourButton tour="dashboardSubscriber" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div data-tour="me-summary" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 mb-2">
@@ -239,7 +243,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <Card>
+        <Card data-tour="me-breakdown">
           <CardHeader>
             <CardTitle className="text-base">Monthly Breakdown</CardTitle>
           </CardHeader>
@@ -267,7 +271,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-tour="me-payments">
           <CardHeader>
             <CardTitle className="text-base">Payment History</CardTitle>
           </CardHeader>
@@ -370,17 +374,20 @@ export default function Dashboard() {
             Jubal Brothers Cable TV Corporation — Palayan Branch
           </p>
         </div>
-        {lastUpdated && (
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            Updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </p>
-        )}
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
+          <TourButton tour="dashboard" />
+        </div>
       </div>
 
       {/* 1. Needs Attention — decisions only; the Unpaid count lives in the stat card below,
            this section focuses on items with no other visible home (applications, claims) */}
       {needsAttention && (
-        <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
+        <Card data-tour="dash-attention" className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2 text-amber-800 dark:text-amber-400">
               <AlertTriangle className="size-4" />
@@ -432,7 +439,7 @@ export default function Dashboard() {
 
       {/* 2. Financial Snapshot */}
       {financials && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div data-tour="dash-financials" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link to="/payments">
             <Card className="hover:border-primary/50 transition-colors cursor-pointer">
               <CardContent className="pt-6 flex items-center justify-between">
@@ -476,7 +483,7 @@ export default function Dashboard() {
       )}
 
       {/* 3. Subscriber counts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link to="/subscribers">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
             <CardContent className="pt-6">
@@ -539,7 +546,7 @@ export default function Dashboard() {
       {/* 4. Deeper analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {financials?.trend && (
-          <Card>
+          <Card data-tour="dash-trend">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base">Revenue Trend</CardTitle>
               {trendDelta && (
@@ -563,7 +570,7 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <Card>
+        <Card data-tour="dash-status">
           <CardHeader>
             <CardTitle className="text-base">Subscriber Status</CardTitle>
           </CardHeader>
@@ -584,7 +591,7 @@ export default function Dashboard() {
       </div>
 
       {/* 5. Quick Actions — full width, own row */}
-      <Card>
+      <Card data-tour="dash-actions">
         <CardHeader>
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>

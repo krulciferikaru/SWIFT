@@ -27,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { UserPlus, KeyRound } from 'lucide-react'
+import TourButton from "../components/TourButton.jsx";
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -206,10 +207,13 @@ export default function Users() {
             </p>
           </div>
         )}
-        <Button onClick={openCreateModal} className="gap-2">
-          <UserPlus className="size-4" />
-          Add Staff Account
-        </Button>
+        <div className="flex gap-2">
+          <TourButton tour="users" />
+          <Button data-tour="users-add" onClick={openCreateModal} className="gap-2">
+            <UserPlus className="size-4" />
+            Add Staff Account
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -218,7 +222,7 @@ export default function Users() {
           <Skeleton className="h-9 w-full sm:w-40" />
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div data-tour="users-filters" className="flex flex-col sm:flex-row gap-3 mb-4">
           <Input
             type="text"
             placeholder="Search by name or email…"
@@ -243,7 +247,7 @@ export default function Users() {
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div data-tour="users-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <Table>
             <TableHeader>
@@ -304,7 +308,7 @@ export default function Users() {
                           onValueChange={(newStatus) => handleStatusChange(user, newStatus)}
                           disabled={actionLoading === user.id}
                         >
-                          <SelectTrigger className="w-32 capitalize">
+                          <SelectTrigger data-tour="users-status" className="w-32 capitalize">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -318,6 +322,7 @@ export default function Users() {
                     <TableCell>
                       {!isSelf && (
                         <Button
+                          data-tour="users-reset"
                           variant="outline"
                           size="sm"
                           className="gap-1.5"
