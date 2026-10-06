@@ -72,6 +72,10 @@ See [`Backend/.env.example`](Backend/.env.example) and [`Frontend/.env.example`]
 - `VITE_API_URL` (frontend) — deployed backend API URL.
 - `PHILSMS_API_TOKEN` / `PHILSMS_SENDER_ID` — SMS provider credentials.
 
+## Documentation
+
+How the system is deployed and how it behaves is documented in [`docs/`](docs/README.md): deployment and releases, automated jobs and SMS, billing and payments, roles and permissions, offline behaviour, and flowcharts.
+
 ## Deployment
 
 The backend deploys to [Railway](https://railway.com) (PHP + MySQL), and the frontend to [Vercel](https://vercel.com). The backend's task scheduler (subscriber status recalculation, payment-due reminders) runs via `php artisan schedule:run` and needs a recurring trigger configured on whatever host runs it.
