@@ -29,6 +29,7 @@ import { useToast } from '../hooks/useToast'
 import { useAuth } from '../context/AuthContext'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
+import PlanDetailsModal from "./PlanDetailsModal";
 
 const emptyForm = { plan_name: '', monthly_rate: '', description: '', speed_mbps: '', status: 'Active' }
 
@@ -42,6 +43,7 @@ export default function Plans() {
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [detailsPlan, setDetailsPlan] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const { toast, showToast } = useToast()
@@ -219,7 +221,17 @@ export default function Plans() {
             <TableBody>
               {plans.map((plan) => (
                 <TableRow key={plan.plan_id}>
-                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">{plan.plan_name}</TableCell>
+                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                    <button
+                        type="button"
+                        onClick={() => setDetailsPlan(plan)}
+                        aria-haspopup="dialog"
+                        title="View details"
+                        className="text-left font-medium text-gray-900 dark:text-gray-100 underline-offset-2 hover:text-primary hover:underline focus-visible:text-primary focus-visible:underline"
+                      >
+                        {plan.plan_name}
+                      </button>
+                  </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
                     ₱{Number(plan.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </TableCell>
@@ -253,6 +265,20 @@ export default function Plans() {
           </Table>
         </div>
       )}
+
+      <PlanDetailsModal
+        plan={detailsPlan}
+        canArchive={canArchive}
+        onClose={() => setDetailsPlan(null)}
+        onEdit={(p) => {
+          setDetailsPlan(null)
+          openEditModal(p)
+        }}
+        onArchive={(p) => {
+          setDetailsPlan(null)
+          setDeleteTarget(p)
+        }}
+      />
 
       <Modal
         isOpen={showModal}

@@ -39,6 +39,7 @@ import subscriberApi from "../../api/subscribers";
 import { useNavigate } from "react-router-dom";
 import TourButton from "../../components/TourButton.jsx";
 import Toast from "../../components/Toast.jsx";
+import SubscriberDetailsModal from "./SubscriberDetailsModal";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 
 export default function SubscribersPage() {
@@ -69,6 +70,7 @@ export default function SubscribersPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [detailsTarget, setDetailsTarget] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -417,7 +419,15 @@ export default function SubscribersPage() {
                 {subscribers.map((sub) => (
                   <TableRow key={sub.subscriber_id}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                      {sub.name}
+                      <button
+                        type="button"
+                        onClick={() => setDetailsTarget(sub)}
+                        aria-haspopup="dialog"
+                        title="View details"
+                        className="text-left font-medium text-gray-900 dark:text-gray-100 underline-offset-2 hover:text-primary hover:underline focus-visible:text-primary focus-visible:underline"
+                      >
+                        {sub.name}
+                      </button>
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.plan?.plan_name ?? "—"}
@@ -578,6 +588,20 @@ export default function SubscribersPage() {
           loading={formLoading}
         />
       </Modal>
+
+      <SubscriberDetailsModal
+        subscriber={detailsTarget}
+        onClose={() => setDetailsTarget(null)}
+        onEdit={(s) => {
+          setDetailsTarget(null);
+          setEditTarget(s);
+        }}
+        onArchive={(s) => {
+          setDetailsTarget(null);
+          setDeleteTarget(s);
+        }}
+        onPayments={(s) => navigate("/payments", { state: { subscriber: s } })}
+      />
 
       <Modal
         isOpen={!!editTarget}

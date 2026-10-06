@@ -53,6 +53,7 @@ const SECTIONS = [
       <>
         <p>This is the master list of everyone signed up for service. At the top you'll see totals for Total, Pending, Active, Unpaid, and Disconnected.</p>
         <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Name</strong> — click a subscriber's name to open all of their details in one window, including their balance, months behind and advance credit. It has the same Edit, Archive and Payments buttons as the row.</li>
           <li><strong>Search box</strong> — type a name, contact number, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
           <li><strong>Status dropdown</strong> — narrow the list to only Active, Unpaid, or Disconnected subscribers.</li>
           <li><strong>Add Subscriber</strong> — opens a form to manually register a new subscriber (name, plan, contact info, etc.).</li>
@@ -93,6 +94,7 @@ const SECTIONS = [
       <>
         <p>This is where the actual plans (e.g. "Basic Internet", "Home Plus") and their monthly prices live. Every subscriber gets assigned one of these.</p>
         <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Name</strong> — click a plan's name to see its full details, with Edit and Archive buttons.</li>
           <li><strong>Add Plan</strong> — create a new plan with a name, monthly rate, speed, and description.</li>
           <li><strong>Edit</strong> — change a plan's price or details. This affects future billing, not past payments.</li>
           <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. Restore it from the Archive page.</li>
