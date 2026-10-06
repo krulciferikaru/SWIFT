@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertTriangle, Download, RefreshCw } from 'lucide-react'
 import reportApi from '../api/reports'
 import { useToast } from '../hooks/useToast'
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
+import { useReportData, describeRequestError } from '../hooks/useReportData'
 
 function money(value) {
   return `PHP ${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -67,66 +68,6 @@ function downloadBlob(blob, filename) {
   window.URL.revokeObjectURL(url)
 }
 
-function createSampleCollectionsData(month) {
-  const currentMonth = month || useCurrentMonth()
-
-  return {
-    summary: {
-      payment_count: 18,
-      paying_subscribers: 12,
-      total_collected: 184500,
-    },
-    by_plan: [
-      { plan_id: 1, plan_name: 'Basic Internet', payment_count: 7, subscriber_count: 6, total_collected: 82000 },
-      { plan_id: 2, plan_name: 'Home Plus', payment_count: 5, subscriber_count: 4, total_collected: 56000 },
-      { plan_id: 3, plan_name: 'Business Pro', payment_count: 4, subscriber_count: 2, total_collected: 46500 },
-    ],
-    by_method: [
-      { payment_method: 'Cash', payment_count: 8, subscriber_count: 6, total_collected: 72000 },
-      { payment_method: 'GCash', payment_count: 6, subscriber_count: 4, total_collected: 61000 },
-      { payment_method: 'Bank Transfer', payment_count: 4, subscriber_count: 2, total_collected: 51500 },
-    ],
-    payments: [
-      { id: 1, payment_date: `${currentMonth}-02`, subscriber_name: 'Ana Dela Cruz', plan_name: 'Basic Internet', amount: 3500, payment_method: 'Cash', or_number: 'OR-1042' },
-      { id: 2, payment_date: `${currentMonth}-04`, subscriber_name: 'Marco Santos', plan_name: 'Home Plus', amount: 4200, payment_method: 'GCash', or_number: 'OR-1043' },
-      { id: 3, payment_date: `${currentMonth}-06`, subscriber_name: 'Leah Mercado', plan_name: 'Business Pro', amount: 8600, payment_method: 'Bank Transfer', or_number: 'OR-1048' },
-      { id: 4, payment_date: `${currentMonth}-09`, subscriber_name: 'Rafael Tan', plan_name: 'Basic Internet', amount: 3500, payment_method: 'Cash', or_number: 'OR-1050' },
-      { id: 5, payment_date: `${currentMonth}-12`, subscriber_name: 'Mia Villanueva', plan_name: 'Home Plus', amount: 4200, payment_method: 'GCash', or_number: 'OR-1054' },
-      { id: 6, payment_date: `${currentMonth}-14`, subscriber_name: 'Chris Garcia', plan_name: 'Business Pro', amount: 8600, payment_method: 'Cash', or_number: 'OR-1058' },
-    ],
-  }
-}
-
-function createSampleStatementData(month) {
-  const currentMonth = month || useCurrentMonth()
-
-  return {
-    summary: {
-      subscriber_count: 28,
-      total_owed: 243500,
-      total_paid: 184500,
-      total_outstanding: 59000,
-      total_advance_credit: 0,
-      active_subscribers: 24,
-      unpaid_subscribers: 3,
-      disconnected_subscribers: 1,
-    },
-    by_plan: [
-      { plan_id: 1, plan_name: 'Basic Internet', subscriber_count: 12, total_owed: 96000, total_paid: 78000, total_outstanding: 18000, total_advance_credit: 0 },
-      { plan_id: 2, plan_name: 'Home Plus', subscriber_count: 9, total_owed: 87000, total_paid: 62000, total_outstanding: 25000, total_advance_credit: 0 },
-      { plan_id: 3, plan_name: 'Business Pro', subscriber_count: 7, total_owed: 60500, total_paid: 44500, total_outstanding: 16000, total_advance_credit: 0 },
-    ],
-    subscribers: [
-      { subscriber_id: 1, name: 'Ana Dela Cruz', plan_name: 'Basic Internet', status: 'Active', monthly_rate: 3500, balance: 0, months_behind: 0 },
-      { subscriber_id: 2, name: 'Marco Santos', plan_name: 'Home Plus', status: 'Active', monthly_rate: 4200, balance: 4200, months_behind: 1 },
-      { subscriber_id: 3, name: 'Leah Mercado', plan_name: 'Business Pro', status: 'Active', monthly_rate: 8600, balance: 0, months_behind: 0 },
-      { subscriber_id: 4, name: 'Rafael Tan', plan_name: 'Basic Internet', status: 'Active', monthly_rate: 3500, balance: 0, months_behind: 0 },
-      { subscriber_id: 5, name: 'Mia Villanueva', plan_name: 'Home Plus', status: 'Unpaid', monthly_rate: 4200, balance: 8400, months_behind: 2 },
-      { subscriber_id: 6, name: 'Chris Garcia', plan_name: 'Business Pro', status: 'Active', monthly_rate: 8600, balance: 0, months_behind: 0 },
-    ],
-  }
-}
-
 const RANGE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'three_months', label: 'Last 3 Months' },
@@ -139,11 +80,7 @@ export default function Reports() {
   const [range, setRange] = useState('monthly')
   const [month, setMonth] = useState(useCurrentMonth())
   const [year, setYear] = useState(String(new Date().getFullYear()))
-  const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState('')
-  const [collections, setCollections] = useState(null)
-  const [statement, setStatement] = useState(null)
-  const [error, setError] = useState('')
   const { toast, showToast } = useToast()
 
   // Query params + file-name key for the selected range.
@@ -154,32 +91,11 @@ export default function Reports() {
   }, [range, month, year])
   const periodKey = range === 'annual' ? year : range === 'three_months' ? 'last-3-months' : month
 
-  const loadReports = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const [collectionsRes, statementRes] = await Promise.all([
-        reportApi.getCollections(params),
-        reportApi.getFinancialStatement(params),
-      ])
-      setCollections(collectionsRes.data.data)
-      setStatement(statementRes.data.data)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load reports.')
-      setCollections(null)
-      setStatement(null)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { collections, statement, loading, error, online, reload } = useReportData(params)
 
-  useEffect(() => {
-    loadReports()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params])
-
-  const displayCollections = useMemo(() => collections ?? createSampleCollectionsData(month), [collections, month])
-  const displayStatement = useMemo(() => statement ?? createSampleStatementData(month), [statement, month])
+  // Only ever real data: when the request fails or you are offline there is nothing to show.
+  const displayCollections = collections
+  const displayStatement = statement
 
   const collectionSummaryCards = useMemo(() => {
     if (!displayCollections) return []
@@ -224,7 +140,7 @@ export default function Reports() {
       downloadBlob(response.data, filename)
       showToast('Report downloaded successfully.')
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to download report.', 'error')
+      showToast(describeRequestError(err, 'download the report').message, 'error')
     } finally {
       setExporting('')
     }
@@ -291,7 +207,7 @@ export default function Reports() {
               ))}
             </select>
           )}
-          <Button onClick={loadReports} variant="outline" className="gap-2">
+          <Button onClick={reload} disabled={loading || !online} variant="outline" className="gap-2">
             <RefreshCw className="size-4" />
             Reload
           </Button>
@@ -300,9 +216,19 @@ export default function Reports() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+        >
           <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-          <span>{error}</span>
+          <div className="space-y-2">
+            <p>{error.message}</p>
+            {(error.kind === 'network' || error.kind === 'server') && (
+              <Button type="button" size="sm" variant="outline" onClick={reload}>
+                Try again
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
@@ -318,7 +244,7 @@ export default function Reports() {
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => exportReport('collections', 'pdf')}
-                disabled={exporting === 'collections-pdf' || loading || !displayCollections}
+                disabled={exporting === 'collections-pdf' || loading || !online || !displayCollections}
                 className="gap-2"
               >
                 <Download className="size-4" />
@@ -326,7 +252,7 @@ export default function Reports() {
               </Button>
               <Button
                 onClick={() => exportReport('collections', 'xlsx')}
-                disabled={exporting === 'collections-xlsx' || loading || !displayCollections}
+                disabled={exporting === 'collections-xlsx' || loading || !online || !displayCollections}
                 variant="outline"
                 className="gap-2"
               >
@@ -443,7 +369,7 @@ export default function Reports() {
                 </div>
               </>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No collections data.</p>
+              error ? null : <p className="text-sm text-gray-500 dark:text-gray-400">No collections data.</p>
             )}
           </CardContent>
         </Card>
@@ -459,7 +385,7 @@ export default function Reports() {
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => exportReport('statement', 'pdf')}
-                disabled={exporting === 'statement-pdf' || loading || !displayStatement}
+                disabled={exporting === 'statement-pdf' || loading || !online || !displayStatement}
                 className="gap-2"
               >
                 <Download className="size-4" />
@@ -467,7 +393,7 @@ export default function Reports() {
               </Button>
               <Button
                 onClick={() => exportReport('statement', 'xlsx')}
-                disabled={exporting === 'statement-xlsx' || loading || !displayStatement}
+                disabled={exporting === 'statement-xlsx' || loading || !online || !displayStatement}
                 variant="outline"
                 className="gap-2"
               >
@@ -567,7 +493,7 @@ export default function Reports() {
                 </div>
               </>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No financial statement data.</p>
+              error ? null : <p className="text-sm text-gray-500 dark:text-gray-400">No financial statement data.</p>
             )}
           </CardContent>
         </Card>

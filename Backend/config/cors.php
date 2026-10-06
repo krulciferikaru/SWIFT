@@ -33,7 +33,8 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    // Lets the frontend read how long to wait after a rate limit response.
+    'exposed_headers' => ['Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
 
     'max_age' => 0,
 
