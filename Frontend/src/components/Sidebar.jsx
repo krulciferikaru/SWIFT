@@ -73,7 +73,10 @@ const navItemsByRole = {
   ],
 };
 
-export default function Sidebar({ open, onToggle }) {
+export default function Sidebar({ open: pinned, onToggle }) {
+  const [hovered, setHovered] = useState(false);
+  // While collapsed, hovering expands the sidebar temporarily as an overlay.
+  const open = pinned || hovered;
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -123,7 +126,12 @@ export default function Sidebar({ open, onToggle }) {
   return (
     <aside
       ref={asideRef}
-      className={`fixed inset-y-0 left-0 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col border-r border-gray-200 dark:border-gray-800 transition-all duration-200 ${open ? "w-60" : "w-16"}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => {
+        setHovered(false);
+        hideTooltip();
+      }}
+      className={`fixed inset-y-0 left-0 z-40 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col border-r border-gray-200 dark:border-gray-800 transition-all duration-200 ${open ? "w-60" : "w-16"} ${hovered && !pinned ? "shadow-xl" : ""}
 `}
     >
       <div
@@ -140,12 +148,18 @@ export default function Sidebar({ open, onToggle }) {
             {/* Toggle - separate button beside the logo */}
             <button
               onClick={onToggle}
-              onMouseEnter={(e) => showTooltip(e, "Close sidebar")}
+              onMouseEnter={(e) =>
+                showTooltip(e, pinned ? "Close sidebar" : "Keep sidebar open")
+              }
               onMouseLeave={hideTooltip}
-              aria-label="Collapse sidebar"
+              aria-label={pinned ? "Collapse sidebar" : "Keep sidebar open"}
               className="flex items-center justify-center size-8 rounded-md hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
             >
-              <PanelLeftClose className="size-4" />
+              {pinned ? (
+                <PanelLeftClose className="size-4" />
+              ) : (
+                <PanelLeftOpen className="size-4" />
+              )}
             </button>
           </>
         ) : (
