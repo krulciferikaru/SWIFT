@@ -24,6 +24,7 @@ import {
 const SECTIONS = [
   {
     id: 'dashboard',
+    tour: 'dashboard',
     icon: LayoutDashboard,
     title: 'Dashboard',
     summary: 'Your home screen — a quick snapshot when you log in.',
@@ -75,6 +76,7 @@ const SECTIONS = [
   },
   {
     id: 'plans',
+    tour: 'plans',
     icon: Wifi,
     title: 'Service Plans',
     summary: 'The internet/cable packages you offer, and their monthly rates.',
@@ -130,6 +132,7 @@ const SECTIONS = [
   },
   {
     id: 'users',
+    tour: 'users',
     icon: ShieldCheck,
     title: 'Manage Roles',
     summary: 'Admin-only: create staff accounts and manage all user accounts.',
@@ -150,6 +153,7 @@ const SECTIONS = [
   },
   {
     id: 'settings',
+    tour: 'settings',
     icon: SettingsIcon,
     title: 'Settings',
     summary: 'Appearance, logout behavior, and SMS tools.',

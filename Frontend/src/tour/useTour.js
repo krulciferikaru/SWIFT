@@ -4,12 +4,33 @@ import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { useAuth } from '../context/AuthContext'
 import { TOURS } from './tours'
+import { setTourActive } from './tourState'
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const isVisible = (el) => el.getClientRects().length > 0
 
 // First visible match: the same data-tour value can exist in desktop and phone markup.
 const findVisible = (selector) =>
   Array.from(document.querySelectorAll(selector)).find(isVisible) || null
+
+// After clicking a tab the old content can linger for a moment and then be replaced
+// once data loads, so wait until the same element has stayed on screen for `settle` ms.
+async function waitForStable(selector, { timeout = 4000, settle = 450 } = {}) {
+  const end = Date.now() + timeout
+  let current = null
+  let since = 0
+  while (Date.now() < end) {
+    const el = findVisible(selector)
+    if (el && el === current) {
+      if (Date.now() - since >= settle) return el
+    } else {
+      current = el
+      since = Date.now()
+    }
+    await sleep(75)
+  }
+  return null
+}
 
 const storageKey = (user, id) => `swift.tourSeen.${user?.id ?? user?.email ?? 'anon'}.${id}`
 
@@ -29,25 +50,60 @@ const markSeen = (user, id) => {
   }
 }
 
-export function runTour(id, { user, onEnd } = {}) {
+let running = false
+let current = null
+
+// Clicks each selector in turn to put the page back how the tour found it.
+async function restorePage(selectors) {
+  for (const sel of [].concat(selectors)) {
+    findVisible(sel)?.click()
+    await sleep(150)
+  }
+}
+
+// Step options (see tours.js):
+//   selector  element to highlight
+//   click     selector to click first (e.g. switch a tab), then wait for `selector`
+//   roles     only show for these roles
+// Steps without `click` are dropped if their element is not on screen.
+export async function runTour(id, { user, onEnd } = {}) {
   const tour = TOURS[id]
-  if (!tour) return false
+  // ignore a second start while one is live (or still starting); a stale flag is reset
+  if (!tour || (running && (!current || current.isActive()))) return false
+  running = true
+  setTourActive(true)
+  // let pages render their sample content before we look for elements
+  await sleep(80)
 
+  const role = user?.role
   const steps = tour.steps
-    .map((s) => ({ ...s, element: findVisible(s.selector) }))
-    .filter((s) => s.element)
-    .map((s) => ({
-      element: s.element,
-      popover: { title: s.title, description: s.description, side: s.side },
-    }))
+    .filter((s) => !s.roles || s.roles.includes(role))
+    .filter((s) => s.click || findVisible(s.selector))
 
+  let ended = false
+  let switchedTabs = false
+  // Driver.js only fires its own onDestroyed when an element is highlighted, so
+  // cleanup is done here, once, for every way the tour can end.
   const finish = () => {
+    if (ended) return
+    ended = true
+    running = false
+    current = null
+    setTourActive(false)
     markSeen(user, id)
+    if (tour.restore && switchedTabs) restorePage(tour.restore)
     onEnd?.()
   }
 
+  let d
+  const close = () => {
+    d.destroy()
+    finish()
+  }
+
   if (steps.length === 0) {
-    const d = driver({ allowClose: true, popoverClass: 'swift-tour', onDestroyed: finish })
+    d = driver({ allowClose: true, popoverClass: 'swift-tour', onDestroyStarted: close })
+    current = d
     d.highlight({
       popover: {
         title: 'Nothing to show yet',
@@ -57,8 +113,36 @@ export function runTour(id, { user, onEnd } = {}) {
     return false
   }
 
-  const d = driver({
-    steps,
+  let moving = false
+  const goTo = async (from, dir) => {
+    if (moving || ended) return
+    moving = true
+    try {
+      let idx = from
+      while (idx >= 0 && idx < steps.length) {
+        const s = steps[idx]
+        if (s.click) {
+          switchedTabs = true
+          findVisible(s.click)?.click()
+          if (!(await waitForStable(s.selector))) {
+            idx += dir
+            continue
+          }
+        }
+        if (!ended) d.drive(idx)
+        return
+      }
+      if (dir > 0 && !ended) close()
+    } finally {
+      moving = false
+    }
+  }
+
+  d = driver({
+    steps: steps.map((s) => ({
+      element: () => findVisible(s.selector),
+      popover: { title: s.title, description: s.description, side: s.side },
+    })),
     showProgress: true,
     progressText: '{{current}} of {{total}}',
     nextBtnText: 'Next',
@@ -68,9 +152,13 @@ export function runTour(id, { user, onEnd } = {}) {
     overlayOpacity: 0.5,
     stagePadding: 6,
     popoverClass: 'swift-tour',
-    onDestroyed: finish,
+    onNextClick: () => goTo(d.getActiveIndex() + 1, 1),
+    onPrevClick: () => goTo(d.getActiveIndex() - 1, -1),
+    onDestroyStarted: close,
   })
-  d.drive()
+  current = d
+
+  await goTo(0, 1)
   return true
 }
 
@@ -88,7 +176,7 @@ export function useAutoStartTour(id) {
 
   useEffect(() => {
     if (!wanted) return
-    const first = TOURS[id]?.steps[0]?.selector
+    const first = TOURS[id]?.steps.find((s) => !s.roles || s.roles.includes(user?.role))?.selector
     let tries = 0
     const timer = setInterval(() => {
       tries += 1

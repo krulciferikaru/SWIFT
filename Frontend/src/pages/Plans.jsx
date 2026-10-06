@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../context/AuthContext'
+import TourButton from "../components/TourButton.jsx";
 
 const emptyForm = { plan_name: '', monthly_rate: '', description: '', speed_mbps: '', status: 'Active' }
 
@@ -144,7 +145,10 @@ export default function Plans() {
           ) : (
             <>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
-              <Button onClick={openAddModal}>Add Plan</Button>
+              <div className="flex gap-2">
+                <TourButton tour="plans" />
+                <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>
+              </div>
             </>
           )}
         </div>
@@ -189,7 +193,10 @@ export default function Plans() {
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
-        <Button onClick={openAddModal}>Add Plan</Button>
+        <div className="flex gap-2">
+                <TourButton tour="plans" />
+                <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>
+              </div>
       </div>
 
       {error && (
@@ -201,7 +208,7 @@ export default function Plans() {
       {plans.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">No plans yet.</p>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div data-tour="plans-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -233,7 +240,7 @@ export default function Plans() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div data-tour="plans-row-actions" className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEditModal(plan)}>
                         Edit
                       </Button>

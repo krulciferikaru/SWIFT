@@ -28,6 +28,8 @@ import { useToast } from "../hooks/useToast";
 import { Search, CheckCircle2, Check } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import TourButton from "../components/TourButton.jsx";
+import { useTourActive } from "../tour/tourState";
+import { PaymentSample } from "../components/TourSamples.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -84,6 +86,7 @@ export default function Payments() {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const tourActive = useTourActive();
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -306,6 +309,8 @@ export default function Payments() {
           </Card>
         </>
       )}
+
+      {tourActive && !selected && <PaymentSample />}
 
       {selected && (
         <>
