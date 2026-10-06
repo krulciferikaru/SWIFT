@@ -20,6 +20,12 @@ class DemoSeederSafetyTest extends TestCase
         $this->app->detectEnvironment(fn () => 'production');
     }
 
+    // Run the seeder directly: in production `db:seed` itself asks for confirmation first.
+    private function runSeeder(): void
+    {
+        app(DatabaseSeeder::class)->setContainer($this->app)->run();
+    }
+
     public function test_demo_seeder_still_works_for_local_development(): void
     {
         $this->seed(DatabaseSeeder::class);
@@ -33,7 +39,7 @@ class DemoSeederSafetyTest extends TestCase
     {
         $this->asProduction();
 
-        $this->seed(DatabaseSeeder::class);
+        $this->runSeeder();
 
         $this->assertSame(0, User::where('email', 'like', '%@swift.test')->count());
     }
@@ -43,7 +49,7 @@ class DemoSeederSafetyTest extends TestCase
         $this->asProduction();
         config(['seeding.allow_demo_seed' => true, 'seeding.demo_password' => null]);
 
-        $this->seed(DatabaseSeeder::class);
+        $this->runSeeder();
 
         $this->assertSame(0, User::where('email', 'like', '%@swift.test')->count());
     }
@@ -53,7 +59,7 @@ class DemoSeederSafetyTest extends TestCase
         $this->asProduction();
         config(['seeding.allow_demo_seed' => true, 'seeding.demo_password' => 'a-long-private-password-1']);
 
-        $this->seed(DatabaseSeeder::class);
+        $this->runSeeder();
 
         $admin = User::where('email', 'admin@swift.test')->firstOrFail();
         $this->assertTrue(Hash::check('a-long-private-password-1', $admin->password));
