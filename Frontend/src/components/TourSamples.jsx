@@ -50,6 +50,38 @@ export function ApprovalSample({ tab, claimsSubTab }) {
   )
 }
 
+export function ArchiveSample({ kind }) {
+  const isPlan = kind === 'plan'
+
+  return (
+    <div
+      aria-hidden="true"
+      inert
+      className="overflow-hidden rounded-lg border-2 border-dashed border-primary/40 bg-white dark:bg-gray-800"
+    >
+      <div className="bg-primary/10 px-4 py-2 text-xs font-medium text-primary">
+        Sample only. Nothing is archived here right now, this is what a real entry looks like.
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <div className="text-sm">
+          <p className="font-medium text-gray-900 dark:text-gray-100">{isPlan ? 'Old Plan' : 'Juan Dela Cruz'}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {isPlan ? '₱800.00 per month · 20 Mbps' : 'Home Plus · 0917 000 0000'}
+          </p>
+        </div>
+        <div data-tour="archive-row-actions" className="flex gap-2">
+          <Button variant="outline" size="sm">
+            Restore
+          </Button>
+          <Button variant="destructive" size="sm">
+            Delete
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function PaymentSample() {
   return (
     <div

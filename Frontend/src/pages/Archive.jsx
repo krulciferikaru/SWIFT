@@ -15,11 +15,15 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
 import Toast from "../components/Toast.jsx";
+import TourButton from "../components/TourButton.jsx";
+import { useTourActive } from "../tour/tourState";
+import { ArchiveSample } from "../components/TourSamples.jsx";
 
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
 
 export default function ArchivePage() {
+  const tourActive = useTourActive()
   const [tab, setTab] = useState('subscribers')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -58,6 +62,8 @@ export default function ArchivePage() {
   }, [fetchItems])
 
   const switchTab = (next) => {
+    // Clicking the tab you are already on would clear the list without reloading it.
+    if (next === tab) return
     setTab(next)
     setPage(1)
     setSearch('')
@@ -105,24 +111,28 @@ export default function ArchivePage() {
     <div>
       <Toast toast={toast} />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Archive</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Archived records are hidden from the rest of the system. Restore them, or delete them permanently here.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Archive</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Archived records are hidden from the rest of the system. Restore them, or delete them permanently here.
+          </p>
+        </div>
+        <TourButton tour="archive" />
       </div>
 
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
-        <button className={tabClass(isSubscribers)} aria-pressed={isSubscribers} onClick={() => switchTab('subscribers')}>
+      <div data-tour="archive-tabs" className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+        <button data-tour="archive-tab-subscribers" className={tabClass(isSubscribers)} aria-pressed={isSubscribers} onClick={() => switchTab('subscribers')}>
           Subscribers
         </button>
-        <button className={tabClass(!isSubscribers)} aria-pressed={!isSubscribers} onClick={() => switchTab('plans')}>
+        <button data-tour="archive-tab-plans" className={tabClass(!isSubscribers)} aria-pressed={!isSubscribers} onClick={() => switchTab('plans')}>
           Service Plans
         </button>
       </div>
 
       {isSubscribers && (
         <Input
+          data-tour="archive-search"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value)
@@ -138,11 +148,18 @@ export default function ArchivePage() {
         <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
+      <div data-tour="archive-list" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
         {loading ? (
           <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</p>
         ) : items.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Nothing archived here.</p>
+          <>
+            <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Nothing archived here.</p>
+            {tourActive && (
+              <div className="px-6 pb-6">
+                <ArchiveSample kind={isSubscribers ? 'subscriber' : 'plan'} />
+              </div>
+            )}
+          </>
         ) : (
           <Table>
             <TableHeader>
@@ -189,7 +206,7 @@ export default function ArchivePage() {
                   )}
                   <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(item.deleted_at)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div data-tour="archive-row-actions" className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => restore(item)} aria-label={`Restore ${item.name || item.plan_name}`}>
                         Restore
                       </Button>

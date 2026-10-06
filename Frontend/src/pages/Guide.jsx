@@ -140,6 +140,7 @@ const SECTIONS = [
   },
   {
     id: 'archive',
+    tour: 'archive',
     icon: Archive,
     title: 'Archive',
     summary: 'Archived subscribers and plans — restore them or delete them for good.',

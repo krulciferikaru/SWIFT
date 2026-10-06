@@ -555,6 +555,43 @@ TOURS.staffForm = {
   ],
 }
 
+TOURS.archive = {
+  title: 'Archive tour',
+  restore: [t('archive-tab-subscribers')],
+  steps: [
+    {
+      selector: t('archive-tabs'),
+      title: 'Archived records',
+      description:
+        'Subscribers and service plans you archive end up here. Archiving hides them from the rest of the system, but nothing is lost.',
+      side: 'bottom',
+    },
+    {
+      click: t('archive-tab-subscribers'),
+      selector: t('archive-search'),
+      title: 'Search archived subscribers',
+      description: 'Find one by name, contact number, address or MAC address.',
+      side: 'bottom',
+    },
+    {
+      click: t('archive-tab-subscribers'),
+      selector: t('archive-row-actions'),
+      title: 'Restore or delete a subscriber',
+      description:
+        'Restore puts the subscriber back on the list and lets them log in again. Delete removes them for good, along with their payment history and login, so only use it when you are sure. If nothing is archived, the dashed sample row shows what an entry looks like.',
+      side: 'left',
+    },
+    {
+      click: t('archive-tab-plans'),
+      selector: t('archive-row-actions'),
+      title: 'Restore or delete a plan',
+      description:
+        'Restore offers the plan to new subscribers again. Delete removes it permanently, and a plan that is still assigned to any subscriber cannot be deleted.',
+      side: 'left',
+    },
+  ],
+}
+
 export const TOUR_PAGES = {
   dashboard: '/dashboard',
   subscribers: '/subscribers',
@@ -562,6 +599,7 @@ export const TOUR_PAGES = {
   plans: '/plans',
   payments: '/payments',
   reports: '/reports',
+  archive: '/archive',
   users: '/users',
   settings: '/settings',
 }
