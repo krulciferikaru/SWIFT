@@ -5,7 +5,8 @@ import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -53,7 +54,7 @@ function formatCurrency(value) {
 }
 
 function collectionRateColor(rate) {
-  if (rate >= 80) return "text-green-600 dark:text-green-400";
+  if (rate >= 80) return "text-green-700 dark:text-green-400";
   if (rate >= 50) return "text-amber-600 dark:text-amber-400";
   return "text-red-600 dark:text-red-400";
 }
@@ -172,7 +173,7 @@ export default function Dashboard() {
 
     if (!myBilling) {
       return (
-        <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">
+        <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">
           No subscriber account is linked to your login yet. Please contact staff.
         </div>
       );
@@ -180,7 +181,7 @@ export default function Dashboard() {
 
     const statusColor =
       myBilling.months_behind === 0
-        ? "text-green-600 dark:text-green-400"
+        ? "text-green-700 dark:text-green-400"
         : myBilling.months_behind <= 2
           ? "text-amber-600 dark:text-amber-400"
           : "text-red-600 dark:text-red-400";
@@ -276,7 +277,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {myPayments.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">No payments recorded yet.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No payments recorded yet.</p>
             ) : (
               <div className="space-y-2">
                 {myPayments.map((p) => (
@@ -350,7 +351,7 @@ export default function Dashboard() {
 
   if (!summary) {
     return (
-      <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">
+      <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">
         Unable to load dashboard data.
       </div>
     );
@@ -375,7 +376,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           {lastUpdated && (
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
           )}
@@ -444,7 +445,7 @@ export default function Dashboard() {
               <CardContent className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collected This Month</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">
                     {formatCurrency(financials.collected_this_month)}
                   </p>
                 </div>
@@ -522,7 +523,7 @@ export default function Dashboard() {
         <Card>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
-              <TrendingUp className="size-5 text-green-600 dark:text-green-400" />
+              <TrendingUp className="size-5 text-green-700 dark:text-green-400" />
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active</p>
             <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.active}</p>
@@ -549,7 +550,7 @@ export default function Dashboard() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base">Revenue Trend</CardTitle>
               {trendDelta && (
-                <span className={`flex items-center gap-1 text-xs font-medium ${trendDelta.up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                <span className={`flex items-center gap-1 text-xs font-medium ${trendDelta.up ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                   {trendDelta.up ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
                   {Math.abs(trendDelta.pct)}% vs last month
                 </span>
@@ -595,47 +596,37 @@ export default function Dashboard() {
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Button asChild variant="outline" className="justify-start h-auto py-4">
-            <Link to="/payments">
+          <Link to="/payments" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Record a Payment</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Search a subscriber and log a payment</p>
               </div>
             </Link>
-          </Button>
-          <Button asChild variant="outline" className="justify-start h-auto py-4">
-            <Link to="/subscribers">
+          <Link to="/subscribers" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Manage Subscribers</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">View, add, or edit subscriber records</p>
               </div>
             </Link>
-          </Button>
-          <Button asChild variant="outline" className="justify-start h-auto py-4">
-            <Link to="/reports">
+          <Link to="/reports" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">View Reports</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Collection, balance, and subscriber reports</p>
               </div>
             </Link>
-          </Button>
-          <Button asChild variant="outline" className="justify-start h-auto py-4">
-            <Link to="/plans">
+          <Link to="/plans" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Service Plans</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Manage available plans and pricing</p>
               </div>
             </Link>
-          </Button>
           {user?.role === "admin" && (
-            <Button asChild variant="outline" className="justify-start h-auto py-4">
-              <Link to="/users">
+            <Link to="/users" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
                 <div className="text-left">
                   <p className="font-medium">Manage Roles</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Control staff account access</p>
                 </div>
               </Link>
-            </Button>
           )}
         </CardContent>
       </Card>

@@ -64,10 +64,10 @@ export default function Register() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-10 pb-10 text-center space-y-4">
-            <CheckCircle2 className="size-12 text-green-600 dark:text-green-400 mx-auto" />
+            <CheckCircle2 className="size-12 text-green-700 dark:text-green-400 mx-auto" />
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Registration submitted</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -79,21 +79,21 @@ export default function Register() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-1">
-          <div className="text-2xl font-bold text-primary mb-2">SWIFT</div>
-          <CardTitle>Create your account</CardTitle>
+          <div aria-hidden="true" className="text-2xl font-bold text-primary mb-2">SWIFT</div>
+          <CardTitle as="h1">Create your account</CardTitle>
           <CardDescription>Register for cable TV service. Your application will be reviewed before activation.</CardDescription>
         </CardHeader>
         <CardContent>
           {message && !submitted && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+            <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
               {message}
             </div>
           )}
@@ -142,7 +142,7 @@ export default function Register() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email <span className="text-gray-400 font-normal">(optional)</span></Label>
+              <Label htmlFor="email">Email <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span></Label>
               <Input
                 id="email"
                 type="email"
@@ -227,6 +227,6 @@ export default function Register() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </main>
   )
 }

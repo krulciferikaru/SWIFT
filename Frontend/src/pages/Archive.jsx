@@ -14,6 +14,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
+import Toast from "../components/Toast.jsx";
 
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
@@ -102,15 +103,7 @@ export default function ArchivePage() {
 
   return (
     <div>
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-            toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Archive</h1>
@@ -120,10 +113,10 @@ export default function ArchivePage() {
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
-        <button className={tabClass(isSubscribers)} onClick={() => switchTab('subscribers')}>
+        <button className={tabClass(isSubscribers)} aria-pressed={isSubscribers} onClick={() => switchTab('subscribers')}>
           Subscribers
         </button>
-        <button className={tabClass(!isSubscribers)} onClick={() => switchTab('plans')}>
+        <button className={tabClass(!isSubscribers)} aria-pressed={!isSubscribers} onClick={() => switchTab('plans')}>
           Service Plans
         </button>
       </div>
@@ -136,12 +129,13 @@ export default function ArchivePage() {
             setPage(1)
           }}
           placeholder="Search by name, contact number, address, MAC…"
+          aria-label="Search archived subscribers"
           className="mb-4 max-w-md"
         />
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
@@ -196,10 +190,10 @@ export default function ArchivePage() {
                   <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(item.deleted_at)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => restore(item)}>
+                      <Button variant="outline" size="sm" onClick={() => restore(item)} aria-label={`Restore ${item.name || item.plan_name}`}>
                         Restore
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(item)}>
+                      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(item)} aria-label={`Delete ${item.name || item.plan_name} permanently`}>
                         Delete
                       </Button>
                     </div>

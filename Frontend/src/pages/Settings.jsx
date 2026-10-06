@@ -14,6 +14,7 @@ import { Sun, Moon, Send, BellRing, PlayCircle } from 'lucide-react'
 import TourButton from "../components/TourButton.jsx";
 import { runTour } from '../tour/useTour'
 import { useShowTourButtons, setShowTourButtons } from '../tour/tourState'
+import Toast from "../components/Toast.jsx";
 
 const SMS_MESSAGE_MAX = 300
 
@@ -78,14 +79,7 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-            }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="flex items-start justify-between gap-3">
         <div>

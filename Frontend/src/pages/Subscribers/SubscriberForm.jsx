@@ -99,10 +99,17 @@ export default function SubscriberForm({
         type={type}
         value={form[key]}
         onChange={set(key)}
+        aria-required={required || undefined}
+        aria-invalid={errors[key] ? true : undefined}
+        aria-describedby={errors[key] ? `${key}-error` : undefined}
         className={errors[key] ? "border-red-400" : ""}
         {...extra}
       />
-      {errors[key] && <p className="text-red-500 text-xs">{errors[key][0]}</p>}
+      {errors[key] && (
+        <p id={`${key}-error`} role="alert" className="text-red-700 dark:text-red-400 text-xs">
+          {errors[key][0]}
+        </p>
+      )}
     </div>
   );
 
@@ -114,7 +121,7 @@ export default function SubscriberForm({
 
       {/* Section: Plan & Status */}
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Service Plan & Status
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -124,6 +131,8 @@ export default function SubscriberForm({
             </Label>
             <Select value={form.plan_id} onValueChange={setValue("plan_id")}>
               <SelectTrigger
+                aria-label="Service plan"
+                aria-invalid={errors.plan_id ? true : undefined}
                 className={errors.plan_id ? "border-red-400 w-full" : "w-full"}
               >
                 <SelectValue placeholder="Select a plan">
@@ -151,7 +160,7 @@ export default function SubscriberForm({
           <div data-tour="sub-status" className="space-y-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={setValue("status")}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -166,7 +175,7 @@ export default function SubscriberForm({
 
       {/* Section: Subscriber Information */}
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Subscriber Information
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -215,7 +224,7 @@ export default function SubscriberForm({
 
       {/* Section: Connection Details */}
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Connection Details
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

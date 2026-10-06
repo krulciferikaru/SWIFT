@@ -146,6 +146,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
     <>
     <aside
       ref={asideRef}
+      aria-label="Sidebar"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
         setHovered(false);
@@ -202,6 +203,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
       </div>
 
       <nav
+        aria-label="Main"
         data-tour="nav"
         className={`flex-1 p-2 space-y-1 flex flex-col ${!open ? "items-center" : ""}`}
       >
@@ -213,6 +215,14 @@ export default function Sidebar({ open: pinned, onToggle }) {
               key={item.path}
               to={item.path}
               data-tour={`nav-${item.path.slice(1)}`}
+              aria-label={
+                open
+                  ? undefined
+                  : item.showBadge && totalApprovalsCount > 0
+                    ? `${item.label}, ${totalApprovalsCount} waiting`
+                    : item.label
+              }
+              aria-current={isActive ? "page" : undefined}
               onMouseEnter={(e) => showTooltip(e, item.label)}
               onMouseLeave={hideTooltip}
               className={`relative flex items-center rounded-md text-sm transition-colors ${
@@ -241,6 +251,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
                   }`}
                 >
                   {totalApprovalsCount}
+                  <span className="sr-only"> waiting</span>
                 </Badge>
               )}
               {!open && item.showBadge && pendingCount > 0 && (
@@ -258,6 +269,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
           variant="outline"
           size="icon"
           data-tour="theme-toggle"
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           onClick={toggleTheme}
           onMouseEnter={(e) =>
             showTooltip(
@@ -289,6 +301,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
 
         <Button
           onClick={requestLogout}
+          aria-label="Logout"
           onMouseEnter={(e) => showTooltip(e, "Logout")}
           onMouseLeave={hideTooltip}
           variant="destructive"
@@ -305,6 +318,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
       {tooltip &&
         createPortal(
           <div
+            aria-hidden="true"
             className="fixed z-9999 -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-900 dark:bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-white dark:text-gray-900 shadow-lg pointer-events-none"
             style={{ left: open ? 248 : 72, top: tooltip.top }}
           >

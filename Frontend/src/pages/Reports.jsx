@@ -15,6 +15,7 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import TourButton from "../components/TourButton.jsx";
+import Toast from "../components/Toast.jsx";
 
 function money(value) {
   return `PHP ${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -231,15 +232,7 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-            toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
@@ -257,11 +250,12 @@ export default function Reports() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-          <div data-tour="reports-range" className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div data-tour="reports-range" role="group" aria-label="Report period" className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
             {RANGE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
+                aria-pressed={range === opt.value}
                 onClick={() => setRange(opt.value)}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${
                   range === opt.value
@@ -276,6 +270,7 @@ export default function Reports() {
           {range === 'monthly' && (
             <Input
               data-tour="reports-month"
+              aria-label="Report month"
               type="month"
               value={month}
               onChange={(e) => e.target.value && setMonth(e.target.value)}
@@ -284,6 +279,7 @@ export default function Reports() {
           )}
           {range === 'annual' && (
             <select
+              aria-label="Report year"
               value={year}
               onChange={(e) => setYear(e.target.value)}
               className="h-9 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 text-sm sm:w-28"
@@ -346,7 +342,7 @@ export default function Reports() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {collectionSummaryCards.map((card) => (
                     <div key={card.label} className={`rounded-xl border px-4 py-3 shadow-sm ${card.tone}`}>
-                      <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80">{card.label}</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.12em]">{card.label}</p>
                       <p className="mt-2 text-lg font-bold">{card.value}</p>
                     </div>
                   ))}
@@ -487,7 +483,7 @@ export default function Reports() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {statementSummaryCards.map((card) => (
                     <div key={card.label} className={`rounded-xl border px-4 py-3 shadow-sm ${card.tone}`}>
-                      <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80">{card.label}</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.12em]">{card.label}</p>
                       <p className="mt-2 text-lg font-bold">{card.value}</p>
                     </div>
                   ))}
