@@ -11,6 +11,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import TourButton from "../../components/TourButton.jsx";
 
 const EMPTY_FORM = {
   plan_id: "",
@@ -107,13 +108,17 @@ export default function SubscriberForm({
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex justify-end">
+        <TourButton tour="subscriberForm" />
+      </div>
+
       {/* Section: Plan & Status */}
       <div className="space-y-4">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
           Service Plan & Status
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+          <div data-tour="sub-plan" className="space-y-1.5">
             <Label>
               Service Plan<span className="text-red-500 ml-0.5">*</span>
             </Label>
@@ -143,7 +148,7 @@ export default function SubscriberForm({
             )}
           </div>
 
-          <div className="space-y-1.5">
+          <div data-tour="sub-status" className="space-y-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={setValue("status")}>
               <SelectTrigger className="w-full">

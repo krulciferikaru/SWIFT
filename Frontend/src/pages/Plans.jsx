@@ -277,6 +277,10 @@ export default function Plans() {
         )}
       >
         <form id="plan-form" onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex justify-end">
+            <TourButton tour="planForm" />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="plan_name">
               Plan Name<span className="text-red-500 ml-0.5">*</span>
@@ -337,7 +341,7 @@ export default function Plans() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div data-tour="plan-status" className="space-y-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={setFieldValue('status')}>
               <SelectTrigger className="w-full">

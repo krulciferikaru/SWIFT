@@ -385,6 +385,162 @@ export const TOURS = {
   },
 }
 
+// Form tours run inside a modal dialog, so selectors are scoped to it.
+const d = (name) => `[role="dialog"] [data-tour="${name}"]`
+const dlg = (sel) => `[role="dialog"] ${sel}`
+
+TOURS.subscriberForm = {
+  title: 'Subscriber form tour',
+  steps: [
+    {
+      selector: d('sub-plan'),
+      title: 'Service Plan',
+      description:
+        'Pick the plan this subscriber pays for. The monthly rate shown beside each plan is what they are billed.',
+      side: 'bottom',
+    },
+    {
+      selector: d('sub-status'),
+      title: 'Status',
+      description:
+        'Leave this on Active for a new subscriber. SWIFT keeps it up to date from payments: Active, Unpaid or Disconnected.',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#name'),
+      title: 'Full Name',
+      description:
+        'The name as it should appear on bills. While you type, SWIFT warns you if a similar subscriber already exists. If it is the same person, edit that record instead of adding a duplicate.',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#contact_number'),
+      title: 'Contact Number',
+      description: 'Optional, but needed for SMS reminders. Use the format 09XX-XXX-XXXX.',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#email'),
+      title: 'Email Address',
+      description:
+        'Required. If this person later signs up for their own login with the same email, it appears under Account Claims for you to verify.',
+      side: 'top',
+    },
+    {
+      selector: dlg('#address'),
+      title: 'Address',
+      description: 'Required. Their service address, for example the barangay and Palayan City.',
+      side: 'top',
+    },
+    {
+      selector: dlg('#mac_address'),
+      title: 'MAC Address',
+      description: 'Optional. The address of the subscriber\'s equipment, written XX:XX:XX:XX:XX:XX.',
+      side: 'top',
+    },
+    {
+      selector: dlg('#connection_date'),
+      title: 'Connection Date',
+      description:
+        'Required. The date service started. Billing is counted from this date, so a date in the past means the earlier months count as due.',
+      side: 'top',
+    },
+    {
+      selector: dlg('button[type="submit"]'),
+      title: 'Save',
+      description:
+        'Fields marked with a red * are required. If something is missing or wrong, a red message appears under that field.',
+      side: 'top',
+    },
+  ],
+}
+
+TOURS.planForm = {
+  title: 'Plan form tour',
+  steps: [
+    {
+      selector: dlg('#plan_name'),
+      title: 'Plan name',
+      description: 'The name subscribers and staff will see, for example "Home Plus".',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#monthly_rate'),
+      title: 'Monthly rate',
+      description:
+        'What each subscriber on this plan is billed every month, in pesos. Changing it later affects future billing, not past payments.',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#speed_mbps'),
+      title: 'Speed',
+      description: 'Optional. The internet speed in Mbps, for reference.',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#description'),
+      title: 'Description',
+      description: 'Optional notes about what the plan includes.',
+      side: 'top',
+    },
+    {
+      selector: d('plan-status'),
+      title: 'Status',
+      description: 'Active plans can be given to subscribers. Mark a plan Inactive to stop offering it without deleting it.',
+      side: 'top',
+    },
+    {
+      selector: dlg('button[type="submit"]'),
+      title: 'Save',
+      description: 'Saves the plan. Required fields are marked with a red *.',
+      side: 'top',
+    },
+  ],
+}
+
+TOURS.staffForm = {
+  title: 'Staff account form tour',
+  steps: [
+    {
+      selector: dlg('#staff-name'),
+      title: 'Full Name',
+      description: 'The staff member\'s name, shown in the sidebar and in records.',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#staff-email'),
+      title: 'Email',
+      description: 'Their login email. It must not already be used by another account.',
+      side: 'bottom',
+    },
+    {
+      selector: d('staff-role'),
+      title: 'Role',
+      description:
+        'The role is fixed when the account is created and cannot be changed afterwards, so choose carefully.',
+      side: 'bottom',
+    },
+    {
+      selector: dlg('#staff-password'),
+      title: 'Password',
+      description: 'Their first password. Share it privately. You can reset it later from the accounts list.',
+      side: 'top',
+    },
+    {
+      selector: dlg('#staff-password-confirm'),
+      title: 'Confirm Password',
+      description: 'Type the same password again to make sure there is no typo.',
+      side: 'top',
+    },
+    {
+      selector: dlg('button[type="submit"]'),
+      title: 'Create account',
+      description: 'Creates the login. The new staff member can sign in right away.',
+      side: 'top',
+    },
+  ],
+}
+
 export const TOUR_PAGES = {
   dashboard: '/dashboard',
   subscribers: '/subscribers',
