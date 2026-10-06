@@ -17,8 +17,8 @@ Route::get('/health', fn() => response()->json([
     'version' => '1.0.0',
 ]));
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -36,21 +36,21 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('role:admin,secretary');
 
     Route::get('/reports/subscribers', [ReportController::class, 'subscribers'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
     Route::get('/reports/subscribers/xlsx', [ReportController::class, 'subscribersXlsx'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
     Route::get('/reports/collections', [ReportController::class, 'collections'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
     Route::get('/reports/collections/pdf', [ReportController::class, 'collectionsPdf'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
     Route::get('/reports/collections/xlsx', [ReportController::class, 'collectionsXlsx'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
     Route::get('/reports/financial-statement', [ReportController::class, 'financialStatement'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
     Route::get('/reports/financial-statement/pdf', [ReportController::class, 'financialStatementPdf'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
     Route::get('/reports/financial-statement/xlsx', [ReportController::class, 'financialStatementXlsx'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary', 'throttle:reports');
 
     // Secretary + Admin can approve/reject subscriber accounts.
     Route::middleware('role:admin,secretary')->group(function () {
@@ -65,9 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subscribers/{subscriber}/payments', [PaymentController::class, 'index']);
         Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store']);
         Route::get('/subscribers/check-duplicate', [SubscriberController::class, 'checkDuplicate']);
-        Route::post('/subscribers/send-reminders', [SubscriberController::class, 'sendReminders']);
+        Route::post('/subscribers/send-reminders', [SubscriberController::class, 'sendReminders'])
+            ->middleware('throttle:sms');
         Route::get('/reports/financial-summary', [PaymentController::class, 'financialSummary']);
-        Route::post('/sms/send', [SmsController::class, 'send']);
+        Route::post('/sms/send', [SmsController::class, 'send'])->middleware('throttle:sms');
         Route::post('/plans', [PlanController::class, 'store']);
         Route::put('/plans/{plan}', [PlanController::class, 'update']);
         Route::patch('/plans/{plan}', [PlanController::class, 'update']);
