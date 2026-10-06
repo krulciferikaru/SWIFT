@@ -244,7 +244,7 @@ export default function Payments() {
             <Skeleton className="h-4 w-72" />
           </div>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <Skeleton className="h-10 w-full" />
             </CardContent>
           </Card>
@@ -264,7 +264,7 @@ export default function Payments() {
           </div>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
@@ -316,7 +316,7 @@ export default function Payments() {
         <>
           {/* Subscriber header — balance now lives here, not buried below */}
           <Card data-tour="payments-balance">
-            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
+            <CardContent className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {selected.name}
@@ -373,7 +373,7 @@ export default function Payments() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {Array.from({ length: 2 }).map((_, i) => (
                 <Card key={i}>
-                  <CardContent className="pt-6 space-y-3">
+                  <CardContent className="space-y-3">
                     {Array.from({ length: 4 }).map((_, j) => (
                       <Skeleton key={j} className="h-8 w-full" />
                     ))}

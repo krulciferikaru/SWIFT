@@ -62,7 +62,7 @@ export function PaymentSample() {
       </p>
 
       <Card data-tour="payments-balance">
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">Juan Dela Cruz</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Home Plus · juan@example.com</p>

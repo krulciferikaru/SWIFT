@@ -21,7 +21,6 @@ import {
   ShieldCheck,
   CircleDollarSign,
   PiggyBank,
-  FileBarChart,
 } from "lucide-react";
 import {
   PieChart,
@@ -159,7 +158,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Card key={i}>
-                <CardContent className="pt-6 space-y-3">
+                <CardContent className="space-y-3">
                   <Skeleton className="h-3 w-24" />
                   <Skeleton className="h-8 w-20" />
                 </CardContent>
@@ -198,7 +197,7 @@ export default function Dashboard() {
 
         <div data-tour="me-summary" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center gap-2 mb-2">
                 <Wifi className="size-5 text-primary" />
               </div>
@@ -210,7 +209,7 @@ export default function Dashboard() {
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center gap-2 mb-2">
                 <Wallet className="size-5 text-amber-500" />
               </div>
@@ -227,7 +226,7 @@ export default function Dashboard() {
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center gap-2 mb-2">
                 <CircleCheck className={`size-5 ${statusColor}`} />
               </div>
@@ -313,7 +312,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
-              <CardContent className="pt-6 space-y-3">
+              <CardContent className="space-y-3">
                 <Skeleton className="h-3 w-28" />
                 <Skeleton className="h-8 w-32" />
               </CardContent>
@@ -323,7 +322,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <Card key={i}>
-              <CardContent className="pt-6 space-y-3">
+              <CardContent className="space-y-3">
                 <Skeleton className="h-5 w-5 rounded" />
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-8 w-14" />
@@ -333,12 +332,12 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-1">
-            <CardContent className="pt-6">
+            <CardContent>
               <Skeleton className="h-55 w-full rounded-full mx-auto max-w-55" />
             </CardContent>
           </Card>
           <Card className="lg:col-span-2">
-            <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full rounded-md" />
               ))}
@@ -442,7 +441,7 @@ export default function Dashboard() {
         <div data-tour="dash-financials" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Link to="/payments">
             <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="pt-6 flex items-center justify-between">
+              <CardContent className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collected This Month</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
@@ -456,7 +455,7 @@ export default function Dashboard() {
 
           <Link to="/subscribers">
             <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="pt-6 flex items-center justify-between">
+              <CardContent className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Outstanding</p>
                   <p className={`text-2xl font-bold mt-1 ${financials.total_outstanding > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
@@ -469,7 +468,7 @@ export default function Dashboard() {
           </Link>
 
           <Card>
-            <CardContent className="pt-6 flex items-center justify-between">
+            <CardContent className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collection Rate</p>
                 <p className={`text-2xl font-bold mt-1 ${collectionRateColor(financials.collection_rate)}`}>
@@ -486,7 +485,7 @@ export default function Dashboard() {
       <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link to="/subscribers">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center justify-between mb-2">
                 <Users2 className="size-5 text-primary" />
               </div>
@@ -498,7 +497,7 @@ export default function Dashboard() {
 
         <Link to="/approvals">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center justify-between mb-2">
                 <ClipboardCheck className="size-5 text-amber-500" />
               </div>
@@ -510,7 +509,7 @@ export default function Dashboard() {
 
         <Link to="/approvals" state={{ tab: "claims" }}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center justify-between mb-2">
                 <ShieldCheck className="size-5 text-blue-500" />
               </div>
@@ -521,7 +520,7 @@ export default function Dashboard() {
         </Link>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className="size-5 text-green-600 dark:text-green-400" />
             </div>
@@ -532,7 +531,7 @@ export default function Dashboard() {
 
         <Link to="/subscribers">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center justify-between mb-2">
                 <Wifi className="size-5 text-gray-400" />
               </div>
@@ -614,12 +613,9 @@ export default function Dashboard() {
           </Button>
           <Button asChild variant="outline" className="justify-start h-auto py-4">
             <Link to="/reports">
-              <div className="text-left flex items-center gap-2">
-                <FileBarChart className="size-4 text-gray-400 shrink-0" />
-                <span>
-                  <p className="font-medium">View Reports</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Collection, balance, and subscriber reports</p>
-                </span>
+              <div className="text-left">
+                <p className="font-medium">View Reports</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Collection, balance, and subscriber reports</p>
               </div>
             </Link>
           </Button>
