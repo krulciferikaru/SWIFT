@@ -164,3 +164,27 @@
 .driver-popover.swift-tour .driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: var(--popover); }
 .driver-popover.swift-tour .driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: var(--popover); }
 .driver-popover.swift-tour .driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: var(--popover); }
+
+/* Printing: drop the app chrome and print on white */
+@page {
+  margin: 14mm;
+}
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  aside,
+  header.fixed,
+  a[href="#main-content"],
+  .driver-popover,
+  .driver-overlay {
+    display: none !important;
+  }
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+  }
+}

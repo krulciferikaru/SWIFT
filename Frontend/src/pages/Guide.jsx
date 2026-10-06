@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +10,7 @@ import { useAuth } from '../context/AuthContext'
 import { TOUR_PAGES } from '../tour/tours'
 import {
   PlayCircle,
+  Printer,
   Search,
   X,
   LayoutDashboard,
@@ -227,6 +229,8 @@ const sectionsForRole = (role) =>
 
 const HIGHLIGHT_NAME = 'guide-search'
 
+const ROLE_LABELS = { admin: 'Administrator', secretary: 'Secretary', subscriber: 'Subscriber' }
+
 // Marks matches on the page with the CSS Custom Highlight API (no DOM changes).
 // Browsers without it still filter; they just do not highlight.
 function useSearchHighlight(containerId, terms, watch) {
@@ -268,16 +272,84 @@ export default function Guide() {
 
   useSearchHighlight('guide-results', sections.length ? terms : [], sections.map((s) => s.id).join(','))
 
+  // Printing (button or Ctrl+P): always print the whole guide, in light colours,
+  // then put the screen back how it was.
+  const queryRef = useRef('')
+  useEffect(() => {
+    queryRef.current = query
+  }, [query])
+
+  useEffect(() => {
+    let wasDark = false
+    let savedQuery = null
+
+    const beforePrint = () => {
+      const root = document.documentElement
+      wasDark = root.classList.contains('dark')
+      root.classList.remove('dark')
+      if (queryRef.current) {
+        savedQuery = queryRef.current
+        flushSync(() => setQuery(''))
+      }
+    }
+    const afterPrint = () => {
+      if (wasDark) document.documentElement.classList.add('dark')
+      wasDark = false
+      if (savedQuery !== null) {
+        setQuery(savedQuery)
+        savedQuery = null
+      }
+    }
+
+    window.addEventListener('beforeprint', beforePrint)
+    window.addEventListener('afterprint', afterPrint)
+    return () => {
+      window.removeEventListener('beforeprint', beforePrint)
+      window.removeEventListener('afterprint', afterPrint)
+      afterPrint()
+    }
+  }, [])
+
+  const printedOn = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+
   return (
     <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Guide</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          A quick reference for every screen in SWIFT. Scroll through, or jump straight to what you need.
+      <div className="hidden print:block border-b border-gray-300 pb-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
+          Jubal Brothers Cable TV Corporation · Palayan Branch
         </p>
+        <h1 className="mt-1 text-3xl font-bold text-gray-900">SWIFT User Guide</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          For {ROLE_LABELS[role] ?? 'staff'} · Printed {printedOn}
+        </p>
+        <h2 className="mt-5 text-sm font-semibold uppercase tracking-wide text-gray-700">Contents</h2>
+        <ol className="mt-1 list-decimal pl-5 text-sm text-gray-800 columns-2">
+          {available.map((s) => (
+            <li key={s.id}>{s.title}</li>
+          ))}
+        </ol>
       </div>
 
-      <div role="search" className="space-y-2">
+      <div className="flex items-start justify-between gap-3 print:hidden">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Guide</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            A quick reference for every screen in SWIFT. Scroll through, or jump straight to what you need.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => window.print()}
+          className="gap-1.5 whitespace-nowrap"
+        >
+          <Printer className="size-4" />
+          Print / Save as PDF
+        </Button>
+      </div>
+
+      <div role="search" className="space-y-2 print:hidden">
         <div className="relative">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
@@ -313,7 +385,7 @@ export default function Guide() {
       </div>
 
       {!searching && (
-        <Card className="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900">
+        <Card className="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900 print:break-inside-avoid">
           <CardContent className="flex items-start gap-3">
             <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <p className="text-sm text-blue-900 dark:text-blue-300">
@@ -324,7 +396,7 @@ export default function Guide() {
       )}
 
       {/* Jump-to nav */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 print:hidden">
         {sections.map((s) => (
           <a
             key={s.id}
@@ -352,7 +424,7 @@ export default function Guide() {
         {sections.map((s) => {
           const Icon = s.icon
           return (
-            <Card key={s.id} id={s.id} className="scroll-mt-4">
+            <Card key={s.id} id={s.id} className="scroll-mt-4 print:break-inside-avoid print:border print:border-gray-300 print:shadow-none print:ring-0">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Icon className="size-4 text-primary" />
@@ -370,7 +442,7 @@ export default function Guide() {
                 {s.tour && TOUR_PAGES[s.tour] && (
                   <Link
                     to={`${TOUR_PAGES[s.tour]}?tour=1`}
-                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5')}
+                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5 print:hidden')}
                   >
                     <PlayCircle className="size-4" />
                     Show me
