@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\PhilSmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class SubscriberApprovalController extends Controller
 {
@@ -36,7 +37,8 @@ class SubscriberApprovalController extends Controller
                 'name' => $subscriber->name,
                 'email' => $subscriber->email,
                 'contact_number' => $subscriber->contact_number,
-                'password' => $subscriber->password ?: Hash::make('password'),
+                // No known default password: someone without one must have it reset by an admin.
+                'password' => $subscriber->password ?: Hash::make(Str::random(40)),
                 'role' => 'subscriber',
                 'account_status' => 'active',
             ]
