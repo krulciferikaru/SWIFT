@@ -126,8 +126,18 @@ function createSampleStatementData(month) {
   }
 }
 
+const RANGE_OPTIONS = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'three_months', label: 'Last 3 Months' },
+  { value: 'annual', label: 'Annual' },
+]
+
+const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => String(new Date().getFullYear() - i))
+
 export default function Reports() {
+  const [range, setRange] = useState('monthly')
   const [month, setMonth] = useState(useCurrentMonth())
+  const [year, setYear] = useState(String(new Date().getFullYear()))
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState('')
   const [collections, setCollections] = useState(null)
@@ -135,13 +145,21 @@ export default function Reports() {
   const [error, setError] = useState('')
   const { toast, showToast } = useToast()
 
+  // Query params + file-name key for the selected range.
+  const params = useMemo(() => {
+    if (range === 'annual') return { range, year }
+    if (range === 'three_months') return { range }
+    return { range, month }
+  }, [range, month, year])
+  const periodKey = range === 'annual' ? year : range === 'three_months' ? 'last-3-months' : month
+
   const loadReports = async () => {
     setLoading(true)
     setError('')
     try {
       const [collectionsRes, statementRes] = await Promise.all([
-        reportApi.getCollections({ month }),
-        reportApi.getFinancialStatement({ month }),
+        reportApi.getCollections(params),
+        reportApi.getFinancialStatement(params),
       ])
       setCollections(collectionsRes.data.data)
       setStatement(statementRes.data.data)
@@ -157,7 +175,7 @@ export default function Reports() {
   useEffect(() => {
     loadReports()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month])
+  }, [params])
 
   const displayCollections = useMemo(() => collections ?? createSampleCollectionsData(month), [collections, month])
   const displayStatement = useMemo(() => statement ?? createSampleStatementData(month), [statement, month])
@@ -189,17 +207,17 @@ export default function Reports() {
       let filename
 
       if (kind === 'collections' && format === 'pdf') {
-        response = await reportApi.downloadCollectionsPdf({ month })
-        filename = `collections_report_${month}.pdf`
+        response = await reportApi.downloadCollectionsPdf(params)
+        filename = `collections_report_${periodKey}.pdf`
       } else if (kind === 'collections' && format === 'xlsx') {
-        response = await reportApi.downloadCollectionsXlsx({ month })
-        filename = `collections_report_${month}.xlsx`
+        response = await reportApi.downloadCollectionsXlsx(params)
+        filename = `collections_report_${periodKey}.xlsx`
       } else if (kind === 'statement' && format === 'pdf') {
-        response = await reportApi.downloadFinancialStatementPdf({ month })
-        filename = `financial_statement_${month}.pdf`
+        response = await reportApi.downloadFinancialStatementPdf(params)
+        filename = `financial_statement_${periodKey}.pdf`
       } else {
-        response = await reportApi.downloadFinancialStatementXlsx({ month })
-        filename = `financial_statement_${month}.xlsx`
+        response = await reportApi.downloadFinancialStatementXlsx(params)
+        filename = `financial_statement_${periodKey}.xlsx`
       }
 
       downloadBlob(response.data, filename)
@@ -230,27 +248,53 @@ export default function Reports() {
             Reports
           </div> */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Monthly collection and financial overview
+            Collection and financial overview
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
-            Review the monthly collection totals and subscriber financial position for the selected period.
+            Review collection totals and subscriber financial position for the selected month, the last 3 months, or a full year.
             Export the report to PDF or Excel when needed.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-          <div className="flex items-center gap-3">
-            <label className="whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-300">
-              Month
-            </label>
+          <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setRange(opt.value)}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                  range === opt.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {range === 'monthly' && (
             <Input
               data-tour="reports-month"
               type="month"
               value={month}
-              onChange={(e) => setMonth(e.target.value)}
+              onChange={(e) => e.target.value && setMonth(e.target.value)}
               className="sm:w-44"
             />
-          </div>
+          )}
+          {range === 'annual' && (
+            <select
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="h-9 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 text-sm sm:w-28"
+            >
+              {YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          )}
           <Button onClick={loadReports} variant="outline" className="gap-2">
             <RefreshCw className="size-4" />
             Reload
@@ -269,9 +313,9 @@ export default function Reports() {
       <div className="flex flex-col gap-6">
         <Card data-tour="reports-collections" className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <CardHeader className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
-            <CardTitle className="text-slate-900 dark:text-slate-100">Monthly Collection Report</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-slate-100">Collection Report</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">
-              Summary of collections, payment methods, and ledger activity for the selected month.
+              Summary of collections, payment methods, and ledger activity for the selected period.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 pt-6">
@@ -412,7 +456,7 @@ export default function Reports() {
           <CardHeader className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
             <CardTitle className="text-slate-900 dark:text-slate-100">Financial Statement</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">
-              Subscriber balances, outstanding amounts, and plan-level financial position for the selected month.
+              Subscriber balances, outstanding amounts, and plan-level financial position as of the end of the selected period.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 pt-6">

@@ -185,7 +185,7 @@ export default function SubscriberForm({
               <ul className="space-y-1">
                 {duplicateMatches.map((m) => (
                   <li key={m.subscriber_id} className="text-xs">
-                    {m.name} — {m.email} ({m.status})
+                    {m.name} — {m.contact_number || m.email || "no contact"} ({m.status})
                   </li>
                 ))}
               </ul>
@@ -195,11 +195,15 @@ export default function SubscriberForm({
               </p>
             </div>
           )}
-          {field("Contact Number", "contact_number", "text", {
-            placeholder: "09XX-XXX-XXXX",
-          })}
+          {field(
+            "Contact Number",
+            "contact_number",
+            "text",
+            { placeholder: "09XX-XXX-XXXX" },
+            true,
+          )}
         </div>
-        {field("Email Address", "email", "email", {}, true)}
+        {field("Email Address (optional)", "email", "email")}
         {field(
           "Address",
           "address",

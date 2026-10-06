@@ -20,9 +20,10 @@ class UpdateSubscriberRequest extends FormRequest
             'plan_id' => ['sometimes', 'integer', 'exists:plan,plan_id'],
             'name' => ['sometimes', 'string', 'max:255'],
             'address' => ['sometimes', 'string', 'max:255'],
-            'contact_number' => ['nullable', 'string', 'max:20'],
+            'contact_number' => ['sometimes', 'required', 'string', 'max:20'],
             'email' => [
                 'sometimes',
+                'nullable',
                 'email',
                 'max:100',
                 Rule::unique('subscriber', 'email')->ignore($subscriberId, 'subscriber_id'),

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -30,7 +30,7 @@ useEffect(() => {
     setLoading(true)
 
     try {
-      const payload = new URLSearchParams({ email, password }).toString()
+      const payload = new URLSearchParams({ login: identifier.trim(), password }).toString()
       const response = await api.post('/login', payload, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
@@ -60,12 +60,13 @@ useEffect(() => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="login">Contact Number or Email</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="login"
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="09XX-XXX-XXXX"
                 required
                 autoFocus
               />
