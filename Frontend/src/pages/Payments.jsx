@@ -27,6 +27,7 @@ import {
 import { useToast } from "../hooks/useToast";
 import { Search, CheckCircle2, Check } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import TourButton from "../components/TourButton.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -247,13 +248,16 @@ export default function Payments() {
         </>
       ) : (
         <>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Payments
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Search for a subscriber to view their balance and record a payment.
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Payments
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Search for a subscriber to view their balance and record a payment.
+              </p>
+            </div>
+            <TourButton tour="payments" />
           </div>
 
           <Card>
@@ -261,6 +265,7 @@ export default function Payments() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
+                  data-tour="payments-search"
                   placeholder="Search by name, email, or MAC address…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -305,7 +310,7 @@ export default function Payments() {
       {selected && (
         <>
           {/* Subscriber header — balance now lives here, not buried below */}
-          <Card>
+          <Card data-tour="payments-balance">
             <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -451,7 +456,7 @@ export default function Payments() {
               </div>
 
               {/* Record payment form, with live coverage preview */}
-              <Card>
+              <Card data-tour="payments-form">
                 <CardHeader>
                   <CardTitle className="text-base">Record Payment</CardTitle>
                 </CardHeader>

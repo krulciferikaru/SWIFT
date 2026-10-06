@@ -199,6 +199,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
       </div>
 
       <nav
+        data-tour="nav"
         className={`flex-1 p-2 space-y-1 flex flex-col ${!open ? "items-center" : ""}`}
       >
         {navItems.map((item) => {
@@ -208,6 +209,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
             <Link
               key={item.path}
               to={item.path}
+              data-tour={`nav-${item.path.slice(1)}`}
               onMouseEnter={(e) => showTooltip(e, item.label)}
               onMouseLeave={hideTooltip}
               className={`relative flex items-center rounded-md text-sm transition-colors ${
@@ -252,6 +254,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
         <Button
           variant="outline"
           size="icon"
+          data-tour="theme-toggle"
           onClick={toggleTheme}
           onMouseEnter={(e) =>
             showTooltip(
@@ -362,6 +365,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
+          data-tour="mobile-menu"
           className="flex items-center justify-center size-10 rounded-md hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
         >
           {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}

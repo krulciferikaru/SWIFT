@@ -14,6 +14,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table'
+import TourButton from "../components/TourButton.jsx";
 
 function money(value) {
   return `PHP ${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -243,6 +244,7 @@ export default function Reports() {
               Month
             </label>
             <Input
+              data-tour="reports-month"
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
@@ -253,6 +255,7 @@ export default function Reports() {
             <RefreshCw className="size-4" />
             Reload
           </Button>
+          <TourButton tour="reports" />
         </div>
       </div>
 
@@ -264,7 +267,7 @@ export default function Reports() {
       )}
 
       <div className="flex flex-col gap-6">
-        <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <Card data-tour="reports-collections" className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <CardHeader className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
             <CardTitle className="text-slate-900 dark:text-slate-100">Monthly Collection Report</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">
@@ -405,7 +408,7 @@ export default function Reports() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <Card data-tour="reports-financial" className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <CardHeader className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
             <CardTitle className="text-slate-900 dark:text-slate-100">Financial Statement</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">
