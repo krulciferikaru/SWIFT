@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
+import { useFirstVisitTour } from '../tour/useTour'
 
 export default function Layout({ children }) {
+  useFirstVisitTour('layout')
+
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const stored = localStorage.getItem('sidebarOpen')
     return stored !== null ? stored === 'true' : true

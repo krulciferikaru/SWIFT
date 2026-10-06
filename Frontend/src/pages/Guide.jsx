@@ -1,7 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '../context/AuthContext'
+import { TOUR_PAGES } from '../tour/tours'
 import {
+  PlayCircle,
   LayoutDashboard,
   Users2,
   ClipboardCheck,
@@ -14,9 +18,9 @@ import {
   Info,
 } from 'lucide-react'
 
-// A single scrollable reference page, not an interactive tour — so it reads
-// fine on a phone, can be printed, and doesn't require figuring out how to
-// operate a tutorial on top of learning the app itself.
+// A scrollable reference page that reads fine on a phone and can be printed.
+// Sections with an interactive tour get a "Show me" button that opens that
+// page with its tour running.
 const SECTIONS = [
   {
     id: 'dashboard',
@@ -31,6 +35,7 @@ const SECTIONS = [
   },
   {
     id: 'subscribers',
+    tour: 'subscribers',
     icon: Users2,
     title: 'Subscribers',
     summary: 'The full list of cable TV/internet subscribers.',
@@ -52,6 +57,7 @@ const SECTIONS = [
   },
   {
     id: 'approvals',
+    tour: 'approvals',
     icon: ClipboardCheck,
     title: 'Pending Approvals',
     summary: 'Review new subscriber sign-ups before they become active.',
@@ -86,6 +92,7 @@ const SECTIONS = [
   },
   {
     id: 'payments',
+    tour: 'payments',
     icon: Wallet,
     title: 'Payments',
     summary: 'Record a subscriber\'s payment and see their balance.',
@@ -105,6 +112,7 @@ const SECTIONS = [
   },
   {
     id: 'reports',
+    tour: 'reports',
     icon: FileText,
     title: 'Reports',
     summary: 'Monthly collection totals and financial statements, exportable to PDF/Excel.',
@@ -212,6 +220,14 @@ export default function Guide() {
               </CardHeader>
               <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
                 {s.body}
+                {s.tour && TOUR_PAGES[s.tour] && (
+                  <Button asChild variant="outline" size="sm" className="gap-1.5">
+                    <Link to={`${TOUR_PAGES[s.tour]}?tour=1`}>
+                      <PlayCircle className="size-4" />
+                      Show me
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )

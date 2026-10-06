@@ -26,6 +26,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "../hooks/useToast";
 import { useApprovals } from "@/context/ApprovalContext";
+import TourButton from "../components/TourButton.jsx";
 
 export default function Approvals() {
   const location = useLocation();
@@ -285,11 +286,14 @@ export default function Approvals() {
         </>
       ) : (
         <>
-          <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-            Approvals
-          </h1>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              Approvals
+            </h1>
+            <TourButton tour="approvals" />
+          </div>
 
-          <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+          <div data-tour="approvals-tabs" className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setTab("pending")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
