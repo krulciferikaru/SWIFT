@@ -1,11 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import { useAuth } from '../context/AuthContext'
 import { TOUR_PAGES } from '../tour/tours'
 import {
   PlayCircle,
+  Search,
+  X,
   LayoutDashboard,
   Users2,
   ClipboardCheck,
@@ -169,10 +174,61 @@ const SECTIONS = [
   },
 ]
 
+// Plain text of a JSX body, so the search can look inside section content.
+const nodeText = (n) => {
+  if (n == null || typeof n === 'boolean') return ''
+  if (typeof n === 'string' || typeof n === 'number') return String(n)
+  if (Array.isArray(n)) return n.map(nodeText).join(' ')
+  return nodeText(n.props?.children)
+}
+
+const SEARCHABLE = SECTIONS.map((s) => ({
+  ...s,
+  haystack: `${s.title} ${s.summary} ${nodeText(s.body)}`.toLowerCase(),
+}))
+
+const HIGHLIGHT_NAME = 'guide-search'
+
+// Marks matches on the page with the CSS Custom Highlight API (no DOM changes).
+// Browsers without it still filter; they just do not highlight.
+function useSearchHighlight(containerId, terms, watch) {
+  useEffect(() => {
+    if (typeof CSS === 'undefined' || !CSS.highlights || typeof Highlight === 'undefined') return
+    CSS.highlights.delete(HIGHLIGHT_NAME)
+    const root = document.getElementById(containerId)
+    if (!root || terms.length === 0) return
+
+    const ranges = []
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.nodeValue.toLowerCase()
+      for (const term of terms) {
+        let from = 0
+        for (let at = text.indexOf(term, from); at !== -1; at = text.indexOf(term, from)) {
+          const range = new Range()
+          range.setStart(node, at)
+          range.setEnd(node, at + term.length)
+          ranges.push(range)
+          from = at + term.length
+        }
+      }
+    }
+    if (ranges.length) CSS.highlights.set(HIGHLIGHT_NAME, new Highlight(...ranges))
+    return () => CSS.highlights.delete(HIGHLIGHT_NAME)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerId, terms.join(' '), watch])
+}
+
 export default function Guide() {
   const { user } = useAuth()
   const role = user?.role
-  const sections = SECTIONS.filter((s) => !s.roles || s.roles.includes(role))
+  const [query, setQuery] = useState('')
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const available = SEARCHABLE.filter((s) => !s.roles || s.roles.includes(role))
+  const sections = available.filter((s) => terms.every((t) => s.haystack.includes(t)))
+  const searching = terms.length > 0
+
+  useSearchHighlight('guide-results', sections.length ? terms : [], sections.map((s) => s.id).join(','))
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -183,14 +239,51 @@ export default function Guide() {
         </p>
       </div>
 
-      <Card className="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900">
-        <CardContent className="pt-6 flex items-start gap-3">
-          <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-          <p className="text-sm text-blue-900 dark:text-blue-300">
-            Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
-          </p>
-        </CardContent>
-      </Card>
+      <div role="search" className="space-y-2">
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
+            aria-hidden="true"
+          />
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setQuery('')
+            }}
+            placeholder="Search the guide, e.g. reset password, export, reconnect"
+            aria-label="Search the guide"
+            className="pl-9 pr-9"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+        <p className="min-h-4 text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+          {searching
+            ? `${sections.length} of ${available.length} section${available.length === 1 ? '' : 's'} match`
+            : ''}
+        </p>
+      </div>
+
+      {!searching && (
+        <Card className="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900">
+          <CardContent className="pt-6 flex items-start gap-3">
+            <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+            <p className="text-sm text-blue-900 dark:text-blue-300">
+              Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Jump-to nav */}
       <div className="flex flex-wrap gap-2">
@@ -205,7 +298,19 @@ export default function Guide() {
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div id="guide-results" className="space-y-4">
+        {sections.length === 0 && (
+          <Card>
+            <CardContent className="pt-6 text-sm text-gray-600 dark:text-gray-400 space-y-3">
+              <p>
+                No sections match <strong>"{query.trim()}"</strong>. Try a different word, or clear the search.
+              </p>
+              <Button type="button" variant="outline" size="sm" onClick={() => setQuery('')}>
+                Clear search
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         {sections.map((s) => {
           const Icon = s.icon
           return (
@@ -225,12 +330,13 @@ export default function Guide() {
               <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
                 {s.body}
                 {s.tour && TOUR_PAGES[s.tour] && (
-                  <Button asChild variant="outline" size="sm" className="gap-1.5">
-                    <Link to={`${TOUR_PAGES[s.tour]}?tour=1`}>
-                      <PlayCircle className="size-4" />
-                      Show me
-                    </Link>
-                  </Button>
+                  <Link
+                    to={`${TOUR_PAGES[s.tour]}?tour=1`}
+                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5')}
+                  >
+                    <PlayCircle className="size-4" />
+                    Show me
+                  </Link>
                 )}
               </CardContent>
             </Card>
