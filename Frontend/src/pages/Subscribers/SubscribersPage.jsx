@@ -37,6 +37,7 @@ import { useToast } from "../../hooks/useToast";
 import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
 import { useNavigate } from "react-router-dom";
+import TourButton from "../../components/TourButton.jsx";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 
 export default function SubscribersPage() {
@@ -212,7 +213,7 @@ export default function SubscribersPage() {
       )}
 
       <div className="space-y-6">
-        <div className="mb-6">
+        <div className="mb-6 flex items-start justify-between gap-3">
           {initialLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-8 w-40" />
@@ -220,18 +221,21 @@ export default function SubscribersPage() {
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Subscribers
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Manage all cable TV subscribers for Palayan Branch.
-              </p>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  Subscribers
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Manage all cable TV subscribers for Palayan Branch.
+                </p>
+              </div>
+              <TourButton tour="subscribers" />
             </>
           )}
         </div>
 
         {summary ? (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div data-tour="subs-summary" className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
               {
                 label: "Total",
@@ -297,6 +301,7 @@ export default function SubscribersPage() {
         ) : (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Input
+              data-tour="subs-search"
               type="text"
               placeholder="Search by name, contact number, address, MAC…"
               value={searchInput}
@@ -305,7 +310,7 @@ export default function SubscribersPage() {
             />
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-full sm:w-40">
+              <SelectTrigger data-tour="subs-status" className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -318,6 +323,7 @@ export default function SubscribersPage() {
             </Select>
 
             <Button
+              data-tour="subs-export"
               onClick={() => setShowPreview(true)}
               className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
             >
@@ -325,6 +331,7 @@ export default function SubscribersPage() {
             </Button>
 
             <Button
+              data-tour="subs-add"
               onClick={() => setShowAdd(true)}
               className="whitespace-nowrap"
             >
@@ -334,7 +341,7 @@ export default function SubscribersPage() {
         )}
 
         {/* Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div data-tour="subs-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
             <Table>
               <TableHeader>

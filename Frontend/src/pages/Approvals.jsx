@@ -26,9 +26,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "../hooks/useToast";
 import { useApprovals } from "@/context/ApprovalContext";
+import TourButton from "../components/TourButton.jsx";
+import { useTourActive } from "../tour/tourState";
+import { ApprovalSample } from "../components/TourSamples.jsx";
 
 export default function Approvals() {
   const location = useLocation();
+  const tourActive = useTourActive();
   const [tab, setTab] = useState(location.state?.tab ?? "pending"); // 'pending' | 'rejected' | 'claims'
   const [claimsSubTab, setClaimsSubTab] = useState("pending"); // 'pending' | 'rejected'
   const [pending, setPending] = useState([]);
@@ -285,12 +289,16 @@ export default function Approvals() {
         </>
       ) : (
         <>
-          <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-            Approvals
-          </h1>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              Approvals
+            </h1>
+            <TourButton tour="approvals" />
+          </div>
 
-          <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+          <div data-tour="approvals-tabs" className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
             <button
+              data-tour="approvals-tab-pending"
               onClick={() => setTab("pending")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === "pending"
@@ -301,6 +309,7 @@ export default function Approvals() {
               Pending
             </button>
             <button
+              data-tour="approvals-tab-rejected"
               onClick={() => setTab("rejected")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === "rejected"
@@ -311,6 +320,7 @@ export default function Approvals() {
               Rejected
             </button>
             <button
+              data-tour="approvals-tab-claims"
               onClick={() => setTab("claims")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === "claims"
@@ -333,8 +343,9 @@ export default function Approvals() {
       )}
 
       {tab === "claims" && !initialLoading && (
-        <div className="flex gap-2 mb-4">
+        <div data-tour="approvals-claims-subtabs" className="flex gap-2 mb-4">
           <button
+            data-tour="approvals-subtab-pending"
             onClick={() => setClaimsSubTab("pending")}
             className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
               claimsSubTab === "pending"
@@ -345,6 +356,7 @@ export default function Approvals() {
             Pending Claims
           </button>
           <button
+            data-tour="approvals-subtab-rejected"
             onClick={() => setClaimsSubTab("rejected")}
             className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
               claimsSubTab === "rejected"
@@ -361,6 +373,7 @@ export default function Approvals() {
         <Skeleton className="h-9 w-full max-w-sm mb-4" />
       ) : (
         <Input
+          data-tour="approvals-search"
           type="text"
           placeholder="Search by name, contact number, or email…"
           value={search}
@@ -484,7 +497,10 @@ export default function Approvals() {
           </Table>
         </div>
       ) : list.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+        <>
+          <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+          {tourActive && <ApprovalSample tab={tab} claimsSubTab={claimsSubTab} />}
+        </>
       ) : tab === "claims" ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
@@ -523,7 +539,7 @@ export default function Approvals() {
                     {new Date(claimUser.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div data-tour="approvals-row-actions" className="flex gap-2">
                       {claimsSubTab === "pending" ? (
                         <>
                           <Button
@@ -601,7 +617,7 @@ export default function Approvals() {
                     {new Date(subscriber.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div data-tour="approvals-row-actions" className="flex gap-2">
                       <Button
                         size="sm"
                         onClick={() => handleApprove(subscriber)}

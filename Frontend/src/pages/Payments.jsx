@@ -27,6 +27,9 @@ import {
 import { useToast } from "../hooks/useToast";
 import { Search, CheckCircle2, Check } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import TourButton from "../components/TourButton.jsx";
+import { useTourActive } from "../tour/tourState";
+import { PaymentSample } from "../components/TourSamples.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -83,6 +86,7 @@ export default function Payments() {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const tourActive = useTourActive();
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -233,27 +237,31 @@ export default function Payments() {
             <Skeleton className="h-4 w-72" />
           </div>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <Skeleton className="h-10 w-full" />
             </CardContent>
           </Card>
         </>
       ) : (
         <>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Payments
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Search for a subscriber to view their balance and record a payment.
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Payments
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Search for a subscriber to view their balance and record a payment.
+              </p>
+            </div>
+            <TourButton tour="payments" />
           </div>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
+                  data-tour="payments-search"
                   placeholder="Search by name, contact number, or MAC address…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -295,11 +303,13 @@ export default function Payments() {
         </>
       )}
 
+      {tourActive && !selected && <PaymentSample />}
+
       {selected && (
         <>
           {/* Subscriber header — balance now lives here, not buried below */}
-          <Card>
-            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
+          <Card data-tour="payments-balance">
+            <CardContent className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {selected.name}
@@ -356,7 +366,7 @@ export default function Payments() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {Array.from({ length: 2 }).map((_, i) => (
                 <Card key={i}>
-                  <CardContent className="pt-6 space-y-3">
+                  <CardContent className="space-y-3">
                     {Array.from({ length: 4 }).map((_, j) => (
                       <Skeleton key={j} className="h-8 w-full" />
                     ))}
@@ -444,7 +454,7 @@ export default function Payments() {
               </div>
 
               {/* Record payment form, with live coverage preview */}
-              <Card>
+              <Card data-tour="payments-form">
                 <CardHeader>
                   <CardTitle className="text-base">Record Payment</CardTitle>
                 </CardHeader>

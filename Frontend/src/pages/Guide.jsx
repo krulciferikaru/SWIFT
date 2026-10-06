@@ -1,7 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import { useAuth } from '../context/AuthContext'
+import { TOUR_PAGES } from '../tour/tours'
 import {
+  PlayCircle,
+  Search,
+  X,
   LayoutDashboard,
   Users2,
   ClipboardCheck,
@@ -15,12 +24,13 @@ import {
   Info,
 } from 'lucide-react'
 
-// A single scrollable reference page, not an interactive tour — so it reads
-// fine on a phone, can be printed, and doesn't require figuring out how to
-// operate a tutorial on top of learning the app itself.
+// A scrollable reference page that reads fine on a phone and can be printed.
+// Sections with an interactive tour get a "Show me" button that opens that
+// page with its tour running.
 const SECTIONS = [
   {
     id: 'dashboard',
+    tour: 'dashboard',
     icon: LayoutDashboard,
     title: 'Dashboard',
     summary: 'Your home screen — a quick snapshot when you log in.',
@@ -32,6 +42,7 @@ const SECTIONS = [
   },
   {
     id: 'subscribers',
+    tour: 'subscribers',
     icon: Users2,
     title: 'Subscribers',
     summary: 'The full list of cable TV/internet subscribers.',
@@ -53,6 +64,7 @@ const SECTIONS = [
   },
   {
     id: 'approvals',
+    tour: 'approvals',
     icon: ClipboardCheck,
     title: 'Pending Approvals',
     summary: 'Review new subscriber sign-ups before they become active.',
@@ -70,6 +82,7 @@ const SECTIONS = [
   },
   {
     id: 'plans',
+    tour: 'plans',
     icon: Wifi,
     title: 'Service Plans',
     summary: 'The internet/cable packages you offer, and their monthly rates.',
@@ -87,6 +100,7 @@ const SECTIONS = [
   },
   {
     id: 'payments',
+    tour: 'payments',
     icon: Wallet,
     title: 'Payments',
     summary: 'Record a subscriber\'s payment and see their balance.',
@@ -106,6 +120,7 @@ const SECTIONS = [
   },
   {
     id: 'reports',
+    tour: 'reports',
     icon: FileText,
     title: 'Reports',
     summary: 'Collection totals and financial statements by month, last 3 months, or year — exportable to PDF/Excel.',
@@ -139,6 +154,7 @@ const SECTIONS = [
   },
   {
     id: 'users',
+    tour: 'users',
     icon: ShieldCheck,
     title: 'Manage Roles',
     summary: 'Admin-only: create staff accounts and manage all user accounts.',
@@ -159,25 +175,98 @@ const SECTIONS = [
   },
   {
     id: 'settings',
+    tour: 'settings',
     icon: SettingsIcon,
     title: 'Settings',
-    summary: 'Appearance, logout behavior, and SMS tools.',
+    summary: (role) =>
+      role === 'subscriber'
+        ? 'Appearance, tour options, and logout behavior.'
+        : 'Appearance, tour options, logout behavior, and SMS tools.',
     roles: ['admin', 'secretary', 'subscriber'],
-    body: (
+    body: (role) => (
       <>
+        <p>These preferences are saved on the device and browser you are using.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
+          <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>
+          <li><strong>Replay welcome tour</strong> — walks through the menu again, the same tour shown on your first visit.</li>
+          {role !== 'subscriber' && (
+            <>
+              <li><strong>Send SMS</strong> — send a one-off text message to any Philippine mobile number. Enter the number and a message (up to 300 characters), then click <em>Send SMS</em>. Messages go out through PhilSMS and may use SMS credit.</li>
+              <li><strong>Payment Reminders</strong> — texts a balance reminder to every subscriber currently marked Unpaid. The number of unpaid subscribers is shown first, and the button is disabled when there are none. Sent messages cannot be recalled, so check the count before you click <em>Send Reminders</em>.</li>
+            </>
+          )}
         </ul>
+        {role === 'subscriber' && (
+          <p>The SMS tools are for staff only. Payment reminders reach you as text messages from the company.</p>
+        )}
       </>
     ),
   },
 ]
 
+// Plain text of a JSX body, so the search can look inside section content.
+const nodeText = (n) => {
+  if (n == null || typeof n === 'boolean') return ''
+  if (typeof n === 'string' || typeof n === 'number') return String(n)
+  if (Array.isArray(n)) return n.map(nodeText).join(' ')
+  return nodeText(n.props?.children)
+}
+
+// A section's summary and body can be a function of the role, so the text each
+// person reads (and searches) matches what applies to them.
+const forRole = (v, role) => (typeof v === 'function' ? v(role) : v)
+
+const sectionsForRole = (role) =>
+  SECTIONS.filter((s) => !s.roles || s.roles.includes(role)).map((s) => {
+    const summary = forRole(s.summary, role)
+    const body = forRole(s.body, role)
+    return { ...s, summary, body, haystack: `${s.title} ${summary} ${nodeText(body)}`.toLowerCase() }
+  })
+
+const HIGHLIGHT_NAME = 'guide-search'
+
+// Marks matches on the page with the CSS Custom Highlight API (no DOM changes).
+// Browsers without it still filter; they just do not highlight.
+function useSearchHighlight(containerId, terms, watch) {
+  useEffect(() => {
+    if (typeof CSS === 'undefined' || !CSS.highlights || typeof Highlight === 'undefined') return
+    CSS.highlights.delete(HIGHLIGHT_NAME)
+    const root = document.getElementById(containerId)
+    if (!root || terms.length === 0) return
+
+    const ranges = []
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.nodeValue.toLowerCase()
+      for (const term of terms) {
+        let from = 0
+        for (let at = text.indexOf(term, from); at !== -1; at = text.indexOf(term, from)) {
+          const range = new Range()
+          range.setStart(node, at)
+          range.setEnd(node, at + term.length)
+          ranges.push(range)
+          from = at + term.length
+        }
+      }
+    }
+    if (ranges.length) CSS.highlights.set(HIGHLIGHT_NAME, new Highlight(...ranges))
+    return () => CSS.highlights.delete(HIGHLIGHT_NAME)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerId, terms.join(' '), watch])
+}
+
 export default function Guide() {
   const { user } = useAuth()
   const role = user?.role
-  const sections = SECTIONS.filter((s) => !s.roles || s.roles.includes(role))
+  const [query, setQuery] = useState('')
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const available = useMemo(() => sectionsForRole(role), [role])
+  const sections = available.filter((s) => terms.every((t) => s.haystack.includes(t)))
+  const searching = terms.length > 0
+
+  useSearchHighlight('guide-results', sections.length ? terms : [], sections.map((s) => s.id).join(','))
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -188,14 +277,51 @@ export default function Guide() {
         </p>
       </div>
 
-      <Card className="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900">
-        <CardContent className="pt-6 flex items-start gap-3">
-          <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-          <p className="text-sm text-blue-900 dark:text-blue-300">
-            Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
-          </p>
-        </CardContent>
-      </Card>
+      <div role="search" className="space-y-2">
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
+            aria-hidden="true"
+          />
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setQuery('')
+            }}
+            placeholder="Search the guide, e.g. reset password, export, reconnect"
+            aria-label="Search the guide"
+            className="pl-9 pr-9"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex size-6 items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+        <p className="min-h-4 text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+          {searching
+            ? `${sections.length} of ${available.length} section${available.length === 1 ? '' : 's'} match`
+            : ''}
+        </p>
+      </div>
+
+      {!searching && (
+        <Card className="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900">
+          <CardContent className="flex items-start gap-3">
+            <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+            <p className="text-sm text-blue-900 dark:text-blue-300">
+              Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Jump-to nav */}
       <div className="flex flex-wrap gap-2">
@@ -210,7 +336,19 @@ export default function Guide() {
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div id="guide-results" className="space-y-4">
+        {sections.length === 0 && (
+          <Card>
+            <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
+              <p>
+                No sections match <strong>"{query.trim()}"</strong>. Try a different word, or clear the search.
+              </p>
+              <Button type="button" variant="outline" size="sm" onClick={() => setQuery('')}>
+                Clear search
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         {sections.map((s) => {
           const Icon = s.icon
           return (
@@ -229,6 +367,15 @@ export default function Guide() {
               </CardHeader>
               <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
                 {s.body}
+                {s.tour && TOUR_PAGES[s.tour] && (
+                  <Link
+                    to={`${TOUR_PAGES[s.tour]}?tour=1`}
+                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5')}
+                  >
+                    <PlayCircle className="size-4" />
+                    Show me
+                  </Link>
+                )}
               </CardContent>
             </Card>
           )

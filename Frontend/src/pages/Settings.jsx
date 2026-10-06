@@ -10,7 +10,10 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, Send, BellRing } from 'lucide-react'
+import { Sun, Moon, Send, BellRing, PlayCircle } from 'lucide-react'
+import TourButton from "../components/TourButton.jsx";
+import { runTour } from '../tour/useTour'
+import { useShowTourButtons, setShowTourButtons } from '../tour/tourState'
 
 const SMS_MESSAGE_MAX = 300
 
@@ -18,6 +21,7 @@ export default function Settings() {
   const { theme, toggleTheme } = useTheme()
   const { user } = useAuth()
   const [confirmLogout, setConfirmLogout] = useState(true)
+  const showTourButtons = useShowTourButtons()
   const { toast, showToast } = useToast()
   const [smsPhone, setSmsPhone] = useState('')
   const [smsMessage, setSmsMessage] = useState('')
@@ -83,12 +87,15 @@ export default function Settings() {
         </div>
       )}
 
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your preferences for SWIFT.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your preferences for SWIFT.</p>
+        </div>
+        <TourButton tour="settings" />
       </div>
 
-      <Card>
+      <Card data-tour="settings-appearance">
         <CardHeader>
           <CardTitle className="text-base">Appearance</CardTitle>
           <CardDescription>Customize how SWIFT looks on your device.</CardDescription>
@@ -117,7 +124,7 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-tour="settings-account">
         <CardHeader>
           <CardTitle className="text-base">Account</CardTitle>
           <CardDescription>Control confirmation prompts and account behavior.</CardDescription>
@@ -139,8 +146,43 @@ export default function Settings() {
         </CardContent>
       </Card>
 
+      <Card data-tour="settings-guidance">
+        <CardHeader>
+          <CardTitle className="text-base">Tours</CardTitle>
+          <CardDescription>Control the guided tours that explain each page.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label htmlFor="tour-buttons-toggle" className="cursor-pointer">Show "Take a tour" buttons</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Turn off to hide the buttons on pages and forms. You can still start any tour from the Guide.
+              </p>
+            </div>
+            <Switch
+              id="tour-buttons-toggle"
+              checked={showTourButtons}
+              onCheckedChange={setShowTourButtons}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Welcome tour</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Walk through the menu again, the same tour you see on your first visit.
+              </p>
+            </div>
+            <Button type="button" variant="outline" className="gap-1.5 shrink-0" onClick={() => runTour('layout', { user })}>
+              <PlayCircle className="size-4" />
+              Replay welcome tour
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {canSendSms && (
-        <Card>
+        <Card data-tour="settings-sms">
           <CardHeader>
             <CardTitle className="text-base">Send SMS</CardTitle>
             <CardDescription>Send an ad-hoc SMS to any Philippine mobile number via PhilSMS.</CardDescription>
@@ -182,7 +224,7 @@ export default function Settings() {
       )}
 
       {canSendSms && (
-        <Card>
+        <Card data-tour="settings-reminders">
           <CardHeader>
             <CardTitle className="text-base">Payment Reminders</CardTitle>
             <CardDescription>
