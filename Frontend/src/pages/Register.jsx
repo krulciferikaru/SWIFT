@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function Register() {
   const [form, setForm] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     password: '',
     password_confirmation: '',
@@ -98,31 +99,31 @@ export default function Register() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                className={errors.name ? 'border-red-400' : ''}
-              />
-              {errors.name && <p className="text-red-500 text-xs">{errors.name[0]}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                className={errors.email ? 'border-red-400' : ''}
-              />
-              {errors.email && <p className="text-red-500 text-xs">{errors.email[0]}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
+                  name="first_name"
+                  value={form.first_name}
+                  onChange={handleChange}
+                  required
+                  className={errors.first_name ? 'border-red-400' : ''}
+                />
+                {errors.first_name && <p className="text-red-500 text-xs">{errors.first_name[0]}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  value={form.last_name}
+                  onChange={handleChange}
+                  required
+                  className={errors.last_name ? 'border-red-400' : ''}
+                />
+                {errors.last_name && <p className="text-red-500 text-xs">{errors.last_name[0]}</p>}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -133,7 +134,24 @@ export default function Register() {
                 value={form.contact_number}
                 onChange={handleChange}
                 placeholder="09XX-XXX-XXXX"
+                required
+                className={errors.contact_number ? 'border-red-400' : ''}
               />
+              {errors.contact_number && <p className="text-red-500 text-xs">{errors.contact_number[0]}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400">You will use this number to log in.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email <span className="text-gray-400 font-normal">(optional)</span></Label>
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className={errors.email ? 'border-red-400' : ''}
+              />
+              {errors.email && <p className="text-red-500 text-xs">{errors.email[0]}</p>}
             </div>
 
             <div className="space-y-1.5">

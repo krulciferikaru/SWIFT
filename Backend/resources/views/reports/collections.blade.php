@@ -161,7 +161,7 @@
         <div class="summary-card"><div class="card"><div class="card-label">Payments</div><div class="card-value">{{ number_format($summary['payment_count']) }}</div></div></div>
         <div class="summary-card"><div class="card"><div class="card-label">Paying Subscribers</div><div class="card-value">{{ number_format($summary['paying_subscribers']) }}</div></div></div>
         <div class="summary-card"><div class="card"><div class="card-label">Total Collected</div><div class="card-value">₱{{ number_format($summary['total_collected'], 2) }}</div></div></div>
-        <div class="summary-card"><div class="card"><div class="card-label">Report Month</div><div class="card-value">{{ $month }}</div></div></div>
+        <div class="summary-card"><div class="card"><div class="card-label">Report Period</div><div class="card-value">{{ $period_label }}</div></div></div>
     </div>
 
     <div class="section">

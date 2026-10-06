@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
         $enabled = config('ratelimit.enabled');
 
         RateLimiter::for('login', fn (Request $request) => $enabled
-            ? Limit::perMinute(config('ratelimit.login'))->by(strtolower((string) $request->input('email')) . '|' . $request->ip())
+            ? Limit::perMinute(config('ratelimit.login'))->by(strtolower((string) ($request->input('login') ?: $request->input('email'))) . '|' . $request->ip())
             : Limit::none()
         );
 

@@ -44,7 +44,7 @@ export default function Plans() {
 
   const { toast, showToast } = useToast()
   const { user } = useAuth()
-  const canDelete = user?.role === 'admin'
+  const canArchive = user?.role === 'admin' || user?.role === 'secretary'
 
   const fetchPlans = async () => {
     setLoading(true)
@@ -123,9 +123,9 @@ export default function Plans() {
     try {
       await api.delete(`/plans/${deleteTarget.plan_id}`)
       setPlans((prev) => prev.filter((p) => p.plan_id !== deleteTarget.plan_id))
-      showToast(`"${deleteTarget.plan_name}" was deleted.`)
+      showToast(`"${deleteTarget.plan_name}" was archived.`)
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to delete plan.', 'error')
+      showToast(err.response?.data?.message || 'Failed to archive plan.', 'error')
     } finally {
       setDeleteLoading(false)
       setDeleteTarget(null)
@@ -237,9 +237,9 @@ export default function Plans() {
                       <Button variant="outline" size="sm" onClick={() => openEditModal(plan)}>
                         Edit
                       </Button>
-                      {canDelete && (
+                      {canArchive && (
                         <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)}>
-                          Delete
+                          Archive
                         </Button>
                       )}
                     </div>
@@ -348,10 +348,10 @@ export default function Plans() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this plan?</AlertDialogTitle>
+            <AlertDialogTitle>Archive this plan?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget && (
-                <>You're about to delete <strong>"{deleteTarget.plan_name}"</strong>. If subscribers are currently assigned to this plan, this action may fail or affect their records. This cannot be undone.</>
+                <><strong>"{deleteTarget.plan_name}"</strong> will no longer be offered for new subscribers. Subscribers already on this plan keep it and are still billed normally. You can restore it from the Archive page.</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -362,7 +362,7 @@ export default function Plans() {
               disabled={deleteLoading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleteLoading ? 'Deleting...' : 'Delete Plan'}
+              {deleteLoading ? 'Archiving...' : 'Archive Plan'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

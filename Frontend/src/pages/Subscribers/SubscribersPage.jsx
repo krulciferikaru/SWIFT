@@ -125,15 +125,15 @@ export default function SubscribersPage() {
       const response = await subscriberApi.delete(deleteTarget.subscriber_id);
 
       if (response.status < 200 || response.status >= 300) {
-        throw new Error("Delete request was not successful.");
+        throw new Error("Archive request was not successful.");
       }
 
       setDeleteTarget(null);
-      showToast("Subscriber deleted.", "success");
+      showToast("Subscriber archived.", "success");
       await refetch();
       await refetchSummary();
     } catch (err) {
-      const msg = err.response?.data?.message ?? "Delete failed.";
+      const msg = err.response?.data?.message ?? "Archive failed.";
       showToast(msg, "error");
       return;
     } finally {
@@ -298,7 +298,7 @@ export default function SubscribersPage() {
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Input
               type="text"
-              placeholder="Search by name, email, address, MAC…"
+              placeholder="Search by name, contact number, address, MAC…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1"
@@ -422,7 +422,7 @@ export default function SubscribersPage() {
                       {sub.plan?.plan_name ?? "—"}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.email}
+                      {sub.email || "—"}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.contact || sub.contact_number || "—"}
@@ -449,7 +449,7 @@ export default function SubscribersPage() {
                           onClick={() => setDeleteTarget(sub)}
                           className="h-auto p-0 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         >
-                          Delete
+                          Archive
                         </Button>
                         <Button
                           variant="link"
@@ -630,10 +630,11 @@ export default function SubscribersPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Subscriber</AlertDialogTitle>
+            <AlertDialogTitle>Archive Subscriber</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteTarget?.name}"? This
-              cannot be undone.
+              Archive "{deleteTarget?.name}"? They will be removed from the
+              subscriber list and can no longer log in, but you can restore
+              them anytime from the Archive page.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -643,7 +644,7 @@ export default function SubscribersPage() {
               disabled={deleteLoading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleteLoading ? "Deleting..." : "Delete Subscriber"}
+              {deleteLoading ? "Archiving..." : "Archive Subscriber"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

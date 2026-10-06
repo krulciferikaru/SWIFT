@@ -9,7 +9,7 @@ use Carbon\CarbonInterface;
 class BillingService
 {
     /**
-     * Walks through every billing month from connection_date to now,
+     * Walks through every billing month from the month after connection_date to now,
      * allocating payments sequentially (oldest month first), carrying
      * partial payments and overpayment credit forward.
      *
@@ -30,7 +30,9 @@ class BillingService
     {
         $rate = (float) ($subscriber->plan->monthly_rate ?? 0);
 
-        $start = Carbon::parse($subscriber->connection_date)->startOfMonth();
+        // The installation month is not billed (the installation fee is separate);
+        // the subscription starts the month after the connection date.
+        $start = Carbon::parse($subscriber->connection_date)->startOfMonth()->addMonth();
         $cutoff = $asOf ? Carbon::parse($asOf) : Carbon::now();
         $now = $cutoff->copy()->startOfMonth();
 
