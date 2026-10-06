@@ -117,6 +117,12 @@
     }
 }
 
+/* Guide search matches (CSS Custom Highlight API) */
+::highlight(guide-search) {
+  background-color: #fde047;
+  color: #111827;
+}
+
 /* Guided tour (driver.js) themed to match light/dark mode */
 .driver-popover.swift-tour {
   background: var(--popover);
