@@ -367,6 +367,13 @@ export const TOURS = {
         side: 'bottom',
       },
       {
+        selector: t('settings-guidance'),
+        title: 'Tour options',
+        description:
+          'Hide the "Take a tour" buttons if you no longer need them, or replay the welcome tour whenever you like.',
+        side: 'bottom',
+      },
+      {
         selector: t('settings-sms'),
         title: 'Send SMS',
         description: 'Send a one-off text message to any Philippine mobile number.',

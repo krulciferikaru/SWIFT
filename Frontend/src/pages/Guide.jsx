@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -161,14 +161,29 @@ const SECTIONS = [
     tour: 'settings',
     icon: SettingsIcon,
     title: 'Settings',
-    summary: 'Appearance, logout behavior, and SMS tools.',
+    summary: (role) =>
+      role === 'subscriber'
+        ? 'Appearance, tour options, and logout behavior.'
+        : 'Appearance, tour options, logout behavior, and SMS tools.',
     roles: ['admin', 'secretary', 'subscriber'],
-    body: (
+    body: (role) => (
       <>
+        <p>These preferences are saved on the device and browser you are using.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
+          <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>
+          <li><strong>Replay welcome tour</strong> — walks through the menu again, the same tour shown on your first visit.</li>
+          {role !== 'subscriber' && (
+            <>
+              <li><strong>Send SMS</strong> — send a one-off text message to any Philippine mobile number. Enter the number and a message (up to 300 characters), then click <em>Send SMS</em>. Messages go out through PhilSMS and may use SMS credit.</li>
+              <li><strong>Payment Reminders</strong> — texts a balance reminder to every subscriber currently marked Unpaid. The number of unpaid subscribers is shown first, and the button is disabled when there are none. Sent messages cannot be recalled, so check the count before you click <em>Send Reminders</em>.</li>
+            </>
+          )}
         </ul>
+        {role === 'subscriber' && (
+          <p>The SMS tools are for staff only. Payment reminders reach you as text messages from the company.</p>
+        )}
       </>
     ),
   },
@@ -182,10 +197,16 @@ const nodeText = (n) => {
   return nodeText(n.props?.children)
 }
 
-const SEARCHABLE = SECTIONS.map((s) => ({
-  ...s,
-  haystack: `${s.title} ${s.summary} ${nodeText(s.body)}`.toLowerCase(),
-}))
+// A section's summary and body can be a function of the role, so the text each
+// person reads (and searches) matches what applies to them.
+const forRole = (v, role) => (typeof v === 'function' ? v(role) : v)
+
+const sectionsForRole = (role) =>
+  SECTIONS.filter((s) => !s.roles || s.roles.includes(role)).map((s) => {
+    const summary = forRole(s.summary, role)
+    const body = forRole(s.body, role)
+    return { ...s, summary, body, haystack: `${s.title} ${summary} ${nodeText(body)}`.toLowerCase() }
+  })
 
 const HIGHLIGHT_NAME = 'guide-search'
 
@@ -224,7 +245,7 @@ export default function Guide() {
   const role = user?.role
   const [query, setQuery] = useState('')
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  const available = SEARCHABLE.filter((s) => !s.roles || s.roles.includes(role))
+  const available = useMemo(() => sectionsForRole(role), [role])
   const sections = available.filter((s) => terms.every((t) => s.haystack.includes(t)))
   const searching = terms.length > 0
 
@@ -276,7 +297,7 @@ export default function Guide() {
 
       {!searching && (
         <Card className="bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900">
-          <CardContent className="pt-6 flex items-start gap-3">
+          <CardContent className="flex items-start gap-3">
             <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <p className="text-sm text-blue-900 dark:text-blue-300">
               Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
@@ -301,7 +322,7 @@ export default function Guide() {
       <div id="guide-results" className="space-y-4">
         {sections.length === 0 && (
           <Card>
-            <CardContent className="pt-6 text-sm text-gray-600 dark:text-gray-400 space-y-3">
+            <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
               <p>
                 No sections match <strong>"{query.trim()}"</strong>. Try a different word, or clear the search.
               </p>
