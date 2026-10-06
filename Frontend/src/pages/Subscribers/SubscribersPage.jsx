@@ -38,6 +38,7 @@ import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
 import { useNavigate } from "react-router-dom";
 import TourButton from "../../components/TourButton.jsx";
+import Toast from "../../components/Toast.jsx";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 
 export default function SubscribersPage() {
@@ -202,15 +203,7 @@ export default function SubscribersPage() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-            toast.type === "error" ? "bg-red-500" : "bg-green-500"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="space-y-6">
         <div className="mb-6 flex items-start justify-between gap-3">
@@ -250,7 +243,7 @@ export default function SubscribersPage() {
               {
                 label: "Active",
                 value: summary.active,
-                color: "text-green-600 dark:text-green-400",
+                color: "text-green-700 dark:text-green-400",
               },
               {
                 label: "Unpaid",
@@ -302,6 +295,7 @@ export default function SubscribersPage() {
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Input
               data-tour="subs-search"
+              aria-label="Search subscribers"
               type="text"
               placeholder="Search by name, contact number, address, MAC…"
               value={searchInput}
@@ -310,7 +304,7 @@ export default function SubscribersPage() {
             />
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger data-tour="subs-status" className="w-full sm:w-40">
+              <SelectTrigger data-tour="subs-status" aria-label="Filter by status" className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -325,7 +319,7 @@ export default function SubscribersPage() {
             <Button
               data-tour="subs-export"
               onClick={() => setShowPreview(true)}
-              className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+              className="bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
             >
               Export CSV
             </Button>
@@ -398,11 +392,11 @@ export default function SubscribersPage() {
               </TableBody>
             </Table>
           ) : error ? (
-            <div className="text-center py-16 text-sm text-red-500 dark:text-red-400">
+            <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
               {error}
             </div>
           ) : subscribers.length === 0 ? (
-            <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">
+            <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">
               No subscribers found.
               {search || status !== "All" ? " Try adjusting your filters." : ""}
             </div>
@@ -434,7 +428,7 @@ export default function SubscribersPage() {
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.contact || sub.contact_number || "—"}
                     </TableCell>
-                    <TableCell className="text-gray-500 dark:text-gray-500 font-mono text-xs">
+                    <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                       {sub.mac_address || "—"}
                     </TableCell>
                     <TableCell>
@@ -446,6 +440,7 @@ export default function SubscribersPage() {
                           variant="link"
                           size="sm"
                           onClick={() => setEditTarget(sub)}
+                          aria-label={`Edit ${sub.name}`}
                           className="h-auto p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                         >
                           Edit
@@ -454,19 +449,21 @@ export default function SubscribersPage() {
                           variant="link"
                           size="sm"
                           onClick={() => setDeleteTarget(sub)}
-                          className="h-auto p-0 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                          aria-label={`Archive ${sub.name}`}
+                          className="h-auto p-0 text-red-700 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         >
                           Archive
                         </Button>
                         <Button
                           variant="link"
                           size="sm"
+                          aria-label={`Payments for ${sub.name}`}
                           onClick={() =>
                             navigate("/payments", {
                               state: { subscriber: sub },
                             })
                           }
-                          className="h-auto p-0 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                          className="h-auto p-0 text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
                         >
                           Payments
                         </Button>
@@ -534,7 +531,7 @@ export default function SubscribersPage() {
               </Button>
               <Button
                 onClick={handleExportReport}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-700 text-white hover:bg-green-800"
               >
                 Download CSV
               </Button>

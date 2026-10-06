@@ -28,6 +28,7 @@ import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { UserPlus, KeyRound } from 'lucide-react'
 import TourButton from "../components/TourButton.jsx";
+import Toast from "../components/Toast.jsx";
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -187,11 +188,7 @@ export default function Users() {
 
   return (
     <div>
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
         {loading ? (
@@ -226,12 +223,13 @@ export default function Users() {
           <Input
             type="text"
             placeholder="Search by name or email…"
+            aria-label="Search accounts"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-40" aria-label="Filter by role">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -244,7 +242,7 @@ export default function Users() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
       <div data-tour="users-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -270,7 +268,7 @@ export default function Users() {
             </TableBody>
           </Table>
         ) : users.length === 0 ? (
-          <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">No users found.</div>
+          <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">No users found.</div>
         ) : (
           <Table>
             <TableHeader>
@@ -279,7 +277,7 @@ export default function Users() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Account Status</TableHead>
-                <TableHead></TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -289,7 +287,7 @@ export default function Users() {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       {user.name}
-                      {isSelf && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(you)</span>}
+                      {isSelf && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(you)</span>}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{user.email}</TableCell>
                     <TableCell>
@@ -308,7 +306,7 @@ export default function Users() {
                           onValueChange={(newStatus) => handleStatusChange(user, newStatus)}
                           disabled={actionLoading === user.id}
                         >
-                          <SelectTrigger data-tour="users-status" className="w-32 capitalize">
+                          <SelectTrigger data-tour="users-status" aria-label={`Account status for ${user.name}`} className="w-32 capitalize">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -327,6 +325,7 @@ export default function Users() {
                           size="sm"
                           className="gap-1.5"
                           onClick={() => openResetModal(user)}
+                          aria-label={`Reset password for ${user.name}`}
                         >
                           <KeyRound className="size-3.5" />
                           Reset Password
@@ -409,7 +408,7 @@ export default function Users() {
           <div data-tour="staff-role" className="space-y-1.5">
             <Label>Role<span className="text-red-500 ml-0.5">*</span></Label>
             <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })} disabled>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

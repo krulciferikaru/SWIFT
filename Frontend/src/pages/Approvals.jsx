@@ -29,6 +29,7 @@ import { useApprovals } from "@/context/ApprovalContext";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
 import { ApprovalSample } from "../components/TourSamples.jsx";
+import Toast from "../components/Toast.jsx";
 
 export default function Approvals() {
   const location = useLocation();
@@ -268,15 +269,7 @@ export default function Approvals() {
 
   return (
     <div>
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-            toast.type === "error" ? "bg-red-500" : "bg-green-500"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {initialLoading ? (
         <>
@@ -296,9 +289,10 @@ export default function Approvals() {
             <TourButton tour="approvals" />
           </div>
 
-          <div data-tour="approvals-tabs" className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+          <div data-tour="approvals-tabs" role="group" aria-label="Approval lists" className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
             <button
               data-tour="approvals-tab-pending"
+              aria-pressed={tab === "pending"}
               onClick={() => setTab("pending")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === "pending"
@@ -310,6 +304,7 @@ export default function Approvals() {
             </button>
             <button
               data-tour="approvals-tab-rejected"
+              aria-pressed={tab === "rejected"}
               onClick={() => setTab("rejected")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === "rejected"
@@ -321,6 +316,7 @@ export default function Approvals() {
             </button>
             <button
               data-tour="approvals-tab-claims"
+              aria-pressed={tab === "claims"}
               onClick={() => setTab("claims")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === "claims"
@@ -343,9 +339,10 @@ export default function Approvals() {
       )}
 
       {tab === "claims" && !initialLoading && (
-        <div data-tour="approvals-claims-subtabs" className="flex gap-2 mb-4">
+        <div data-tour="approvals-claims-subtabs" role="group" aria-label="Claim lists" className="flex gap-2 mb-4">
           <button
             data-tour="approvals-subtab-pending"
+            aria-pressed={claimsSubTab === "pending"}
             onClick={() => setClaimsSubTab("pending")}
             className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
               claimsSubTab === "pending"
@@ -357,6 +354,7 @@ export default function Approvals() {
           </button>
           <button
             data-tour="approvals-subtab-rejected"
+            aria-pressed={claimsSubTab === "rejected"}
             onClick={() => setClaimsSubTab("rejected")}
             className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
               claimsSubTab === "rejected"
@@ -374,6 +372,7 @@ export default function Approvals() {
       ) : (
         <Input
           data-tour="approvals-search"
+          aria-label="Search approvals"
           type="text"
           placeholder="Search by name, contact number, or email…"
           value={search}
@@ -383,7 +382,7 @@ export default function Approvals() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
           {error}
         </div>
       )}
@@ -545,8 +544,9 @@ export default function Approvals() {
                           <Button
                             size="sm"
                             onClick={() => handleApproveClaim(claimUser)}
+                            aria-label={`Approve ${claimUser.name}`}
                             disabled={actionLoading === claimUser.id}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-green-700 text-white hover:bg-green-800"
                           >
                             Approve
                           </Button>
@@ -554,6 +554,7 @@ export default function Approvals() {
                             size="sm"
                             variant="destructive"
                             onClick={() => setRejectClaimTarget(claimUser)}
+                            aria-label={`Reject ${claimUser.name}`}
                             disabled={actionLoading === claimUser.id}
                           >
                             Reject
@@ -563,8 +564,9 @@ export default function Approvals() {
                         <Button
                           size="sm"
                           onClick={() => handleReapproveClaim(claimUser)}
+                          aria-label={`Re-approve ${claimUser.name}`}
                           disabled={actionLoading === claimUser.id}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-700 text-white hover:bg-green-800"
                         >
                           Re-approve
                         </Button>
@@ -621,8 +623,9 @@ export default function Approvals() {
                       <Button
                         size="sm"
                         onClick={() => handleApprove(subscriber)}
+                        aria-label={`${tab === "pending" ? "Approve" : "Re-approve"} ${subscriber.name}`}
                         disabled={actionLoading === subscriber.subscriber_id}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-green-700 text-white hover:bg-green-800"
                       >
                         {tab === "pending" ? "Approve" : "Re-approve"}
                       </Button>
@@ -631,6 +634,7 @@ export default function Approvals() {
                           size="sm"
                           variant="destructive"
                           onClick={() => setRejectTarget(subscriber)}
+                          aria-label={`Reject ${subscriber.name}`}
                           disabled={actionLoading === subscriber.subscriber_id}
                         >
                           Reject

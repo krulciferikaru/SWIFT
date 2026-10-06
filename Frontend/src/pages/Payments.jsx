@@ -30,6 +30,7 @@ import { useLocation } from "react-router-dom";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
 import { PaymentSample } from "../components/TourSamples.jsx";
+import Toast from "../components/Toast.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -221,14 +222,7 @@ export default function Payments() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === "error" ? "bg-red-500" : "bg-green-500"
-            }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {loading ? (
         <>
@@ -262,6 +256,7 @@ export default function Payments() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
                   data-tour="payments-search"
+                  aria-label="Search subscribers"
                   placeholder="Search by name, contact number, or MAC address…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -277,7 +272,7 @@ export default function Payments() {
                       <Skeleton className="h-4 w-32" />
                     </div>
                   ) : results.length === 0 ? (
-                    <p className="p-3 text-sm text-gray-400 dark:text-gray-500">
+                    <p className="p-3 text-sm text-gray-500 dark:text-gray-400">
                       No subscribers found.
                     </p>
                   ) : (
@@ -427,7 +422,7 @@ export default function Payments() {
                   </CardHeader>
                   <CardContent className="space-y-2 max-h-72 overflow-y-auto">
                     {history.length === 0 ? (
-                      <p className="text-sm text-gray-400 dark:text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         No payments recorded yet.
                       </p>
                     ) : (
@@ -533,7 +528,7 @@ export default function Payments() {
                             setForm({ ...form, payment_method: v })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full" aria-label="Payment method">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -574,7 +569,7 @@ export default function Payments() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="size-5 text-green-600 dark:text-green-400" />
+              <CheckCircle2 className="size-5 text-green-700 dark:text-green-400" />
               Reconnect this subscriber?
             </AlertDialogTitle>
             <AlertDialogDescription>

@@ -28,6 +28,7 @@ import {
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../context/AuthContext'
 import TourButton from "../components/TourButton.jsx";
+import Toast from "../components/Toast.jsx";
 
 const emptyForm = { plan_name: '', monthly_rate: '', description: '', speed_mbps: '', status: 'Active' }
 
@@ -184,12 +185,7 @@ export default function Plans() {
 
   return (
     <div>
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-          }`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
@@ -200,7 +196,7 @@ export default function Plans() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
           {error}
         </div>
       )}
@@ -241,11 +237,11 @@ export default function Plans() {
                   </TableCell>
                   <TableCell>
                     <div data-tour="plans-row-actions" className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(plan)}>
+                      <Button variant="outline" size="sm" onClick={() => openEditModal(plan)} aria-label={`Edit ${plan.plan_name}`}>
                         Edit
                       </Button>
                       {canArchive && (
-                        <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)}>
+                        <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)} aria-label={`Archive ${plan.plan_name}`}>
                           Archive
                         </Button>
                       )}
@@ -329,7 +325,7 @@ export default function Plans() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="description">Description</Label>
-              <span className="text-xs text-gray-400 dark:text-gray-500">{form.description.length}/200</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{form.description.length}/200</span>
             </div>
             <Textarea
               id="description"
@@ -344,7 +340,7 @@ export default function Plans() {
           <div data-tour="plan-status" className="space-y-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={setFieldValue('status')}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Plan status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

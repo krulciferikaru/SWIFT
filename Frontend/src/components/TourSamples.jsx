@@ -32,7 +32,7 @@ export function ApprovalSample({ tab, claimsSubTab }) {
         <div data-tour="approvals-row-actions" className="flex gap-2">
           {canDecide ? (
             <>
-              <Button size="sm" className="bg-green-600 hover:bg-green-700">
+              <Button size="sm" className="bg-green-700 text-white hover:bg-green-800">
                 Approve
               </Button>
               <Button size="sm" variant="destructive">
@@ -40,7 +40,7 @@ export function ApprovalSample({ tab, claimsSubTab }) {
               </Button>
             </>
           ) : (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700">
+            <Button size="sm" className="bg-green-700 text-white hover:bg-green-800">
               Re-approve
             </Button>
           )}
