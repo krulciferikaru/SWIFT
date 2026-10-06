@@ -18,8 +18,8 @@ export default function Layout({ children }) {
   return (
     <div>
       <Sidebar open={sidebarOpen} onToggle={toggleSidebar} />
-      <main className={`p-6 bg-gray-50 dark:bg-gray-900 min-h-screen transition-all duration-200 ${
-        sidebarOpen ? 'ml-60' : 'ml-16'
+      <main className={`p-4 pt-20 md:p-6 bg-gray-50 dark:bg-gray-900 min-h-screen transition-all duration-200 ${
+        sidebarOpen ? 'md:ml-60' : 'md:ml-16'
       }`}>
         {children}
       </main>
