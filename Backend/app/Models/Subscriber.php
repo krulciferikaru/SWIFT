@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subscriber extends Model
 {
+    use SoftDeletes;
+
     // Your existing table is named 'subscriber' (not 'subscribers')
     protected $table = 'subscriber';
 
@@ -44,7 +47,8 @@ class Subscriber extends Model
 
     public function plan(): BelongsTo
     {
-        return $this->belongsTo(Plan::class, 'plan_id', 'plan_id');
+        // withTrashed: an archived plan must keep billing its existing subscribers.
+        return $this->belongsTo(Plan::class, 'plan_id', 'plan_id')->withTrashed();
     }
 
     public function payments(): HasMany

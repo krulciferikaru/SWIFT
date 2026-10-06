@@ -38,10 +38,11 @@ class PlanController extends Controller
         ]);
     }
 
+    /** Archives the plan (soft delete); permanent deletion lives in the Archive module. */
     public function destroy(Plan $plan)
     {
         $plan->delete();
 
-        return response()->json(['message' => 'Plan deleted.']);
+        return response()->json(['message' => 'Plan archived.']);
     }
 }

@@ -182,15 +182,8 @@ export default function Payments() {
       showToast("Payment recorded.");
       const historyRes = await paymentsApi.getHistory(selected.subscriber_id);
       setHistory(historyRes.data.data);
-      const fresh = await subscriberApi.getAll({
-        search: selected.email,
-        per_page: 1,
-      });
-      const freshData = fresh.data.data;
-      const freshList = Array.isArray(freshData)
-        ? freshData
-        : (freshData?.data ?? []);
-      if (freshList[0]) setSelected(freshList[0]);
+      const fresh = await subscriberApi.getOne(selected.subscriber_id);
+      if (fresh.data.data) setSelected(fresh.data.data);
     } catch (err) {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {});
@@ -269,7 +262,7 @@ export default function Payments() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
                   data-tour="payments-search"
-                  placeholder="Search by name, email, or MAC address…"
+                  placeholder="Search by name, contact number, or MAC address…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -298,7 +291,7 @@ export default function Payments() {
                           {s.name}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {s.email}
+                          {s.contact_number || s.email}
                         </p>
                       </button>
                     ))
@@ -323,7 +316,7 @@ export default function Payments() {
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {selected.plan?.plan_name ?? "No plan assigned"} ·{" "}
-                  {selected.email}
+                  {selected.contact_number || selected.email}
                 </p>
                 <Badge
                   variant="outline"

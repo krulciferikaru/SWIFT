@@ -30,7 +30,7 @@ class Payment extends Model
 
     public function subscriber(): BelongsTo
     {
-        return $this->belongsTo(Subscriber::class, 'subscriber_id', 'subscriber_id');
+        return $this->belongsTo(Subscriber::class, 'subscriber_id', 'subscriber_id')->withTrashed();
     }
 
     public function recordedBy(): BelongsTo

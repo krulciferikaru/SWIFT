@@ -375,7 +375,7 @@ export default function Approvals() {
         <Input
           data-tour="approvals-search"
           type="text"
-          placeholder="Search by name, email, or contact number…"
+          placeholder="Search by name, contact number, or email…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="mb-4 max-w-sm"
@@ -390,7 +390,7 @@ export default function Approvals() {
 
       {tab === "claims" && claimsSubTab === "pending" && list.length > 0 && (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded text-sm text-amber-800 dark:text-amber-400">
-          These are new login registrations using an email that matches an
+          These are new login registrations using a contact number that matches an
           existing subscriber record. Verify the person's identity (name,
           contact number, address on file) before approving — approving links
           this login to the existing subscriber's account.
@@ -507,7 +507,7 @@ export default function Approvals() {
             <TableHeader>
               <TableRow>
                 <TableHead>Requested Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Contact Number</TableHead>
                 <TableHead>Existing Subscriber on File</TableHead>
                 <TableHead>Requested On</TableHead>
                 <TableHead>Actions</TableHead>
@@ -520,7 +520,7 @@ export default function Approvals() {
                     {claimUser.name}
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
-                    {claimUser.email}
+                    {claimUser.contact_number || claimUser.email || "—"}
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
                     {claimUser.subscriber ? (
@@ -596,7 +596,7 @@ export default function Approvals() {
                     {subscriber.name}
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
-                    {subscriber.email}
+                    {subscriber.email || "—"}
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
                     {subscriber.contact_number || "—"}

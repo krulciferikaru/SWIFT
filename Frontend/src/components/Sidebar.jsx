@@ -30,6 +30,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Wallet,
+  Archive,
   Menu,
   X,
 } from "lucide-react";
@@ -49,6 +50,7 @@ const navItemsByRole = {
     { label: "Service Plans", path: "/plans", icon: Wifi },
     { label: "Payments", path: "/payments", icon: Wallet },
     { label: "Reports", path: "/reports", icon: FileText },
+    { label: "Archive", path: "/archive", icon: Archive },
     { label: "Manage Roles", path: "/users", icon: ShieldCheck },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
     { label: "Guide", path: "/guide", icon: HelpCircle },
@@ -65,6 +67,7 @@ const navItemsByRole = {
     { label: "Service Plans", path: "/plans", icon: Wifi },
     { label: "Payments", path: "/payments", icon: Wallet },
     { label: "Reports", path: "/reports", icon: FileText },
+    { label: "Archive", path: "/archive", icon: Archive },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
     { label: "Guide", path: "/guide", icon: HelpCircle },
   ],

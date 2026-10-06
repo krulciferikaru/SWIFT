@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
@@ -72,6 +73,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/plans', [PlanController::class, 'store']);
         Route::put('/plans/{plan}', [PlanController::class, 'update']);
         Route::patch('/plans/{plan}', [PlanController::class, 'update']);
+        Route::delete('/plans/{plan}', [PlanController::class, 'destroy']);
+
+        // Archive module: archived records can be restored or permanently deleted.
+        Route::get('/archive/subscribers', [ArchiveController::class, 'subscribers']);
+        Route::patch('/archive/subscribers/{id}/restore', [ArchiveController::class, 'restoreSubscriber']);
+        Route::delete('/archive/subscribers/{id}', [ArchiveController::class, 'deleteSubscriber']);
+        Route::get('/archive/plans', [ArchiveController::class, 'plans']);
+        Route::patch('/archive/plans/{id}/restore', [ArchiveController::class, 'restorePlan']);
+        Route::delete('/archive/plans/{id}', [ArchiveController::class, 'deletePlan']);
     });
 
     Route::get('/subscribers', [SubscriberController::class, 'index'])
@@ -93,6 +103,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
         Route::patch('/users/{user}/password', [UserController::class, 'resetPassword']);
-        Route::apiResource('plans', PlanController::class)->except(['index', 'show', 'store', 'update']);
     });
 });

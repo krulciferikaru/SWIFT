@@ -15,6 +15,7 @@ import Payments from "./pages/Payments.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 import Guide from "./pages/Guide.jsx";
+import ArchivePage from "./pages/Archive.jsx";
 
 export default function App() {
   return (
@@ -93,6 +94,17 @@ export default function App() {
                 }
               />
               
+              <Route
+                path="/archive"
+                element={
+                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                    <Layout>
+                      <ArchivePage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
               <Route
                 path="/users"
                 element={

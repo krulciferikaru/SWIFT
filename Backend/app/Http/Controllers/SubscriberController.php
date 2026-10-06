@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscriber\StoreSubscriberRequest;
 use App\Http\Requests\Subscriber\UpdateSubscriberRequest;
 use App\Models\Subscriber;
+use App\Models\User;
 use App\Services\BillingService;
 use App\Services\PhilSmsService;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -149,35 +149,20 @@ class SubscriberController extends Controller
     /**
      * DELETE /api/subscribers/{subscriber}
      *
-     * Deletes a subscriber record.
-     * Only accessible by Admin role.
-     *
-     * Note: This performs a hard delete. If the subscriber has payment history,
-     * the foreign key constraint will block the deletion — handle this in
-     * the React UI by warning the user first.
+     * Archives the subscriber (soft delete) and signs out any linked login.
+     * Permanent deletion lives in the Archive module.
      */
     public function destroy(Subscriber $subscriber): JsonResponse
     {
-        // Block deletion if subscriber has payment records.
-        if ($subscriber->payments()->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete subscriber with existing payment records. Set status to Disconnected instead.',
-            ], 422);
-        }
+        User::where('subscriber_id', $subscriber->subscriber_id)->each(
+            fn (User $user) => $user->tokens()->delete()
+        );
 
-        try {
-            $subscriber->delete();
-        } catch (QueryException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to delete subscriber. It may be linked to other records.',
-            ], 500);
-        }
+        $subscriber->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Subscriber deleted successfully.',
+            'message' => 'Subscriber archived.',
         ]);
     }
 

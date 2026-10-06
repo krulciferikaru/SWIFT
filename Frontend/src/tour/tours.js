@@ -144,7 +144,7 @@ export const TOURS = {
       {
         selector: t('subs-search'),
         title: 'Search',
-        description: 'Type a name, email, address or MAC address. The list filters as you type.',
+        description: 'Type a name, contact number, address or MAC address. The list filters as you type.',
         side: 'bottom',
       },
       {
@@ -169,7 +169,7 @@ export const TOURS = {
         selector: t('subs-table'),
         title: 'Subscriber list',
         description:
-          'Each row has Edit, Delete and Payments. Delete cannot be undone, and Payments opens that subscriber\'s billing.',
+          'Each row has Edit, Archive and Payments. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing.',
         side: 'top',
       },
     ],
@@ -183,13 +183,13 @@ export const TOURS = {
         selector: t('approvals-tabs'),
         title: 'Three lists',
         description:
-          'Pending is new sign-ups, Rejected holds ones you turned down, and Account Claims is someone registering with the email of an existing subscriber. This tour visits each one.',
+          'Pending is new sign-ups, Rejected holds ones you turned down, and Account Claims is someone registering with the contact number of an existing subscriber. This tour visits each one.',
         side: 'bottom',
       },
       {
         selector: t('approvals-search'),
         title: 'Search',
-        description: 'Filter any of these lists by name, email or contact number.',
+        description: 'Filter any of these lists by name, contact number or email.',
         side: 'bottom',
       },
       {
@@ -213,7 +213,7 @@ export const TOURS = {
         selector: t('approvals-claims-subtabs'),
         title: 'Account Claims',
         description:
-          'This list has two sub-tabs: Pending Claims and Rejected Claims. A claim happens when someone registers with the email of a subscriber who is already on file.',
+          'This list has two sub-tabs: Pending Claims and Rejected Claims. A claim happens when someone registers with the contact number of a subscriber who is already on file.',
         side: 'bottom',
       },
       {
@@ -253,9 +253,9 @@ export const TOURS = {
       },
       {
         selector: t('plans-row-actions'),
-        title: 'Edit or delete',
+        title: 'Edit or archive',
         description:
-          'Edit changes future billing only, not past payments. Delete is for admins only: move subscribers off a plan before removing it.',
+          'Edit changes future billing only, not past payments. Archive stops offering the plan to new subscribers; subscribers already on it keep it and are billed as usual. Restore it from the Archive page.',
         side: 'left',
       },
     ],
@@ -267,7 +267,7 @@ export const TOURS = {
       {
         selector: t('payments-search'),
         title: 'Find the subscriber',
-        description: 'Search by name, email or MAC address, then click the subscriber in the results.',
+        description: 'Search by name, contact number or MAC address, then click the subscriber in the results.',
         side: 'bottom',
       },
       {
@@ -291,9 +291,16 @@ export const TOURS = {
     title: 'Reports tour',
     steps: [
       {
+        selector: t('reports-range'),
+        title: 'Choose the period',
+        description:
+          'Monthly shows one month, Last 3 Months covers the past three months up to today, and Annual shows a whole year. The reports reload when you switch.',
+        side: 'bottom',
+      },
+      {
         selector: t('reports-month'),
-        title: 'Choose a month',
-        description: 'Reports are for one month at a time. Change it and the reports reload.',
+        title: 'Pick the month',
+        description: 'With Monthly selected, choose which month to report on.',
         side: 'bottom',
       },
       {
@@ -423,14 +430,14 @@ TOURS.subscriberForm = {
     {
       selector: dlg('#contact_number'),
       title: 'Contact Number',
-      description: 'Optional, but needed for SMS reminders. Use the format 09XX-XXX-XXXX.',
+      description:
+        'Required. Used for SMS reminders, and it is how a subscriber can later claim their own login: if someone registers with this number, it appears under Account Claims for you to verify. Use the format 09XX-XXX-XXXX.',
       side: 'bottom',
     },
     {
       selector: dlg('#email'),
       title: 'Email Address',
-      description:
-        'Required. If this person later signs up for their own login with the same email, it appears under Account Claims for you to verify.',
+      description: 'Optional. Add it if the subscriber has one; the number above is what identifies them.',
       side: 'top',
     },
     {

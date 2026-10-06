@@ -17,6 +17,7 @@ import {
   Wifi,
   Wallet,
   FileText,
+  Archive,
   ShieldCheck,
   Settings as SettingsIcon,
   KeyRound,
@@ -50,11 +51,11 @@ const SECTIONS = [
       <>
         <p>This is the master list of everyone signed up for service. At the top you'll see totals for Total, Pending, Active, Unpaid, and Disconnected.</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Search box</strong> — type a name, email, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
+          <li><strong>Search box</strong> — type a name, contact number, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
           <li><strong>Status dropdown</strong> — narrow the list to only Active, Unpaid, or Disconnected subscribers.</li>
           <li><strong>Add Subscriber</strong> — opens a form to manually register a new subscriber (name, plan, contact info, etc.).</li>
           <li><strong>Edit</strong> (per row) — update a subscriber's details, like their assigned plan or contact number.</li>
-          <li><strong>Delete</strong> (per row) — permanently removes a subscriber record. Use carefully — this cannot be undone.</li>
+          <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. Nothing is lost; you can restore them anytime.</li>
           <li><strong>Payments</strong> (per row) — jumps straight to that subscriber's billing page (see the Payments section below).</li>
           <li><strong>Export CSV</strong> — downloads the current filtered list as a spreadsheet file.</li>
         </ul>
@@ -74,7 +75,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Pending tab</strong> — new applications. Click <em>Approve</em> to activate them, or <em>Reject</em> if the application looks wrong or fraudulent.</li>
           <li><strong>Rejected tab</strong> — applications you previously rejected. You can re-approve from here if it turns out to be a mistake.</li>
-          <li><strong>Account Claims tab</strong> — this is different from a new sign-up. It happens when someone registers using an email that matches an <em>existing</em> subscriber already on file (for example, an old subscriber who never had a login before). Always double-check the name, address, and contact number shown against what you have on file before approving a claim — approving it links that login to the existing subscriber's record and billing history.</li>
+          <li><strong>Account Claims tab</strong> — this is different from a new sign-up. It happens when someone registers using a contact number that matches an <em>existing</em> subscriber already on file (for example, an old subscriber who never had a login before). Always double-check the name, address, and contact number shown against what you have on file before approving a claim — approving it links that login to the existing subscriber's record and billing history.</li>
         </ul>
       </>
     ),
@@ -92,7 +93,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Plan</strong> — create a new plan with a name, monthly rate, speed, and description.</li>
           <li><strong>Edit</strong> — change a plan's price or details. This affects future billing, not past payments.</li>
-          <li><strong>Delete</strong> — <em>Admin only.</em> If subscribers are still on that plan, deleting may fail or affect their billing — reassign subscribers off a plan before removing it.</li>
+          <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. Restore it from the Archive page.</li>
         </ul>
       </>
     ),
@@ -108,7 +109,7 @@ const SECTIONS = [
       <>
         <p>This is where you'll spend the most time day-to-day.</p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>Search for the subscriber by name, email, or MAC address.</li>
+          <li>Search for the subscriber by name, contact number, or MAC address.</li>
           <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Recent Payments</strong> history.</li>
           <li>Fill in the <strong>Record Payment</strong> form: amount, OR (official receipt) number, date, and payment method (Cash, GCash, or Others). As you type an amount, it shows you a live preview of which month(s) that payment will cover.</li>
           <li>Click <strong>Record Payment</strong> to save it.</li>
@@ -122,16 +123,32 @@ const SECTIONS = [
     tour: 'reports',
     icon: FileText,
     title: 'Reports',
-    summary: 'Monthly collection totals and financial statements, exportable to PDF/Excel.',
+    summary: 'Collection totals and financial statements by month, last 3 months, or year — exportable to PDF/Excel.',
     roles: ['admin', 'secretary'],
     body: (
       <>
-        <p>Pick a month at the top, then review:</p>
+        <p>Choose <strong>Monthly</strong> (pick a month), <strong>Last 3 Months</strong> (the past three months up to today), or <strong>Annual</strong> (pick a year) at the top, then review:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Monthly Collection Report</strong> — how much was collected that month, broken down by plan and by payment method, plus a full payment ledger.</li>
+          <li><strong>Collection Report</strong> — how much was collected in the selected period, broken down by plan and by payment method, plus a full payment ledger.</li>
           <li><strong>Financial Statement</strong> — who owes what: total receivables, paid, and outstanding balances, broken down by plan and per-subscriber.</li>
         </ul>
         <p>Each report has <strong>PDF</strong> and <strong>XLSX</strong> (Excel) download buttons if you need to print or send it somewhere.</p>
+      </>
+    ),
+  },
+  {
+    id: 'archive',
+    icon: Archive,
+    title: 'Archive',
+    summary: 'Archived subscribers and plans — restore them or delete them for good.',
+    roles: ['admin', 'secretary'],
+    body: (
+      <>
+        <p>Subscribers and plans are never deleted straight from their own pages. <strong>Archive</strong> moves them here instead.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Restore</strong> — puts the record back where it was.</li>
+          <li><strong>Delete</strong> — permanently removes it. For a subscriber this also deletes their payment history and login, so only do this when you are sure. A plan that is still assigned to any subscriber cannot be deleted.</li>
+        </ul>
       </>
     ),
   },

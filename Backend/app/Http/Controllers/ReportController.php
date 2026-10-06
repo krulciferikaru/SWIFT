@@ -93,7 +93,7 @@ class ReportController extends Controller
 
     public function collections(Request $request): JsonResponse
     {
-        $period = $this->resolveMonthlyPeriod($request);
+        $period = $this->resolvePeriod($request);
         $data = $this->buildCollectionsData($period);
 
         return response()->json([
@@ -104,7 +104,7 @@ class ReportController extends Controller
 
     public function financialStatement(Request $request): JsonResponse
     {
-        $period = $this->resolveMonthlyPeriod($request);
+        $period = $this->resolvePeriod($request);
         $data = $this->buildFinancialStatementData($period);
 
         return response()->json([
@@ -115,7 +115,7 @@ class ReportController extends Controller
 
     public function collectionsPdf(Request $request)
     {
-        $period = $this->resolveMonthlyPeriod($request);
+        $period = $this->resolvePeriod($request);
         $data = $this->buildCollectionsData($period);
 
         return $this->exports->downloadPdf(
@@ -127,7 +127,7 @@ class ReportController extends Controller
 
     public function collectionsXlsx(Request $request)
     {
-        $period = $this->resolveMonthlyPeriod($request);
+        $period = $this->resolvePeriod($request);
         $data = $this->buildCollectionsData($period);
 
         return $this->exports->downloadXlsx(
@@ -138,7 +138,7 @@ class ReportController extends Controller
 
     public function financialStatementPdf(Request $request)
     {
-        $period = $this->resolveMonthlyPeriod($request);
+        $period = $this->resolvePeriod($request);
         $data = $this->buildFinancialStatementData($period);
 
         return $this->exports->downloadPdf(
@@ -150,7 +150,7 @@ class ReportController extends Controller
 
     public function financialStatementXlsx(Request $request)
     {
-        $period = $this->resolveMonthlyPeriod($request);
+        $period = $this->resolvePeriod($request);
         $data = $this->buildFinancialStatementData($period);
 
         return $this->exports->downloadXlsx(
@@ -159,19 +159,50 @@ class ReportController extends Controller
         );
     }
 
-    private function resolveMonthlyPeriod(Request $request): array
+    /**
+     * Resolves the report window from ?range=monthly|three_months|annual.
+     *   monthly       -> ?month=YYYY-MM (defaults to the current month)
+     *   three_months  -> rolling window: the same day 3 months ago through today
+     *   annual        -> ?year=YYYY (defaults to the current year; the current
+     *                    year stops at today so future months aren't billed)
+     */
+    private function resolvePeriod(Request $request): array
     {
         $validated = $request->validate([
+            'range' => ['nullable', 'in:monthly,three_months,annual'],
             'month' => ['nullable', 'date_format:Y-m'],
+            'year' => ['nullable', 'date_format:Y'],
         ]);
 
-        $month = $validated['month'] ?? now()->format('Y-m');
-        $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
-        $end = $start->copy()->endOfMonth();
+        $range = $validated['range'] ?? 'monthly';
+        $today = now()->endOfDay();
+
+        if ($range === 'three_months') {
+            $start = now()->subMonths(3)->startOfDay();
+            $end = $today;
+            $key = 'last-3-months';
+            $label = 'Last 3 Months (' . $start->format('M j, Y') . ' - ' . $end->format('M j, Y') . ')';
+        } elseif ($range === 'annual') {
+            $year = $validated['year'] ?? now()->format('Y');
+            $start = Carbon::createFromFormat('Y-m-d', $year . '-01-01')->startOfDay();
+            $end = $start->copy()->endOfYear();
+            if ($end->gt($today)) {
+                $end = $today;
+            }
+            $key = $year;
+            $label = 'Year ' . $year;
+        } else {
+            $month = $validated['month'] ?? now()->format('Y-m');
+            $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+            $key = $month;
+            $label = $start->format('F Y');
+        }
 
         return [
-            'month' => $month,
-            'label' => $start->format('F Y'),
+            'range' => $range,
+            'month' => $key,
+            'label' => $label,
             'start' => $start,
             'end' => $end,
         ];
@@ -241,7 +272,8 @@ class ReportController extends Controller
 
         return [
             'report_type' => 'collections',
-            'report_title' => 'Monthly Collection Report',
+            'report_title' => 'Collection Report',
+            'range' => $period['range'],
             'month' => $period['month'],
             'period_label' => $period['label'],
             'period' => [
@@ -337,6 +369,7 @@ class ReportController extends Controller
         return [
             'report_type' => 'financial_statement',
             'report_title' => 'Financial Statement',
+            'range' => $period['range'],
             'month' => $period['month'],
             'period_label' => $period['label'],
             'period' => [
