@@ -82,11 +82,21 @@ export async function runTour(id, { user, onEnd } = {}) {
 
   let ended = false
   let switchedTabs = false
+  // Escape should only end the tour. Capture it first so a dialog the tour is
+  // running inside (e.g. the Add Subscriber form) does not also close.
+  const onKeyDown = (e) => {
+    if (e.key !== 'Escape') return
+    e.stopImmediatePropagation()
+    e.preventDefault()
+    close()
+  }
+  window.addEventListener('keydown', onKeyDown, true)
   // Driver.js only fires its own onDestroyed when an element is highlighted, so
   // cleanup is done here, once, for every way the tour can end.
   const finish = () => {
     if (ended) return
     ended = true
+    window.removeEventListener('keydown', onKeyDown, true)
     running = false
     current = null
     setTourActive(false)

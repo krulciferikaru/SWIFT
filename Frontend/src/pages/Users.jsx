@@ -375,6 +375,10 @@ export default function Users() {
         )}
       >
         <form id="staff-create-form" onSubmit={submitCreate} className="space-y-4">
+          <div className="flex justify-end">
+            <TourButton tour="staffForm" />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="staff-name">Full Name<span className="text-red-500 ml-0.5">*</span></Label>
             <Input
@@ -402,7 +406,7 @@ export default function Users() {
             {staffErrors.email && <p className="text-red-500 text-xs">{staffErrors.email[0]}</p>}
           </div>
 
-          <div className="space-y-1.5">
+          <div data-tour="staff-role" className="space-y-1.5">
             <Label>Role<span className="text-red-500 ml-0.5">*</span></Label>
             <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })} disabled>
               <SelectTrigger className="w-full">
