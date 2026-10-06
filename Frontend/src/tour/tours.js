@@ -169,7 +169,7 @@ export const TOURS = {
         selector: t('subs-table'),
         title: 'Subscriber list',
         description:
-          'Each row has Edit, Archive and Payments. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing.',
+          'Click a name to see everything about that subscriber in one place, including their balance, with the same buttons. Each row also has Edit, Archive and Payments. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing.',
         side: 'top',
       },
     ],
@@ -248,7 +248,7 @@ export const TOURS = {
         selector: t('plans-table'),
         title: 'Your plans',
         description:
-          'Name, monthly rate, speed and whether the plan is Active. Every subscriber is assigned one of these.',
+          'Name, monthly rate, speed and whether the plan is Active. Every subscriber is assigned one of these. Click a plan name to see its full details.',
         side: 'top',
       },
       {
