@@ -43,5 +43,10 @@ class AppServiceProvider extends ServiceProvider
             ? Limit::perMinute(config('ratelimit.reports'))->by($request->user()?->id ?: $request->ip())
             : Limit::none()
         );
+
+        RateLimiter::for('report-exports', fn (Request $request) => $enabled
+            ? Limit::perMinute(config('ratelimit.report_exports'))->by($request->user()?->id ?: $request->ip())
+            : Limit::none()
+        );
     }
 }
