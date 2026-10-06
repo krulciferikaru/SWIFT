@@ -22,7 +22,7 @@ export function ApprovalSample({ tab, claimsSubTab }) {
       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="text-sm">
           <p className="font-medium text-gray-900 dark:text-gray-100">Juan Dela Cruz</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">juan@example.com · 0917 000 0000</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">0917 000 0000 · juan@example.com</p>
           {isClaims && (
             <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
               On file: Juan D. Cruz, Brgy. Example, Palayan City
@@ -65,7 +65,7 @@ export function PaymentSample() {
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">Juan Dela Cruz</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Home Plus · juan@example.com</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Home Plus · 0917 000 0000</p>
             <Badge
               variant="outline"
               className="mt-2 border-yellow-200 bg-yellow-100 text-yellow-700 dark:border-yellow-900 dark:bg-yellow-950 dark:text-yellow-400"

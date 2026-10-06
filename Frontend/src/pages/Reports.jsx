@@ -257,7 +257,7 @@ export default function Reports() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
-          <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div data-tour="reports-range" className="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
             {RANGE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
