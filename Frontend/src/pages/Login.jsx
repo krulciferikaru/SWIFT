@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import CompanyContact from '../components/CompanyContact.jsx'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -109,6 +110,7 @@ useEffect(() => {
               Register
             </Link>
           </p>
+          <CompanyContact variant="inline" />
         </CardContent>
       </Card>
     </main>

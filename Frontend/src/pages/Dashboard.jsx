@@ -4,6 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import PhoneVerification from "../components/PhoneVerification.jsx";
 import PaymentHistory from "../components/PaymentHistory.jsx";
 import DashboardActivity from "../components/DashboardActivity.jsx";
+import AccountStatusBanner from "../components/AccountStatusBanner.jsx";
+import CompanyContact from "../components/CompanyContact.jsx";
+import TextSizeControl from "../components/TextSizeControl.jsx";
 import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
@@ -200,8 +203,13 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Account</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, {user?.name}.</p>
           </div>
-          <TourButton tour="dashboardSubscriber" />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <TextSizeControl />
+            <TourButton tour="dashboardSubscriber" />
+          </div>
         </div>
+
+        <AccountStatusBanner billing={myBilling} />
 
         <PhoneVerification variant="banner" />
 
@@ -211,7 +219,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mb-2">
                 <Wifi className="size-5 text-primary" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Monthly Rate</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Your monthly bill</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {formatCurrency(myBilling.monthly_rate)}
               </p>
@@ -223,7 +231,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mb-2">
                 <Wallet className="size-5 text-amber-500" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Current Balance</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount you owe</p>
               <p className={`text-2xl font-bold mt-1 ${myBilling.balance > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
                 {formatCurrency(myBilling.balance)}
               </p>
@@ -240,17 +248,11 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mb-2">
                 <CircleCheck className={`size-5 ${statusColor}`} />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Months Behind</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unpaid months</p>
               <p className={`text-2xl font-bold mt-1 ${statusColor}`}>{myBilling.months_behind}</p>
             </CardContent>
           </Card>
         </div>
-
-        {myBilling.balance > 0 && (
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded text-sm text-amber-800 dark:text-amber-400">
-            You have an outstanding balance. Please settle your payment to avoid service interruption.
-          </div>
-        )}
 
         <Card data-tour="me-breakdown">
           <CardHeader>
@@ -270,7 +272,7 @@ export default function Dashboard() {
                       ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900 capitalize"
                       : m.status === "partial"
                         ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900 capitalize"
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 capitalize"
+                        : "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900 capitalize"
                   }
                 >
                   {m.status}
@@ -288,6 +290,8 @@ export default function Dashboard() {
             <PaymentHistory payments={myPayments} subscriber={mySubscriber} />
           </CardContent>
         </Card>
+
+        <CompanyContact />
       </div>
     );
   }

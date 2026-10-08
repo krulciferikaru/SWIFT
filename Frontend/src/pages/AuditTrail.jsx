@@ -30,6 +30,7 @@ const ACTION_LABELS = {
   'user.created': 'Created a staff account',
   'user.status_changed': 'Changed an account’s status',
   'user.password_reset': 'Reset a password',
+  'company.updated': 'Updated the company contact information',
   'user.permissions_changed': 'Changed a secretary’s permissions',
   'sms.sent': 'Sent a text message',
   'sms.reminders_sent': 'Sent payment reminders',
@@ -77,6 +78,9 @@ const FIELD_LABELS = {
   sent: 'Sent',
   failed: 'Failed',
   success: 'Delivered',
+  mobile: 'Mobile number',
+  office_hours: 'Office hours',
+  how_to_pay: 'How to pay',
   added: 'Allowed',
   removed: 'No longer allowed',
 }

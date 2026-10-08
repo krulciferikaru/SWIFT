@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\CompanyInfoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
@@ -23,6 +24,9 @@ Route::get('/health', fn() => response()->json([
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+
+// How to reach the company. Public so the sign-in page can show it.
+Route::get('/company-info', [CompanyInfoController::class, 'show'])->middleware('throttle:reports');
 
 /*
  * Staff routes are guarded by permission (config/permissions.php), not by role name, so an
@@ -137,6 +141,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions']);
     });
+
+    Route::put('/company-info', [CompanyInfoController::class, 'update'])
+        ->middleware('permission:users.manage');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])
         ->middleware('permission:audit.view');
