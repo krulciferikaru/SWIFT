@@ -19,13 +19,35 @@ There are three roles. A person's role is fixed when their account is created an
 
 ## In short
 
-- **Admin** can do everything.
-- **Secretary** can do everything an admin can **except** manage accounts (Manage Roles).
+- **Admin** can do everything, including Manage Roles and the Audit Trail.
+- **Secretary** can do everything an admin can **except** Manage Roles and the Audit Trail, unless an admin switches individual abilities off (see below).
 - **Subscriber** can only see their own account and the plan list. Subscribers never see other people's records.
+
+## Per-secretary permissions
+
+On **Manage Roles**, each secretary has a **Permissions** button. The admin ticks exactly which of these tasks that secretary may do:
+
+| Permission | Lets them |
+|---|---|
+| View subscribers | See the subscriber list and each subscriber's details |
+| Add and edit subscribers | Add subscribers, edit details, change status |
+| Archive subscribers | Move subscribers to the Archive |
+| Approve registrations | Approve or reject new registrations and account claims |
+| Manage service plans | Add, edit and archive plans |
+| View payments | Open Payments and see payment history and balances |
+| Record payments | Enter a payment received |
+| View and export reports | Open Reports and download PDF, Excel or CSV |
+| Use the Archive | See archived records, restore them, or delete them permanently |
+| Send text messages | Send payment reminders and other texts |
+
+- A secretary who has never been customised keeps **all** of these, which is how the system worked before permissions existed. **Reset to default** gives everything back.
+- Pages and buttons a secretary is not allowed to use are hidden for them, and the server also refuses the request.
+- **Manage Roles** and **Audit Trail** are admin-only and can never be granted. Admins cannot be restricted.
+- Every change to someone's permissions is written to the [Audit Trail](features.md#audit-trail).
 
 ## Things to know
 
-- **No finer control yet.** Permissions are by role, not per module. A secretary cannot be given "view only" on Reports, for example. Module-level View / Edit / Delete permissions were recommended by an evaluator and would need new development.
+- **Finer than on/off per task is not available.** Permissions are switches per task, not separate View / Edit / Delete levels inside every module.
 - **Permanent deletion is allowed for secretaries too.** Deleting from the Archive page removes a subscriber together with their payment history and login, and cannot be undone.
 - **Archived subscribers cannot log in** until they are restored.
 - **Inactive accounts cannot log in.** Staff accounts are set Pending, Active or Inactive by an admin. A new self-registered subscriber stays Pending until approved.
