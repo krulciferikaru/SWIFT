@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PhoneVerification from "../components/PhoneVerification.jsx";
 import PaymentHistory from "../components/PaymentHistory.jsx";
+import DashboardActivity from "../components/DashboardActivity.jsx";
 import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
@@ -430,6 +431,9 @@ export default function Dashboard() {
         </Card>
       )}
 
+      {/* Activity in a chosen period (today / month / quarter / year / all time) */}
+      <DashboardActivity />
+
       {/* 2. Financial Snapshot */}
       {financials && (
         <div data-tour="dash-financials" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -476,6 +480,12 @@ export default function Dashboard() {
       )}
 
       {/* 3. Subscriber counts */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Right now</h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Current numbers, as of today. They cannot be filtered by period.
+        </p>
+      </div>
       <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link to="/subscribers">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">

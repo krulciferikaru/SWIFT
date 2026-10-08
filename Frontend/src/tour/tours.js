@@ -72,6 +72,13 @@ export const TOURS = {
     title: 'Dashboard tour',
     steps: [
       {
+        selector: t('dash-activity'),
+        title: 'Activity by period',
+        description:
+          'Pick Today, This month, This quarter, This year or All time to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. Your choice is remembered.',
+        side: 'bottom',
+      },
+      {
         selector: t('dash-attention'),
         title: 'Needs Attention',
         description:
@@ -89,7 +96,7 @@ export const TOURS = {
         selector: t('dash-counts'),
         title: 'Subscriber counts',
         description:
-          'Total subscribers, pending applications, account claims, and how many are Active or Unpaid. Each card opens the matching page.',
+          'Total subscribers, pending applications, account claims, and how many are Active or Unpaid, as of right now. These are current numbers, so they do not follow the period filter above. Each card opens the matching page.',
         side: 'bottom',
       },
       {
