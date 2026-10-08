@@ -183,8 +183,22 @@ export const TOURS = {
         selector: t('subs-table'),
         title: 'Subscriber list',
         description:
-          'Click a name to see everything about that subscriber in one place, including their balance, with the same buttons. Each row also has Edit, Archive and Payments. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing. A green Verified tag beside a contact number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
+          'One row per subscriber. A green Verified tag beside a contact number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
         side: 'top',
+      },
+      {
+        selector: t('subs-name'),
+        title: 'Click a name for the details',
+        description:
+          'Every name is a link, shown in blue with an arrow. Click it to open a window with everything about that subscriber in one place, including their balance, with the same Edit, Archive and Payments buttons.',
+        side: 'right',
+      },
+      {
+        selector: t('subs-actions'),
+        title: 'Edit, Archive and Payments',
+        description:
+          'Edit changes their details. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing and receipts. Buttons you are not allowed to use are not shown.',
+        side: 'left',
       },
     ],
   },

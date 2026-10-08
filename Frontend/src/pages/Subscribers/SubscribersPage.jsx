@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { Archive, ChevronRight, CreditCard, MousePointerClick, Pencil } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -342,6 +343,11 @@ export default function SubscribersPage() {
           </div>
         )}
 
+        <p className="mb-2 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+          <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
+          Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
+        </p>
+
         {/* Table */}
         <div data-tour="subs-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
@@ -426,13 +432,15 @@ export default function SubscribersPage() {
                   <TableRow key={sub.subscriber_id}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       <button
+                        data-tour="subs-name"
                         type="button"
                         onClick={() => setDetailsTarget(sub)}
                         aria-haspopup="dialog"
                         title="View details"
-                        className="text-left font-medium text-gray-900 dark:text-gray-100 underline-offset-2 hover:text-primary hover:underline focus-visible:text-primary focus-visible:underline"
+                        className="group inline-flex items-center gap-0.5 text-left font-semibold text-blue-700 dark:text-blue-400 underline decoration-blue-700/40 dark:decoration-blue-400/40 underline-offset-2 hover:decoration-current focus-visible:decoration-current"
                       >
                         {sub.name}
+                        <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                       </button>
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
@@ -454,32 +462,34 @@ export default function SubscribersPage() {
                       <StatusBadge status={sub.status} />
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div data-tour="subs-actions" className="flex flex-wrap gap-2">
                         {can("subscribers.manage") && (
                         <Button
-                          variant="link"
+                          variant="outline"
                           size="sm"
                           onClick={() => setEditTarget(sub)}
                           aria-label={`Edit ${sub.name}`}
-                          className="h-auto p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                          className="gap-1.5"
                         >
+                          <Pencil className="size-3.5" aria-hidden="true" />
                           Edit
                         </Button>
                         )}
                         {can("subscribers.archive") && (
                         <Button
-                          variant="link"
+                          variant="destructive"
                           size="sm"
                           onClick={() => setDeleteTarget(sub)}
                           aria-label={`Archive ${sub.name}`}
-                          className="h-auto p-0 text-red-700 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                          className="gap-1.5"
                         >
+                          <Archive className="size-3.5" aria-hidden="true" />
                           Archive
                         </Button>
                         )}
                         {can("payments.view", "payments.record") && (
                         <Button
-                          variant="link"
+                          variant="outline"
                           size="sm"
                           aria-label={`Payments for ${sub.name}`}
                           onClick={() =>
@@ -487,8 +497,9 @@ export default function SubscribersPage() {
                               state: { subscriber: sub },
                             })
                           }
-                          className="h-auto p-0 text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                          className="gap-1.5 border-green-700/40 text-green-700 hover:bg-green-50 dark:border-green-400/40 dark:text-green-400 dark:hover:bg-green-950"
                         >
+                          <CreditCard className="size-3.5" aria-hidden="true" />
                           Payments
                         </Button>
                         )}
