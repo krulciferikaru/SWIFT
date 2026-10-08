@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Services\Audit;
 use App\Http\Controllers\Controller;
 use App\Models\Subscriber;
 use App\Models\User;
@@ -137,6 +138,8 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Your account has been rejected.'], 403);
             }
 
+            Audit::log('auth.login_failed', null, $identifier, [], $user);
+
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
@@ -154,6 +157,8 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        Audit::log('auth.login', $user, null, [], $user);
 
         return response()->json([
             'message' => 'Login successful.',

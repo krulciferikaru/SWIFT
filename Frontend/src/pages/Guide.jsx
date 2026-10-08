@@ -21,6 +21,7 @@ import {
   FileText,
   Archive,
   ShieldCheck,
+  ScrollText,
   Settings as SettingsIcon,
   KeyRound,
   Info,
@@ -175,6 +176,24 @@ const SECTIONS = [
             <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them.</span>
           </li>
         </ul>
+      </>
+    ),
+  },
+  {
+    id: 'audit',
+    icon: ScrollText,
+    title: 'Audit Trail',
+    summary: 'Admin-only: see who did what, and when.',
+    roles: ['admin'],
+    body: (
+      <>
+        <p>Every important action is recorded here: sign-ins (including failed ones), adding or editing subscribers and plans, approvals, payments, archiving and deleting, password resets, and text messages sent.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Search</strong> by a person's name or the record they touched.</li>
+          <li><strong>Show</strong> narrows the list to one kind of activity, and <strong>From / To</strong> limits it to a date range.</li>
+          <li>Edits list what changed, with the old value crossed out beside the new one.</li>
+        </ul>
+        <p>Entries can't be edited or deleted from inside SWIFT, and passwords are never recorded.</p>
       </>
     ),
   },

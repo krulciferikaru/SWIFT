@@ -31,6 +31,7 @@ import {
   PanelLeftOpen,
   Wallet,
   Archive,
+  ScrollText,
   Menu,
   X,
 } from "lucide-react";
@@ -52,6 +53,7 @@ const navItemsByRole = {
     { label: "Reports", path: "/reports", icon: FileText },
     { label: "Archive", path: "/archive", icon: Archive },
     { label: "Manage Roles", path: "/users", icon: ShieldCheck },
+    { label: "Audit Trail", path: "/audit", icon: ScrollText },
     { label: "Settings", path: "/settings", icon: SettingsIcon },
     { label: "Guide", path: "/guide", icon: HelpCircle },
   ],

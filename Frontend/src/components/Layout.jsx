@@ -12,6 +12,7 @@ const TITLES = {
   '/reports': 'Reports',
   '/archive': 'Archive',
   '/users': 'Manage Roles',
+  '/audit': 'Audit Trail',
   '/settings': 'Settings',
   '/guide': 'Guide',
 }
