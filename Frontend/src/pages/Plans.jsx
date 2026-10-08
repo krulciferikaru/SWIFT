@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
+import { Archive, ChevronRight, MousePointerClick, Pencil } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -211,6 +212,12 @@ export default function Plans() {
       {plans.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">No plans yet.</p>
       ) : (
+        <>
+        <p className="mb-2 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+          <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
+          Click a plan's name to see its details. Each row also has Edit and Archive buttons.
+        </p>
+
         <div data-tour="plans-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
@@ -228,13 +235,15 @@ export default function Plans() {
                 <TableRow key={plan.plan_id}>
                   <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                     <button
+                        data-tour="plans-name"
                         type="button"
                         onClick={() => setDetailsPlan(plan)}
                         aria-haspopup="dialog"
                         title="View details"
-                        className="text-left font-medium text-gray-900 dark:text-gray-100 underline-offset-2 hover:text-primary hover:underline focus-visible:text-primary focus-visible:underline"
+                        className="group inline-flex items-center gap-0.5 text-left font-semibold text-blue-700 dark:text-blue-400 underline decoration-blue-700/40 dark:decoration-blue-400/40 underline-offset-2 hover:decoration-current focus-visible:decoration-current"
                       >
                         {plan.plan_name}
+                        <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                       </button>
                   </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
@@ -255,12 +264,14 @@ export default function Plans() {
                   <TableCell>
                     <div data-tour="plans-row-actions" className="flex gap-2">
                       {canManage && (
-                        <Button variant="outline" size="sm" onClick={() => openEditModal(plan)} aria-label={`Edit ${plan.plan_name}`}>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openEditModal(plan)} aria-label={`Edit ${plan.plan_name}`}>
+                          <Pencil className="size-3.5" aria-hidden="true" />
                           Edit
                         </Button>
                       )}
                       {canArchive && (
-                        <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)} aria-label={`Archive ${plan.plan_name}`}>
+                        <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setDeleteTarget(plan)} aria-label={`Archive ${plan.plan_name}`}>
+                          <Archive className="size-3.5" aria-hidden="true" />
                           Archive
                         </Button>
                       )}
@@ -271,6 +282,7 @@ export default function Plans() {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       <PlanDetailsModal

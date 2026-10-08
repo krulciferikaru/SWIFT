@@ -28,7 +28,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "../hooks/useToast";
-import { Search, CheckCircle2, Check } from "lucide-react";
+import { Search, CheckCircle2, Check, ChevronRight } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
@@ -284,14 +284,20 @@ export default function Payments() {
                       <button
                         key={s.subscriber_id}
                         onClick={() => selectSubscriber(s)}
-                        className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="group flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {s.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {s.contact_number || s.email}
-                        </p>
+                        <span>
+                          <span className="block text-sm font-semibold text-blue-700 dark:text-blue-400">
+                            {s.name}
+                          </span>
+                          <span className="block text-xs text-gray-500 dark:text-gray-400">
+                            {s.contact_number || s.email}
+                          </span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center text-xs font-medium text-blue-700 dark:text-blue-400">
+                          Open billing
+                          <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                        </span>
                       </button>
                     ))
                   )}
