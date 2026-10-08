@@ -38,47 +38,48 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-const navItemsByRole = {
-  admin: [
-    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Subscribers", path: "/subscribers", icon: Users2 },
-    {
-      label: "Pending Approvals",
-      path: "/approvals",
-      icon: ClipboardCheck,
-      showBadge: true,
-    },
-    { label: "Service Plans", path: "/plans", icon: Wifi },
-    { label: "Payments", path: "/payments", icon: Wallet },
-    { label: "Reports", path: "/reports", icon: FileText },
-    { label: "Archive", path: "/archive", icon: Archive },
-    { label: "Manage Roles", path: "/users", icon: ShieldCheck },
-    { label: "Audit Trail", path: "/audit", icon: ScrollText },
-    { label: "Settings", path: "/settings", icon: SettingsIcon },
-    { label: "Guide", path: "/guide", icon: HelpCircle },
-  ],
-  secretary: [
-    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Subscribers", path: "/subscribers", icon: Users2 },
-    {
-      label: "Pending Approvals",
-      path: "/approvals",
-      icon: ClipboardCheck,
-      showBadge: true,
-    },
-    { label: "Service Plans", path: "/plans", icon: Wifi },
-    { label: "Payments", path: "/payments", icon: Wallet },
-    { label: "Reports", path: "/reports", icon: FileText },
-    { label: "Archive", path: "/archive", icon: Archive },
-    { label: "Settings", path: "/settings", icon: SettingsIcon },
-    { label: "Guide", path: "/guide", icon: HelpCircle },
-  ],
-  subscriber: [
-    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Settings", path: "/settings", icon: SettingsIcon },
-    { label: "Guide", path: "/guide", icon: HelpCircle },
-  ],
-};
+// The menu is split into labelled sections. Each section only appears for people who have at
+// least one page in it. "bottom" sections sit at the foot of the menu, away from the work pages.
+const STAFF = ["admin", "secretary"];
+const EVERYONE = ["admin", "secretary", "subscriber"];
+
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [{ label: "Dashboard", path: "/dashboard", icon: LayoutDashboard, roles: EVERYONE }],
+  },
+  {
+    label: "Customers",
+    items: [
+      { label: "Subscribers", path: "/subscribers", icon: Users2, roles: STAFF },
+      { label: "Pending Approvals", path: "/approvals", icon: ClipboardCheck, roles: STAFF, showBadge: true },
+      { label: "Service Plans", path: "/plans", icon: Wifi, roles: STAFF },
+    ],
+  },
+  {
+    label: "Billing",
+    items: [
+      { label: "Payments", path: "/payments", icon: Wallet, roles: STAFF },
+      { label: "Reports", path: "/reports", icon: FileText, roles: STAFF },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { label: "Archive", path: "/archive", icon: Archive, roles: STAFF },
+      { label: "Manage Roles", path: "/users", icon: ShieldCheck, roles: ["admin"] },
+      { label: "Audit Trail", path: "/audit", icon: ScrollText, roles: ["admin"] },
+    ],
+  },
+  {
+    label: "Support",
+    bottom: true,
+    items: [
+      { label: "Settings", path: "/settings", icon: SettingsIcon, roles: EVERYONE },
+      { label: "Guide", path: "/guide", icon: HelpCircle, roles: EVERYONE },
+    ],
+  },
+];
 
 // Which permission a staff member needs to see each menu item (admin-only pages included).
 const PATH_PERMISSION = {
@@ -120,9 +121,14 @@ export default function Sidebar({ open: pinned, onToggle }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen]);
 
-  const navItems = (navItemsByRole[user?.role] || []).filter(
-    (item) => !PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path])),
-  );
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter(
+      (item) =>
+        item.roles.includes(user?.role) &&
+        (!PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path]))),
+    ),
+  })).filter((group) => group.items.length > 0);
   const canSeeApprovals = can("approvals.manage");
   const totalApprovalsCount = pendingCount + claimsCount;
 
@@ -222,7 +228,30 @@ export default function Sidebar({ open: pinned, onToggle }) {
         data-tour="nav"
         className={`flex-1 p-2 space-y-1 flex flex-col ${!open ? "items-center" : ""}`}
       >
-        {navItems.map((item) => {
+        {groups.map((group, gi) => (
+          <div
+            key={group.label}
+            role="group"
+            aria-label={group.label}
+            className={`flex flex-col space-y-1 ${!open ? "items-center" : "w-full"} ${
+              group.bottom ? "mt-auto border-t border-gray-200 dark:border-gray-800 pt-2" : ""
+            }`}
+          >
+            {open ? (
+              !group.bottom && (
+                <p
+                  aria-hidden="true"
+                  className={`px-3 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 ${gi === 0 ? "pt-1" : "pt-3"}`}
+                >
+                  {group.label}
+                </p>
+              )
+            ) : (
+              gi > 0 && !group.bottom && (
+                <span aria-hidden="true" className="my-1 h-px w-6 bg-gray-200 dark:bg-gray-800" />
+              )
+            )}
+            {group.items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (
@@ -275,6 +304,8 @@ export default function Sidebar({ open: pinned, onToggle }) {
             </Link>
           );
         })}
+          </div>
+        ))}
       </nav>
 
       <div
@@ -417,7 +448,22 @@ export default function Sidebar({ open: pinned, onToggle }) {
           aria-label="Main menu"
           className="absolute inset-x-0 top-0 max-h-full overflow-y-auto bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 shadow-lg p-2"
         >
-          {navItems.map((item) => {
+          {groups.map((group, gi) => (
+            <div
+              key={group.label}
+              role="group"
+              aria-label={group.label}
+              className={gi > 0 ? "mt-1 border-t border-gray-200 dark:border-gray-800 pt-1" : ""}
+            >
+              {!group.bottom && (
+                <p
+                  aria-hidden="true"
+                  className="px-3 pt-2 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                >
+                  {group.label}
+                </p>
+              )}
+              {group.items.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
@@ -450,6 +496,8 @@ export default function Sidebar({ open: pinned, onToggle }) {
               </Link>
             );
           })}
+            </div>
+          ))}
 
           <div className="my-2 border-t border-gray-200 dark:border-gray-800" />
 

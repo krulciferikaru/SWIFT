@@ -16,7 +16,7 @@ export const TOURS = {
         selector: t('nav'),
         title: 'Navigation',
         description:
-          'Everything in SWIFT is reached from this menu. Hover it when it is collapsed to see the labels.',
+          'Everything in SWIFT is reached from this menu, grouped into sections: Overview, Customers, Billing and Administration, with Settings and the Guide at the bottom. You only see the pages your role allows. Hover the menu when it is collapsed to see the labels.',
         side: 'right',
       },
       {
