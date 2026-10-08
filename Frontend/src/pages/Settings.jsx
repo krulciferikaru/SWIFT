@@ -20,7 +20,7 @@ const SMS_MESSAGE_MAX = 300
 
 export default function Settings() {
   const { theme, toggleTheme } = useTheme()
-  const { user } = useAuth()
+  const { user, can } = useAuth()
   const [confirmLogout, setConfirmLogout] = useState(true)
   const showTourButtons = useShowTourButtons()
   const { toast, showToast } = useToast()
@@ -30,7 +30,7 @@ export default function Settings() {
   const [unpaidCount, setUnpaidCount] = useState(null)
   const [sendingReminders, setSendingReminders] = useState(false)
 
-  const canSendSms = user?.role === 'admin' || user?.role === 'secretary'
+  const canSendSms = can('sms.send')
 
   useEffect(() => {
     const skip = localStorage.getItem('skipLogoutConfirm') === 'true'

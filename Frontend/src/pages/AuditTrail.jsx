@@ -27,6 +27,7 @@ const ACTION_LABELS = {
   'user.created': 'Created a staff account',
   'user.status_changed': 'Changed an account’s status',
   'user.password_reset': 'Reset a password',
+  'user.permissions_changed': 'Changed a secretary’s permissions',
   'sms.sent': 'Sent a text message',
   'sms.reminders_sent': 'Sent payment reminders',
 }
@@ -42,6 +43,19 @@ const CATEGORIES = [
   ['user', 'Staff accounts'],
   ['sms', 'Text messages'],
 ]
+
+const PERMISSION_LABELS = {
+  'subscribers.view': 'View subscribers',
+  'subscribers.manage': 'Add and edit subscribers',
+  'subscribers.archive': 'Archive subscribers',
+  'approvals.manage': 'Approve registrations',
+  'plans.manage': 'Manage service plans',
+  'payments.view': 'View payments',
+  'payments.record': 'Record payments',
+  'reports.view': 'View and export reports',
+  'archive.manage': 'Use the Archive',
+  'sms.send': 'Send text messages',
+}
 
 const FIELD_LABELS = {
   plan_id: 'Plan',
@@ -60,11 +74,18 @@ const FIELD_LABELS = {
   sent: 'Sent',
   failed: 'Failed',
   success: 'Delivered',
+  added: 'Allowed',
+  removed: 'No longer allowed',
 }
 
 const label = (key) => FIELD_LABELS[key] ?? key.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
 
-const show = (v) => (v === null || v === undefined || v === '' ? '—' : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v))
+const show = (v) => {
+  if (Array.isArray(v)) return v.length ? v.map((k) => PERMISSION_LABELS[k] ?? k).join(', ') : '—'
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No'
+  return String(v)
+}
 
 const formatWhen = (value) =>
   new Date(value).toLocaleString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })

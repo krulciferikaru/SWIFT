@@ -26,7 +26,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
-import { UserPlus, KeyRound } from 'lucide-react'
+import { UserPlus, KeyRound, SlidersHorizontal } from 'lucide-react'
+import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 
@@ -70,6 +71,7 @@ export default function Users() {
   const [creating, setCreating] = useState(false)
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
+  const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
   const [resetTarget, setResetTarget] = useState(null) // user being reset
   const [resetForm, setResetForm] = useState({ password: '', password_confirmation: '' })
   const [resetErrors, setResetErrors] = useState({})
@@ -318,6 +320,19 @@ export default function Users() {
                       )}
                     </TableCell>
                     <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                      {user.role === 'secretary' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setPermTarget(user)}
+                          aria-label={`Edit permissions for ${user.name}`}
+                        >
+                          <SlidersHorizontal className="size-3.5" />
+                          Permissions
+                        </Button>
+                      )}
                       {!isSelf && (
                         <Button
                           data-tour="users-reset"
@@ -331,6 +346,7 @@ export default function Users() {
                           Reset Password
                         </Button>
                       )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -490,6 +506,16 @@ export default function Users() {
           </div>
         </form>
       </Modal>
+
+      <PermissionsModal
+        user={permTarget}
+        onClose={() => setPermTarget(null)}
+        onSaved={(updated, message) => {
+          setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)))
+          setPermTarget(null)
+          showToast(message)
+        }}
+      />
 
       <AlertDialog open={!!pendingCreate} onOpenChange={(open) => { if (!open) setPendingCreate(null) }}>
         <AlertDialogContent>

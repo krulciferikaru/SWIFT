@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import subscriberApi from "../api/subscribers";
+import { useAuth } from "../context/AuthContext";
 import paymentsApi from "../api/payments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,7 @@ function describeCoverage(months, amount) {
 }
 
 export default function Payments() {
+  const { can } = useAuth();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -449,6 +451,7 @@ export default function Payments() {
               </div>
 
               {/* Record payment form, with live coverage preview */}
+              {can("payments.record") && (
               <Card data-tour="payments-form">
                 <CardHeader>
                   <CardTitle className="text-base">Record Payment</CardTitle>
@@ -557,6 +560,7 @@ export default function Payments() {
                   </form>
                 </CardContent>
               </Card>
+              )}
             </>
           )}
         </>

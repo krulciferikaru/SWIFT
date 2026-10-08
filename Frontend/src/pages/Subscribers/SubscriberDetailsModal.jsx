@@ -4,10 +4,12 @@ import Modal from '../../components/Modal'
 import StatusBadge from '../../components/StatusBadge'
 import DetailField, { peso, longDate } from '../../components/DetailField'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '../../context/AuthContext'
 import { Skeleton } from '@/components/ui/skeleton'
 import paymentsApi from '../../api/payments'
 
 export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, onArchive, onPayments }) {
+  const { can } = useAuth()
   const [billing, setBilling] = useState(null)
   const [billingState, setBillingState] = useState('idle') // idle | loading | error
 
@@ -49,26 +51,34 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
       size="lg"
       footer={(requestClose) => (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => onArchive(s)}
-            aria-label={`Archive ${s?.name}`}
-          >
-            Archive
-          </Button>
+          {can('subscribers.archive') ? (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => onArchive(s)}
+              aria-label={`Archive ${s?.name}`}
+            >
+              Archive
+            </Button>
+          ) : (
+            <span />
+          )}
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={requestClose}>
               Close
             </Button>
-            <Button type="button" variant="outline" className="gap-1.5" onClick={() => onPayments(s)}>
-              <CreditCard className="size-4" />
-              Payments
-            </Button>
-            <Button type="button" className="gap-1.5" onClick={() => onEdit(s)}>
-              <Pencil className="size-4" />
-              Edit
-            </Button>
+            {can('payments.view', 'payments.record') && (
+              <Button type="button" variant="outline" className="gap-1.5" onClick={() => onPayments(s)}>
+                <CreditCard className="size-4" />
+                Payments
+              </Button>
+            )}
+            {can('subscribers.manage') && (
+              <Button type="button" className="gap-1.5" onClick={() => onEdit(s)}>
+                <Pencil className="size-4" />
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       )}

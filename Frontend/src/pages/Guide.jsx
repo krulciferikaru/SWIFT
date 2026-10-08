@@ -170,6 +170,7 @@ const SECTIONS = [
         <p>This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
+          <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
           <li className="flex items-start gap-1.5">
             <KeyRound className="size-4 mt-0.5 shrink-0" />

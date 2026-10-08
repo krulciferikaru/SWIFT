@@ -43,7 +43,7 @@ export default function App() {
               <Route
                 path="/subscribers"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission="subscribers.view">
                     <Layout>
                       <SubscribersPage />
                     </Layout>
@@ -54,7 +54,7 @@ export default function App() {
               <Route
                 path="/approvals"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission="approvals.manage">
                     <Layout>
                       <Approvals />
                     </Layout>
@@ -76,7 +76,7 @@ export default function App() {
               <Route
                 path="/payments"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission={["payments.view", "payments.record"]}>
                     <Layout>
                       <Payments />
                     </Layout>
@@ -87,7 +87,7 @@ export default function App() {
               <Route
                 path="/reports"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission="reports.view">
                     <Layout>
                       <Reports />
                     </Layout>
@@ -98,7 +98,7 @@ export default function App() {
               <Route
                 path="/archive"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission="archive.manage">
                     <Layout>
                       <ArchivePage />
                     </Layout>
@@ -109,7 +109,7 @@ export default function App() {
               <Route
                 path="/users"
                 element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
+                  <ProtectedRoute permission="users.manage">
                     <Layout>
                       <Users />
                     </Layout>
@@ -120,7 +120,7 @@ export default function App() {
               <Route
                 path="/audit"
                 element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
+                  <ProtectedRoute permission="audit.view">
                     <Layout>
                       <AuditTrail />
                     </Layout>

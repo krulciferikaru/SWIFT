@@ -27,6 +27,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import reportApi from "../../api/reports";
 import Modal from "../../components/Modal";
 import StatusBadge from "../../components/StatusBadge";
@@ -43,6 +44,7 @@ import SubscriberDetailsModal from "./SubscriberDetailsModal";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 
 export default function SubscribersPage() {
+  const { can } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
@@ -326,13 +328,15 @@ export default function SubscribersPage() {
               Export CSV
             </Button>
 
-            <Button
-              data-tour="subs-add"
-              onClick={() => setShowAdd(true)}
-              className="whitespace-nowrap"
-            >
-              Add Subscriber
-            </Button>
+            {can("subscribers.manage") && (
+              <Button
+                data-tour="subs-add"
+                onClick={() => setShowAdd(true)}
+                className="whitespace-nowrap"
+              >
+                Add Subscriber
+              </Button>
+            )}
           </div>
         )}
 
@@ -446,6 +450,7 @@ export default function SubscribersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        {can("subscribers.manage") && (
                         <Button
                           variant="link"
                           size="sm"
@@ -455,6 +460,8 @@ export default function SubscribersPage() {
                         >
                           Edit
                         </Button>
+                        )}
+                        {can("subscribers.archive") && (
                         <Button
                           variant="link"
                           size="sm"
@@ -464,6 +471,8 @@ export default function SubscribersPage() {
                         >
                           Archive
                         </Button>
+                        )}
+                        {can("payments.view", "payments.record") && (
                         <Button
                           variant="link"
                           size="sm"
@@ -477,6 +486,7 @@ export default function SubscribersPage() {
                         >
                           Payments
                         </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
