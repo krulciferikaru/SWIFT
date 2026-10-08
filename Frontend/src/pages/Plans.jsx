@@ -47,8 +47,9 @@ export default function Plans() {
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const { toast, showToast } = useToast()
-  const { user } = useAuth()
-  const canArchive = user?.role === 'admin' || user?.role === 'secretary'
+  const { can } = useAuth()
+  const canArchive = can('plans.manage')
+  const canManage = canArchive
 
   const fetchPlans = async () => {
     setLoading(true)
@@ -150,7 +151,7 @@ export default function Plans() {
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
               <div className="flex gap-2">
                 <TourButton tour="plans" />
-                <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>
+                {canManage && <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>}
               </div>
             </>
           )}
@@ -193,7 +194,7 @@ export default function Plans() {
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
         <div className="flex gap-2">
                 <TourButton tour="plans" />
-                <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>
+                {canManage && <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>}
               </div>
       </div>
 
@@ -249,9 +250,11 @@ export default function Plans() {
                   </TableCell>
                   <TableCell>
                     <div data-tour="plans-row-actions" className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(plan)} aria-label={`Edit ${plan.plan_name}`}>
-                        Edit
-                      </Button>
+                      {canManage && (
+                        <Button variant="outline" size="sm" onClick={() => openEditModal(plan)} aria-label={`Edit ${plan.plan_name}`}>
+                          Edit
+                        </Button>
+                      )}
                       {canArchive && (
                         <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)} aria-label={`Archive ${plan.plan_name}`}>
                           Archive
