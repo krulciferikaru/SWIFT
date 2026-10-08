@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PhoneVerification from "../components/PhoneVerification.jsx";
 import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
@@ -197,6 +198,8 @@ export default function Dashboard() {
           </div>
           <TourButton tour="dashboardSubscriber" />
         </div>
+
+        <PhoneVerification variant="banner" />
 
         <div data-tour="me-summary" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>

@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
 import Modal from "../../components/Modal";
 import StatusBadge from "../../components/StatusBadge";
@@ -441,6 +442,7 @@ export default function SubscribersPage() {
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.contact || sub.contact_number || "—"}
+                      <div><VerifiedBadge verified={sub.contact_verified} /></div>
                     </TableCell>
                     <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                       {sub.mac_address || "—"}

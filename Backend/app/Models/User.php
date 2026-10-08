@@ -28,7 +28,7 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['effective_permissions'];
+    protected $appends = ['effective_permissions', 'contact_verified'];
 
     protected function casts(): array
     {
@@ -36,6 +36,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'permissions' => 'array',
+            'contact_verified_at' => 'datetime',
         ];
     }
 
@@ -50,6 +51,11 @@ class User extends Authenticatable
             'secretary' => array_values(array_intersect($this->permissions ?? $grantable, $grantable)),
             default => [],
         };
+    }
+
+    public function getContactVerifiedAttribute(): bool
+    {
+        return $this->contact_verified_at !== null;
     }
 
     public function getEffectivePermissionsAttribute(): array
@@ -69,6 +75,13 @@ class User extends Authenticatable
 
     protected static function booted(): void
     {
+        // A new number has to be verified again.
+        static::saving(function (User $user): void {
+            if ($user->exists && $user->isDirty('contact_number') && ! $user->isDirty('contact_verified_at')) {
+                $user->contact_verified_at = null;
+            }
+        });
+
         static::deleting(function (User $user): void {
             if ($user->subscriber_id && $user->subscriber) {
                 $user->subscriber->delete();

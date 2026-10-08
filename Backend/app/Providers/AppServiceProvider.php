@@ -39,6 +39,16 @@ class AppServiceProvider extends ServiceProvider
             : Limit::none()
         );
 
+        RateLimiter::for('phone-code', fn (Request $request) => $enabled
+            ? Limit::perMinutes(10, config('ratelimit.phone_code'))->by($request->user()?->id ?: $request->ip())
+            : Limit::none()
+        );
+
+        RateLimiter::for('phone-verify', fn (Request $request) => $enabled
+            ? Limit::perMinute(config('ratelimit.phone_verify'))->by($request->user()?->id ?: $request->ip())
+            : Limit::none()
+        );
+
         RateLimiter::for('reports', fn (Request $request) => $enabled
             ? Limit::perMinute(config('ratelimit.reports'))->by($request->user()?->id ?: $request->ip())
             : Limit::none()
