@@ -3,6 +3,7 @@ import subscriberApi from "../api/subscribers";
 import { useAuth } from "../context/AuthContext";
 import paymentsApi from "../api/payments";
 import PaymentHistory from "../components/PaymentHistory.jsx";
+import { errorMessage } from "../utils/errors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -150,8 +151,8 @@ export default function Payments() {
         ]);
         setBilling(billingRes.data.data);
         setHistory(historyRes.data.data);
-      } catch {
-        showToast("Failed to load billing details.", "error");
+      } catch (err) {
+        showToast(errorMessage(err, "Failed to load billing details."), "error");
       } finally {
         setLoadingDetail(false);
       }

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import { errorMessage } from '../utils/errors'
+import { useOnReconnect } from './useOnline'
 import subscriberApi from '../api/subscribers'
 
 /**
@@ -34,8 +36,8 @@ export function useSubscribers({ search, status, page }) {
         setSubscribers([])
         setMeta(null)
       }
-    } catch {
-      setError('Failed to load subscribers. Make sure the backend is running.')
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to load subscribers.'))
     } finally {
       setLoading(false)
     }
@@ -57,6 +59,12 @@ export function useSubscribers({ search, status, page }) {
   useEffect(() => {
     fetchSummary()
   }, [fetchSummary])
+
+  // A list that failed while offline loads again by itself once the connection is back.
+  useOnReconnect(() => {
+    fetchSubscribers()
+    fetchSummary()
+  })
 
   return { subscribers, meta, summary, loading, error, refetch: fetchSubscribers, refetchSummary: fetchSummary }
 }

@@ -20,7 +20,7 @@ const OFFLINE = {
 
 // One place that turns a failed request into something a person can act on.
 export function describeRequestError(err, what = 'load the report') {
-  if (!err.response) {
+  if (err.isNetworkError || !err.response) {
     return {
       kind: 'network',
       message: "Can't reach the server. Check your internet connection and try again.",

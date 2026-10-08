@@ -26,6 +26,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
+import { useOnReconnect } from '../hooks/useOnline'
 import { UserPlus, KeyRound, SlidersHorizontal } from 'lucide-react'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
@@ -101,6 +102,8 @@ export default function Users() {
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
+
+  useOnReconnect(fetchUsers)
 
   useEffect(() => {
     setPage(1)

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar.jsx'
 import { useFirstVisitTour } from '../tour/useTour'
+import OfflineBanner from './OfflineBanner.jsx'
 
 const TITLES = {
   '/dashboard': 'Dashboard',
@@ -69,6 +70,7 @@ export default function Layout({ children }) {
           sidebarOpen ? 'md:ml-60' : 'md:ml-16'
         }`}
       >
+        <OfflineBanner />
         {children}
       </main>
     </div>

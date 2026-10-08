@@ -4,6 +4,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { errorMessage } from '../utils/errors'
+import { useOnReconnect } from '../hooks/useOnline'
 
 const ACTION_LABELS = {
   'auth.login': 'Signed in',
@@ -147,7 +149,7 @@ export default function AuditTrail() {
       setLogs(res.data.data.data)
       setMeta(res.data.data)
     } catch (err) {
-      setError(err.response?.status === 429 ? 'Too many requests. Please wait a moment and try again.' : 'Failed to load the audit trail.')
+      setError(err.response?.status === 429 ? 'Too many requests. Please wait a moment and try again.' : errorMessage(err, 'Failed to load the audit trail.'))
     } finally {
       setLoading(false)
     }
@@ -156,6 +158,8 @@ export default function AuditTrail() {
   useEffect(() => {
     fetchLogs()
   }, [fetchLogs])
+
+  useOnReconnect(fetchLogs)
 
   const resetPage = (setter) => (e) => {
     setter(e.target.value)

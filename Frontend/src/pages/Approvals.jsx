@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios";
+import { useOnReconnect } from "../hooks/useOnline";
 import subscriberApi from "../api/subscribers";
 import {
   Table,
@@ -125,6 +126,14 @@ export default function Approvals() {
     else if (claimsSubTab === "pending") fetchClaims();
     else fetchRejectedClaims();
   }, [tab, claimsSubTab]);
+
+  // Reload whichever list is showing once the connection is back.
+  useOnReconnect(() => {
+    if (tab === "pending") fetchPending();
+    else if (tab === "rejected") fetchRejected();
+    else if (claimsSubTab === "pending") fetchClaims();
+    else fetchRejectedClaims();
+  });
 
   const handleApprove = async (subscriber) => {
     setActionLoading(subscriber.subscriber_id);
