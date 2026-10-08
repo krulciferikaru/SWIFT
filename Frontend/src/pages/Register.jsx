@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { errorMessage } from '../utils/errors'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import api from '../api/axios'
@@ -55,7 +56,7 @@ export default function Register() {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors)
       } else {
-        setMessage('Registration failed. Please try again.')
+        setMessage(errorMessage(err, 'Registration failed. Please try again.'))
       }
     } finally {
       setLoading(false)

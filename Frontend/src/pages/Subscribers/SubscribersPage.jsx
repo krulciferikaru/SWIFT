@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
 import Modal from "../../components/Modal";
@@ -164,8 +165,8 @@ export default function SubscribersPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
       showToast("Report downloaded successfully.");
-    } catch {
-      showToast("Failed to download report.", "error");
+    } catch (err) {
+      showToast(errorMessage(err, "Failed to download report."), "error");
     }
   };
 

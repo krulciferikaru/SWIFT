@@ -14,6 +14,8 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
+import { errorMessage } from '../utils/errors'
+import { useOnReconnect } from '../hooks/useOnline'
 import Toast from "../components/Toast.jsx";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
@@ -50,8 +52,8 @@ export default function ArchivePage() {
         setItems(res.data.data)
         setMeta(null)
       }
-    } catch {
-      setError('Failed to load archived records.')
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to load archived records.'))
     } finally {
       setLoading(false)
     }
@@ -60,6 +62,8 @@ export default function ArchivePage() {
   useEffect(() => {
     fetchItems()
   }, [fetchItems])
+
+  useOnReconnect(fetchItems)
 
   const switchTab = (next) => {
     // Clicking the tab you are already on would clear the list without reloading it.

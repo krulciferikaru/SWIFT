@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
+import { errorMessage } from '../utils/errors'
+import { useOnReconnect } from '../hooks/useOnline'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -58,7 +60,7 @@ export default function Plans() {
       const response = await api.get('/plans')
       setPlans(response.data)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load plans.')
+      setError(errorMessage(err, 'Failed to load plans.'))
     } finally {
       setLoading(false)
     }
@@ -67,6 +69,8 @@ export default function Plans() {
   useEffect(() => {
     fetchPlans()
   }, [])
+
+  useOnReconnect(fetchPlans)
 
   const openAddModal = () => {
     setEditingId(null)

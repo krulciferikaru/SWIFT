@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import usersApi from '../api/users'
 import Modal from './Modal'
+import { errorMessage } from '../utils/errors'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -22,7 +23,7 @@ export default function PermissionsModal({ user, onClose, onSaved }) {
     usersApi
       .getPermissionCatalog()
       .then((res) => setCatalog(res.data.data))
-      .catch(() => setError('Could not load the list of permissions.'))
+      .catch((err) => setError(errorMessage(err, 'Could not load the list of permissions.')))
       .finally(() => setLoading(false))
   }, [user])
 

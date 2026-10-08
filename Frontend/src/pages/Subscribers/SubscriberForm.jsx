@@ -12,6 +12,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import TourButton from "../../components/TourButton.jsx";
+import { errorMessage } from "../../utils/errors";
 
 const EMPTY_FORM = {
   plan_id: "",
@@ -40,6 +41,7 @@ export default function SubscriberForm({
   const [form, setForm] = useState(initial ?? EMPTY_FORM);
   const [plans, setPlans] = useState([]);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState("");
   const [duplicateMatches, setDuplicateMatches] = useState([]);
 
   useEffect(() => {
@@ -78,6 +80,7 @@ export default function SubscriberForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+    setFormError("");
     try {
       await onSubmit({
         ...form,
@@ -86,6 +89,9 @@ export default function SubscriberForm({
     } catch (err) {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {});
+      } else {
+        // Offline, timed out, or a server error: say so, and keep everything typed.
+        setFormError(errorMessage(err, "Could not save the subscriber. Please try again."));
       }
     }
   };
@@ -121,6 +127,12 @@ export default function SubscriberForm({
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+      {formError && (
+        <div role="alert" className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+          {formError}
+        </div>
+      )}
+
       <div className="flex justify-end">
         <TourButton tour="subscriberForm" />
       </div>
