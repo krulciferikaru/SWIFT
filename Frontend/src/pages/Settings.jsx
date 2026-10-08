@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
+import TextSizeControl from '../components/TextSizeControl.jsx'
+import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
 import { useToast } from '../hooks/useToast'
 import smsApi from '../api/sms'
 import subscriberApi from '../api/subscribers'
@@ -116,6 +118,14 @@ export default function Settings() {
               onCheckedChange={toggleTheme}
             />
           </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 dark:border-gray-700 pt-5">
+            <div>
+              <p className="text-sm font-medium">Text size</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Make everything in SWIFT bigger and easier to read.</p>
+            </div>
+            <TextSizeControl />
+          </div>
         </CardContent>
       </Card>
 
@@ -187,6 +197,8 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {user?.role === 'admin' && <CompanyInfoForm showToast={showToast} />}
 
       {canSendSms && (
         <Card data-tour="settings-sms">

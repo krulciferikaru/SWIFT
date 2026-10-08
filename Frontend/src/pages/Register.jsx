@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
+import CompanyContact from '../components/CompanyContact.jsx'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import api from '../api/axios'
@@ -226,6 +227,7 @@ export default function Register() {
               Log In
             </Link>
           </p>
+          <CompanyContact variant="inline" />
         </CardContent>
       </Card>
     </main>

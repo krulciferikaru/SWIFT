@@ -99,11 +99,17 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
         }
 
-        $subscriber = Subscriber::findOrFail($subscriberId);
+        $subscriber = Subscriber::with('plan')->findOrFail($subscriberId);
 
         return response()->json([
             'success' => true,
-            'data' => $this->billing->getBreakdown($subscriber),
+            'data' => [
+                ...$this->billing->getBreakdown($subscriber),
+                // What the subscriber's account is called right now, in the words staff see.
+                'status' => $subscriber->status,
+                'plan_name' => $subscriber->plan?->plan_name,
+                ...$this->billing->nextDue($subscriber),
+            ],
         ]);
     }
 

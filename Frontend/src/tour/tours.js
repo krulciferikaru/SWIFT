@@ -131,10 +131,24 @@ export const TOURS = {
         side: 'bottom',
       },
       {
+        selector: t('text-size'),
+        title: 'Make the text bigger',
+        description:
+          'If the writing is hard to read, tap the bigger A. Everything in SWIFT gets larger, and the choice is remembered on this device.',
+        side: 'bottom',
+      },
+      {
+        selector: t('me-status'),
+        title: 'Your service status',
+        description:
+          'This box says in plain words whether your service is active, needs a payment, or is disconnected, how much you owe, and when your next bill is due.',
+        side: 'bottom',
+      },
+      {
         selector: t('me-summary'),
         title: 'Your account at a glance',
         description:
-          'Your plan and monthly rate, your current balance, and how many months you are behind.',
+          'Your monthly bill, the amount you owe, and how many months are unpaid.',
         side: 'bottom',
       },
       {
@@ -147,7 +161,14 @@ export const TOURS = {
         selector: t('me-payments'),
         title: 'Payment history',
         description:
-          'Every payment the company has recorded for you, newest first, with the total paid. Use the year filter to narrow it, and click Receipt beside a payment to see and print a receipt. For payments, refunds or reconnection, contact the company directly.',
+          'Every payment the company has recorded for you, newest first, with the total paid. Use the year filter to narrow it, and click Receipt beside a payment to see and print a receipt.',
+        side: 'top',
+      },
+      {
+        selector: t('me-contact'),
+        title: 'Contact the company',
+        description:
+          'How to reach the company for payments, refunds, reconnection or questions, and how to pay. The company fills this in, so it appears once they have added their details.',
         side: 'top',
       },
     ],
@@ -424,6 +445,12 @@ export const TOURS = {
         side: 'bottom',
       },
       {
+        selector: t('text-size'),
+        title: 'Text size',
+        description: 'Make everything in SWIFT bigger. The choice is remembered on this device.',
+        side: 'bottom',
+      },
+      {
         selector: t('settings-account'),
         title: 'Logout confirmation',
         description: 'Turn off the "are you sure?" prompt if you do not want it every time you log out.',
@@ -435,6 +462,14 @@ export const TOURS = {
         description:
           'Hide the "Take a tour" buttons if you no longer need them, or replay the welcome tour whenever you like.',
         side: 'bottom',
+      },
+      {
+        selector: t('settings-company'),
+        title: 'Company contact information',
+        description:
+          'Admins enter the company\'s phone, email, address, office hours and how to pay. Subscribers see it on their dashboard, and the sign-in page shows it too. Anything left empty is not shown.',
+        side: 'top',
+        roles: ['admin'],
       },
       {
         selector: t('settings-phone'),
