@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Models\Payment;
 use App\Models\Subscriber;
 use App\Services\BillingService;
@@ -55,6 +56,13 @@ class PaymentController extends Controller
             ...$validated,
             'subscriber_id' => $subscriber->subscriber_id,
             'recorded_by' => $request->user()->id,
+        ]);
+
+        Audit::log('payment.recorded', $subscriber, null, [
+            'amount' => (float) $payment->amount,
+            'or_number' => $payment->or_number,
+            'method' => $payment->payment_method,
+            'payment_date' => $validated['payment_date'],
         ]);
 
         $subscriber = $subscriber->fresh();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -57,6 +58,8 @@ class UserController extends Controller
             'account_status' => 'active',
         ]);
 
+        Audit::log('user.created', $user, null, ['role' => $user->role]);
+
         return response()->json([
             'success' => true,
             'message' => 'Staff account created successfully.',
@@ -70,7 +73,12 @@ class UserController extends Controller
             'account_status' => ['required', Rule::in(['pending', 'active', 'inactive'])],
         ]);
 
+        $previous = $user->account_status;
         $user->update($validated);
+
+        Audit::log('user.status_changed', $user, null, [
+            'account_status' => ['old' => $previous, 'new' => $user->account_status],
+        ]);
 
         return response()->json([
             'message' => 'Account status updated.',
@@ -93,6 +101,8 @@ class UserController extends Controller
         $user->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        Audit::log('user.password_reset', $user);
 
         return response()->json([
             'message' => "{$user->name}'s password has been reset.",

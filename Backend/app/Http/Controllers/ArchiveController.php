@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Models\Plan;
 use App\Models\Subscriber;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +26,9 @@ class ArchiveController extends Controller
 
     public function restoreSubscriber(int $id): JsonResponse
     {
-        Subscriber::onlyTrashed()->findOrFail($id)->restore();
+        $subscriber = Subscriber::onlyTrashed()->findOrFail($id);
+        $subscriber->restore();
+        Audit::log('subscriber.restored', $subscriber);
 
         return response()->json(['success' => true, 'message' => 'Subscriber restored.']);
     }
@@ -36,7 +39,9 @@ class ArchiveController extends Controller
      */
     public function deleteSubscriber(int $id): JsonResponse
     {
-        Subscriber::onlyTrashed()->findOrFail($id)->forceDelete();
+        $subscriber = Subscriber::onlyTrashed()->findOrFail($id);
+        $subscriber->forceDelete();
+        Audit::log('subscriber.deleted_permanently', $subscriber);
 
         return response()->json(['success' => true, 'message' => 'Subscriber permanently deleted.']);
     }
@@ -51,7 +56,9 @@ class ArchiveController extends Controller
 
     public function restorePlan(int $id): JsonResponse
     {
-        Plan::onlyTrashed()->findOrFail($id)->restore();
+        $plan = Plan::onlyTrashed()->findOrFail($id);
+        $plan->restore();
+        Audit::log('plan.restored', $plan);
 
         return response()->json(['success' => true, 'message' => 'Plan restored.']);
     }
@@ -69,6 +76,7 @@ class ArchiveController extends Controller
         }
 
         $plan->forceDelete();
+        Audit::log('plan.deleted_permanently', $plan);
 
         return response()->json(['success' => true, 'message' => 'Plan permanently deleted.']);
     }

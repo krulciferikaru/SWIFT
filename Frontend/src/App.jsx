@@ -16,6 +16,7 @@ import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 import Guide from "./pages/Guide.jsx";
 import ArchivePage from "./pages/Archive.jsx";
+import AuditTrail from "./pages/AuditTrail.jsx";
 
 export default function App() {
   return (
@@ -111,6 +112,17 @@ export default function App() {
                   <ProtectedRoute allowedRoles={["admin"]}>
                     <Layout>
                       <Users />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/audit"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Layout>
+                      <AuditTrail />
                     </Layout>
                   </ProtectedRoute>
                 }
