@@ -15,6 +15,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
+import { TableSkeleton } from '../components/Skeletons.jsx'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 import Toast from "../components/Toast.jsx";
@@ -155,7 +156,11 @@ export default function ArchivePage() {
 
       <div data-tour="archive-list" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
         {loading ? (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+          <TableSkeleton rows={5} columns={
+            isSubscribers
+              ? [{ label: 'Name' }, { label: 'Plan' }, { label: 'Contact Number' }, { label: 'Address' }, { label: 'Archived On' }, { label: 'Actions', kind: 'actions' }]
+              : [{ label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' }, { label: 'Archived On' }, { label: 'Actions', kind: 'actions' }]
+          } />
         ) : items.length === 0 ? (
           <>
             <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Nothing archived here.</p>

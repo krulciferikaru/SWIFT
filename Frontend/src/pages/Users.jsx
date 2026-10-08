@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import usersApi from '../api/users'
+import { TableSkeleton } from '../components/Skeletons.jsx'
 import { useAuth } from '../context/AuthContext'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -198,6 +199,7 @@ export default function Users() {
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
         {loading ? (
           <div className="space-y-2">
+            <h1 className="sr-only">Manage Roles</h1>
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-64" />
           </div>
@@ -252,26 +254,10 @@ export default function Users() {
 
       <div data-tour="users-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-10" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-28" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-32 rounded-md" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <TableSkeleton rows={6} columns={[
+            { label: 'Name' }, { label: 'Email' }, { label: 'Role', kind: 'badge' },
+            { label: 'Account Status' }, { label: 'Actions', kind: 'actions' },
+          ]} />
         ) : users.length === 0 ? (
           <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">No users found.</div>
         ) : (

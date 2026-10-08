@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import usersApi from '../api/users'
 import Modal from './Modal'
+import { LoadingStatus } from './Skeletons.jsx'
+import { Skeleton } from '@/components/ui/skeleton'
 import { errorMessage } from '../utils/errors'
 import { Button } from '@/components/ui/button'
 
@@ -79,7 +81,19 @@ export default function PermissionsModal({ user, onClose, onSaved }) {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+        <LoadingStatus>
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <li key={i} className="flex items-start gap-3 py-3">
+                <Skeleton className="mt-1 size-4" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-44" />
+                  <Skeleton className="h-3 w-64 max-w-full" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </LoadingStatus>
       ) : (
         <fieldset>
           <legend className="sr-only">Allowed tasks</legend>

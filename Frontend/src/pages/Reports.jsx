@@ -17,6 +17,7 @@ import {
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 import { useReportData, describeRequestError } from '../hooks/useReportData'
+import { ReportSkeleton } from "../components/Skeletons.jsx";
 
 function money(value) {
   return `PHP ${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -262,7 +263,7 @@ export default function Reports() {
             </div>
 
             {loading ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading report…</p>
+              <ReportSkeleton cards={3} />
             ) : displayCollections ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -403,7 +404,7 @@ export default function Reports() {
             </div>
 
             {loading ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading report…</p>
+              <ReportSkeleton cards={4} />
             ) : displayStatement ? (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

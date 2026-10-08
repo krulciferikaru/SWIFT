@@ -88,7 +88,7 @@ export default function DashboardActivity() {
   const fresh = data && data.period === period
 
   return (
-    <section data-tour="dash-activity" aria-labelledby="dash-activity-heading" className="space-y-3">
+    <section data-tour="dash-activity" aria-labelledby="dash-activity-heading" aria-busy={loading || undefined} className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="dash-activity-heading" className="text-base font-semibold text-gray-900 dark:text-gray-100">
