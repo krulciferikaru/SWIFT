@@ -24,6 +24,12 @@ const EMPTY_FORM = {
   status: "Active",
 };
 
+// Keeps only hex digits and puts a colon after every pair: "aabbcc" -> "AA:BB:CC".
+function formatMac(value) {
+  const hex = value.replace(/[^0-9a-fA-F]/g, "").slice(0, 12).toUpperCase();
+  return hex.match(/.{1,2}/g)?.join(":") ?? "";
+}
+
 export default function SubscriberForm({
   initial = null,
   onSubmit,
@@ -230,6 +236,13 @@ export default function SubscriberForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field("MAC Address", "mac_address", "text", {
             placeholder: "XX:XX:XX:XX:XX:XX",
+            maxLength: 17,
+            autoComplete: "off",
+            spellCheck: false,
+            onChange: (e) => {
+              const next = formatMac(e.target.value);
+              setForm((prev) => ({ ...prev, mac_address: next }));
+            },
           })}
           {field("Connection Date", "connection_date", "date", {}, true)}
         </div>
