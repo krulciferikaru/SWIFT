@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Models\Payment;
 use App\Models\Subscriber;
 use App\Services\BillingService;
@@ -34,7 +35,7 @@ class PaymentController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $subscriber->payments()->orderByDesc('payment_date')->orderByDesc('id')->get(),
+            'data' => $subscriber->payments()->with('recordedBy:id,name')->orderByDesc('payment_date')->orderByDesc('id')->get(),
         ]);
     }
 
@@ -55,6 +56,13 @@ class PaymentController extends Controller
             ...$validated,
             'subscriber_id' => $subscriber->subscriber_id,
             'recorded_by' => $request->user()->id,
+        ]);
+
+        Audit::log('payment.recorded', $subscriber, null, [
+            'amount' => (float) $payment->amount,
+            'or_number' => $payment->or_number,
+            'method' => $payment->payment_method,
+            'payment_date' => $validated['payment_date'],
         ]);
 
         $subscriber = $subscriber->fresh();
@@ -91,11 +99,17 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
         }
 
-        $subscriber = Subscriber::findOrFail($subscriberId);
+        $subscriber = Subscriber::with('plan')->findOrFail($subscriberId);
 
         return response()->json([
             'success' => true,
-            'data' => $this->billing->getBreakdown($subscriber),
+            'data' => [
+                ...$this->billing->getBreakdown($subscriber),
+                // What the subscriber's account is called right now, in the words staff see.
+                'status' => $subscriber->status,
+                'plan_name' => $subscriber->plan?->plan_name,
+                ...$this->billing->nextDue($subscriber),
+            ],
         ]);
     }
 
@@ -110,12 +124,24 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
         }
 
-        $payments = Payment::where('subscriber_id', $subscriberId)
+        $payments = Payment::with('recordedBy:id,name')->where('subscriber_id', $subscriberId)
             ->orderByDesc('payment_date')
             ->orderByDesc('id')
             ->get();
 
-        return response()->json(['success' => true, 'data' => $payments]);
+        $subscriber = Subscriber::with('plan')->find($subscriberId);
+
+        return response()->json([
+            'success' => true,
+            'data' => $payments,
+            // What a printed receipt needs to say who it is for.
+            'subscriber' => $subscriber ? [
+                'name' => $subscriber->name,
+                'address' => $subscriber->address,
+                'contact_number' => $subscriber->contact_number,
+                'plan_name' => $subscriber->plan?->plan_name,
+            ] : null,
+        ]);
     }
     /**
      * GET /api/reports/financial-summary

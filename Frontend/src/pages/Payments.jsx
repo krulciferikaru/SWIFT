@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import subscriberApi from "../api/subscribers";
+import { useAuth } from "../context/AuthContext";
 import paymentsApi from "../api/payments";
+import PaymentHistory from "../components/PaymentHistory.jsx";
+import { errorMessage } from "../utils/errors";
+import { CardListSkeleton, LoadingStatus } from "../components/Skeletons.jsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +29,12 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "../hooks/useToast";
-import { Search, CheckCircle2, Check } from "lucide-react";
+import { Search, CheckCircle2, Check, ChevronRight } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import TourButton from "../components/TourButton.jsx";
+import { useTourActive } from "../tour/tourState";
+import { PaymentSample } from "../components/TourSamples.jsx";
+import Toast from "../components/Toast.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -80,9 +88,11 @@ function describeCoverage(months, amount) {
 }
 
 export default function Payments() {
+  const { can } = useAuth();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const tourActive = useTourActive();
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -142,8 +152,8 @@ export default function Payments() {
         ]);
         setBilling(billingRes.data.data);
         setHistory(historyRes.data.data);
-      } catch {
-        showToast("Failed to load billing details.", "error");
+      } catch (err) {
+        showToast(errorMessage(err, "Failed to load billing details."), "error");
       } finally {
         setLoadingDetail(false);
       }
@@ -178,15 +188,8 @@ export default function Payments() {
       showToast("Payment recorded.");
       const historyRes = await paymentsApi.getHistory(selected.subscriber_id);
       setHistory(historyRes.data.data);
-      const fresh = await subscriberApi.getAll({
-        search: selected.email,
-        per_page: 1,
-      });
-      const freshData = fresh.data.data;
-      const freshList = Array.isArray(freshData)
-        ? freshData
-        : (freshData?.data ?? []);
-      if (freshList[0]) setSelected(freshList[0]);
+      const fresh = await subscriberApi.getOne(selected.subscriber_id);
+      if (fresh.data.data) setSelected(fresh.data.data);
     } catch (err) {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {});
@@ -224,44 +227,43 @@ export default function Payments() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === "error" ? "bg-red-500" : "bg-green-500"
-            }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       {loading ? (
         <>
           <div className="space-y-2">
+            <h1 className="sr-only">Payments</h1>
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-72" />
           </div>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <Skeleton className="h-10 w-full" />
             </CardContent>
           </Card>
         </>
       ) : (
         <>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Payments
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Search for a subscriber to view their balance and record a payment.
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Payments
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Search for a subscriber to view their balance and record a payment.
+              </p>
+            </div>
+            <TourButton tour="payments" />
           </div>
 
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
-                  placeholder="Search by name, email, or MAC address…"
+                  data-tour="payments-search"
+                  aria-label="Search subscribers"
+                  placeholder="Search by name, contact number, or MAC address…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -276,7 +278,7 @@ export default function Payments() {
                       <Skeleton className="h-4 w-32" />
                     </div>
                   ) : results.length === 0 ? (
-                    <p className="p-3 text-sm text-gray-400 dark:text-gray-500">
+                    <p className="p-3 text-sm text-gray-500 dark:text-gray-400">
                       No subscribers found.
                     </p>
                   ) : (
@@ -284,14 +286,20 @@ export default function Payments() {
                       <button
                         key={s.subscriber_id}
                         onClick={() => selectSubscriber(s)}
-                        className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="group flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {s.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {s.email}
-                        </p>
+                        <span>
+                          <span className="block text-sm font-semibold text-blue-700 dark:text-blue-400">
+                            {s.name}
+                          </span>
+                          <span className="block text-xs text-gray-500 dark:text-gray-400">
+                            {s.contact_number || s.email}
+                          </span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center text-xs font-medium text-blue-700 dark:text-blue-400">
+                          Open billing
+                          <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                        </span>
                       </button>
                     ))
                   )}
@@ -302,18 +310,20 @@ export default function Payments() {
         </>
       )}
 
+      {tourActive && !selected && <PaymentSample />}
+
       {selected && (
         <>
           {/* Subscriber header — balance now lives here, not buried below */}
-          <Card>
-            <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
+          <Card data-tour="payments-balance">
+            <CardContent className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {selected.name}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {selected.plan?.plan_name ?? "No plan assigned"} ·{" "}
-                  {selected.email}
+                  {selected.contact_number || selected.email}
                 </p>
                 <Badge
                   variant="outline"
@@ -360,17 +370,24 @@ export default function Payments() {
           </Card>
 
           {loadingDetail ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="pt-6 space-y-3">
-                    {Array.from({ length: 4 }).map((_, j) => (
-                      <Skeleton key={j} className="h-8 w-full" />
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <LoadingStatus className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <CardListSkeleton rows={4} />
+                <CardListSkeleton rows={4} />
+              </div>
+              <Card>
+                <CardHeader><Skeleton className="h-5 w-36" /></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 max-w-md">
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                  <Skeleton className="h-9 w-full max-w-md" />
+                </CardContent>
+              </Card>
+            </LoadingStatus>
           ) : (
             <>
               {/* Breakdown + history side-by-side, so "did they already pay?" doesn't require scrolling */}
@@ -418,40 +435,28 @@ export default function Payments() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card data-tour="payments-history">
                   <CardHeader>
-                    <CardTitle className="text-base">Recent Payments</CardTitle>
+                    <CardTitle className="text-base">Payment History</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 max-h-72 overflow-y-auto">
-                    {history.length === 0 ? (
-                      <p className="text-sm text-gray-400 dark:text-gray-500">
-                        No payments recorded yet.
-                      </p>
-                    ) : (
-                      history.map((p) => (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span className="text-gray-500 dark:text-gray-400">
-                            {new Date(p.payment_date).toLocaleDateString()} ·{" "}
-                            {p.or_number}
-                          </span>
-                          <span className="text-gray-900 dark:text-gray-100">
-                            ₱
-                            {Number(p.amount).toLocaleString("en-PH", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </span>
-                        </div>
-                      ))
-                    )}
+                  <CardContent>
+                    <PaymentHistory
+                      maxHeightClass="max-h-80"
+                      payments={history}
+                      subscriber={{
+                        name: selected.name,
+                        address: selected.address,
+                        contact_number: selected.contact_number,
+                        plan_name: selected.plan?.plan_name,
+                      }}
+                    />
                   </CardContent>
                 </Card>
               </div>
 
               {/* Record payment form, with live coverage preview */}
-              <Card>
+              {can("payments.record") && (
+              <Card data-tour="payments-form">
                 <CardHeader>
                   <CardTitle className="text-base">Record Payment</CardTitle>
                 </CardHeader>
@@ -530,7 +535,7 @@ export default function Payments() {
                             setForm({ ...form, payment_method: v })
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full" aria-label="Payment method">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -559,6 +564,7 @@ export default function Payments() {
                   </form>
                 </CardContent>
               </Card>
+              )}
             </>
           )}
         </>
@@ -571,7 +577,7 @@ export default function Payments() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="size-5 text-green-600 dark:text-green-400" />
+              <CheckCircle2 className="size-5 text-green-700 dark:text-green-400" />
               Reconnect this subscriber?
             </AlertDialogTitle>
             <AlertDialogDescription>

@@ -4,13 +4,18 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import CompanyContact from '../components/CompanyContact.jsx'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+  useEffect(() => {
+    document.title = 'Log in · SWIFT'
+  }, [])
+
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -30,7 +35,7 @@ useEffect(() => {
     setLoading(true)
 
     try {
-      const payload = new URLSearchParams({ email, password }).toString()
+      const payload = new URLSearchParams({ login: identifier.trim(), password }).toString()
       const response = await api.post('/login', payload, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
@@ -44,28 +49,29 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-1">
-          <div className="text-2xl font-bold text-primary mb-2">SWIFT</div>
-          <CardTitle>Welcome back</CardTitle>
+          <div aria-hidden="true" className="text-2xl font-bold text-primary mb-2">SWIFT</div>
+          <CardTitle as="h1">Welcome back</CardTitle>
           <CardDescription>Log in to manage your cable TV account.</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+            <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="login">Contact Number or Email</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="login"
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="09XX-XXX-XXXX"
                 required
                 autoFocus
               />
@@ -86,7 +92,6 @@ useEffect(() => {
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  tabIndex={-1}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -105,8 +110,9 @@ useEffect(() => {
               Register
             </Link>
           </p>
+          <CompanyContact variant="inline" />
         </CardContent>
       </Card>
-    </div>
+    </main>
   )
 }

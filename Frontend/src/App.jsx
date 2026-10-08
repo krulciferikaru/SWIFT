@@ -15,6 +15,8 @@ import Payments from "./pages/Payments.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 import Guide from "./pages/Guide.jsx";
+import ArchivePage from "./pages/Archive.jsx";
+import AuditTrail from "./pages/AuditTrail.jsx";
 
 export default function App() {
   return (
@@ -41,7 +43,7 @@ export default function App() {
               <Route
                 path="/subscribers"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission="subscribers.view">
                     <Layout>
                       <SubscribersPage />
                     </Layout>
@@ -52,7 +54,7 @@ export default function App() {
               <Route
                 path="/approvals"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission="approvals.manage">
                     <Layout>
                       <Approvals />
                     </Layout>
@@ -74,7 +76,7 @@ export default function App() {
               <Route
                 path="/payments"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission={["payments.view", "payments.record"]}>
                     <Layout>
                       <Payments />
                     </Layout>
@@ -85,7 +87,7 @@ export default function App() {
               <Route
                 path="/reports"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute permission="reports.view">
                     <Layout>
                       <Reports />
                     </Layout>
@@ -94,11 +96,33 @@ export default function App() {
               />
               
               <Route
+                path="/archive"
+                element={
+                  <ProtectedRoute permission="archive.manage">
+                    <Layout>
+                      <ArchivePage />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/users"
                 element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
+                  <ProtectedRoute permission="users.manage">
                     <Layout>
                       <Users />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/audit"
+                element={
+                  <ProtectedRoute permission="audit.view">
+                    <Layout>
+                      <AuditTrail />
                     </Layout>
                   </ProtectedRoute>
                 }

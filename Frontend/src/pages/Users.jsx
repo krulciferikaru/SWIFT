@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import usersApi from '../api/users'
+import { capitalizeWords } from '../utils/text'
+import { TableSkeleton } from '../components/Skeletons.jsx'
 import { useAuth } from '../context/AuthContext'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -26,7 +28,11 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
-import { UserPlus, KeyRound } from 'lucide-react'
+import { useOnReconnect } from '../hooks/useOnline'
+import { UserPlus, KeyRound, SlidersHorizontal } from 'lucide-react'
+import PermissionsModal from '../components/PermissionsModal.jsx'
+import TourButton from "../components/TourButton.jsx";
+import Toast from "../components/Toast.jsx";
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -68,6 +74,7 @@ export default function Users() {
   const [creating, setCreating] = useState(false)
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
+  const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
   const [resetTarget, setResetTarget] = useState(null) // user being reset
   const [resetForm, setResetForm] = useState({ password: '', password_confirmation: '' })
   const [resetErrors, setResetErrors] = useState({})
@@ -98,6 +105,8 @@ export default function Users() {
     fetchUsers()
   }, [fetchUsers])
 
+  useOnReconnect(fetchUsers)
+
   useEffect(() => {
     setPage(1)
   }, [search, roleFilter])
@@ -123,7 +132,8 @@ export default function Users() {
   }
 
   const handleStaffFormChange = (e) => {
-    setStaffForm({ ...staffForm, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setStaffForm({ ...staffForm, [name]: name === 'name' ? capitalizeWords(value) : value })
   }
 
   const submitCreate = async (e) => {
@@ -186,15 +196,12 @@ export default function Users() {
 
   return (
     <div>
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
         {loading ? (
           <div className="space-y-2">
+            <h1 className="sr-only">Manage Roles</h1>
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-64" />
           </div>
@@ -206,10 +213,13 @@ export default function Users() {
             </p>
           </div>
         )}
-        <Button onClick={openCreateModal} className="gap-2">
-          <UserPlus className="size-4" />
-          Add Staff Account
-        </Button>
+        <div className="flex gap-2">
+          <TourButton tour="users" />
+          <Button data-tour="users-add" onClick={openCreateModal} className="gap-2">
+            <UserPlus className="size-4" />
+            Add Staff Account
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -218,16 +228,17 @@ export default function Users() {
           <Skeleton className="h-9 w-full sm:w-40" />
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div data-tour="users-filters" className="flex flex-col sm:flex-row gap-3 mb-4">
           <Input
             type="text"
             placeholder="Search by name or email…"
+            aria-label="Search accounts"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-40" aria-label="Filter by role">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -240,33 +251,17 @@ export default function Users() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div data-tour="users-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-10" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-28" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-32 rounded-md" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <TableSkeleton rows={6} columns={[
+            { label: 'Name' }, { label: 'Email' }, { label: 'Role', kind: 'badge' },
+            { label: 'Account Status' }, { label: 'Actions', kind: 'actions' },
+          ]} />
         ) : users.length === 0 ? (
-          <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">No users found.</div>
+          <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">No users found.</div>
         ) : (
           <Table>
             <TableHeader>
@@ -275,7 +270,7 @@ export default function Users() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Account Status</TableHead>
-                <TableHead></TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -285,7 +280,7 @@ export default function Users() {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       {user.name}
-                      {isSelf && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(you)</span>}
+                      {isSelf && <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(you)</span>}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{user.email}</TableCell>
                     <TableCell>
@@ -304,7 +299,7 @@ export default function Users() {
                           onValueChange={(newStatus) => handleStatusChange(user, newStatus)}
                           disabled={actionLoading === user.id}
                         >
-                          <SelectTrigger className="w-32 capitalize">
+                          <SelectTrigger data-tour="users-status" aria-label={`Account status for ${user.name}`} className="w-32 capitalize">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -316,17 +311,34 @@ export default function Users() {
                       )}
                     </TableCell>
                     <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                      {user.role === 'secretary' && (
+                        <Button
+                          data-tour="users-permissions"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setPermTarget(user)}
+                          aria-label={`Edit permissions for ${user.name}`}
+                        >
+                          <SlidersHorizontal className="size-3.5" />
+                          Permissions
+                        </Button>
+                      )}
                       {!isSelf && (
                         <Button
+                          data-tour="users-reset"
                           variant="outline"
                           size="sm"
                           className="gap-1.5"
                           onClick={() => openResetModal(user)}
+                          aria-label={`Reset password for ${user.name}`}
                         >
                           <KeyRound className="size-3.5" />
                           Reset Password
                         </Button>
                       )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -370,6 +382,10 @@ export default function Users() {
         )}
       >
         <form id="staff-create-form" onSubmit={submitCreate} className="space-y-4">
+          <div className="flex justify-end">
+            <TourButton tour="staffForm" />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="staff-name">Full Name<span className="text-red-500 ml-0.5">*</span></Label>
             <Input
@@ -397,10 +413,10 @@ export default function Users() {
             {staffErrors.email && <p className="text-red-500 text-xs">{staffErrors.email[0]}</p>}
           </div>
 
-          <div className="space-y-1.5">
+          <div data-tour="staff-role" className="space-y-1.5">
             <Label>Role<span className="text-red-500 ml-0.5">*</span></Label>
             <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })} disabled>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -482,6 +498,16 @@ export default function Users() {
           </div>
         </form>
       </Modal>
+
+      <PermissionsModal
+        user={permTarget}
+        onClose={() => setPermTarget(null)}
+        onSaved={(updated, message) => {
+          setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)))
+          setPermTarget(null)
+          showToast(message)
+        }}
+      />
 
       <AlertDialog open={!!pendingCreate} onOpenChange={(open) => { if (!open) setPendingCreate(null) }}>
         <AlertDialogContent>

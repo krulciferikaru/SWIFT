@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { errorMessage } from '../utils/errors'
+import CompanyContact from '../components/CompanyContact.jsx'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import api from '../api/axios'
+import { capitalizeWords, BARANGAYS } from '../utils/text'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -11,7 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function Register() {
   const [form, setForm] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     password: '',
     password_confirmation: '',
@@ -34,7 +38,9 @@ export default function Register() {
   }, [authLoading, isAuthenticated, navigate])
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    const nameFields = ['first_name', 'last_name']
+    setForm({ ...form, [name]: nameFields.includes(name) ? capitalizeWords(value) : value })
   }
 
   const handleSubmit = async (e) => {
@@ -54,7 +60,7 @@ export default function Register() {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors)
       } else {
-        setMessage('Registration failed. Please try again.')
+        setMessage(errorMessage(err, 'Registration failed. Please try again.'))
       }
     } finally {
       setLoading(false)
@@ -63,10 +69,10 @@ export default function Register() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-10 pb-10 text-center space-y-4">
-            <CheckCircle2 className="size-12 text-green-600 dark:text-green-400 mx-auto" />
+            <CheckCircle2 className="size-12 text-green-700 dark:text-green-400 mx-auto" />
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Registration submitted</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -78,51 +84,51 @@ export default function Register() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-1">
-          <div className="text-2xl font-bold text-primary mb-2">SWIFT</div>
-          <CardTitle>Create your account</CardTitle>
+          <div aria-hidden="true" className="text-2xl font-bold text-primary mb-2">SWIFT</div>
+          <CardTitle as="h1">Create your account</CardTitle>
           <CardDescription>Register for cable TV service. Your application will be reviewed before activation.</CardDescription>
         </CardHeader>
         <CardContent>
           {message && !submitted && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+            <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
               {message}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                className={errors.name ? 'border-red-400' : ''}
-              />
-              {errors.name && <p className="text-red-500 text-xs">{errors.name[0]}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                required
-                className={errors.email ? 'border-red-400' : ''}
-              />
-              {errors.email && <p className="text-red-500 text-xs">{errors.email[0]}</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
+                  name="first_name"
+                  value={form.first_name}
+                  onChange={handleChange}
+                  required
+                  className={errors.first_name ? 'border-red-400' : ''}
+                />
+                {errors.first_name && <p className="text-red-500 text-xs">{errors.first_name[0]}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  value={form.last_name}
+                  onChange={handleChange}
+                  required
+                  className={errors.last_name ? 'border-red-400' : ''}
+                />
+                {errors.last_name && <p className="text-red-500 text-xs">{errors.last_name[0]}</p>}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -133,18 +139,44 @@ export default function Register() {
                 value={form.contact_number}
                 onChange={handleChange}
                 placeholder="09XX-XXX-XXXX"
+                required
+                className={errors.contact_number ? 'border-red-400' : ''}
               />
+              {errors.contact_number && <p className="text-red-500 text-xs">{errors.contact_number[0]}</p>}
+              <p className="text-xs text-gray-500 dark:text-gray-400">You will use this number to log in.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span></Label>
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className={errors.email ? 'border-red-400' : ''}
+              />
+              {errors.email && <p className="text-red-500 text-xs">{errors.email[0]}</p>}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="address">Address</Label>
-              <Input
+              <select
                 id="address"
                 name="address"
                 value={form.address}
                 onChange={handleChange}
-                placeholder="e.g. Palayan City, Nueva Ecija"
-              />
+                required
+                className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? 'border-red-400' : 'border-input'}`}
+              >
+                <option value="">Select your barangay</option>
+                {BARANGAYS.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+              {errors.address && <p className="text-red-500 text-xs">{errors.address[0]}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -207,8 +239,9 @@ export default function Register() {
               Log In
             </Link>
           </p>
+          <CompanyContact variant="inline" />
         </CardContent>
       </Card>
-    </div>
+    </main>
   )
 }

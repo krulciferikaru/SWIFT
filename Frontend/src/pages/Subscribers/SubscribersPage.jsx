@@ -27,6 +27,11 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { TableSkeleton } from "../../components/Skeletons.jsx";
+import { Archive, ChevronRight, CreditCard, MousePointerClick, Pencil } from "lucide-react";
+import { errorMessage } from "../../utils/errors";
+import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
 import Modal from "../../components/Modal";
 import StatusBadge from "../../components/StatusBadge";
@@ -37,9 +42,13 @@ import { useToast } from "../../hooks/useToast";
 import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
 import { useNavigate } from "react-router-dom";
+import TourButton from "../../components/TourButton.jsx";
+import Toast from "../../components/Toast.jsx";
+import SubscriberDetailsModal from "./SubscriberDetailsModal";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 
 export default function SubscribersPage() {
+  const { can } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
@@ -67,6 +76,7 @@ export default function SubscribersPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [detailsTarget, setDetailsTarget] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -125,15 +135,15 @@ export default function SubscribersPage() {
       const response = await subscriberApi.delete(deleteTarget.subscriber_id);
 
       if (response.status < 200 || response.status >= 300) {
-        throw new Error("Delete request was not successful.");
+        throw new Error("Archive request was not successful.");
       }
 
       setDeleteTarget(null);
-      showToast("Subscriber deleted.", "success");
+      showToast("Subscriber archived.", "success");
       await refetch();
       await refetchSummary();
     } catch (err) {
-      const msg = err.response?.data?.message ?? "Delete failed.";
+      const msg = err.response?.data?.message ?? "Archive failed.";
       showToast(msg, "error");
       return;
     } finally {
@@ -157,8 +167,8 @@ export default function SubscribersPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
       showToast("Report downloaded successfully.");
-    } catch {
-      showToast("Failed to download report.", "error");
+    } catch (err) {
+      showToast(errorMessage(err, "Failed to download report."), "error");
     }
   };
 
@@ -201,37 +211,33 @@ export default function SubscribersPage() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${
-            toast.type === "error" ? "bg-red-500" : "bg-green-500"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="space-y-6">
-        <div className="mb-6">
+        <div className="mb-6 flex items-start justify-between gap-3">
           {initialLoading ? (
             <div className="space-y-2">
+              <h1 className="sr-only">Subscribers</h1>
               <Skeleton className="h-8 w-40" />
               <Skeleton className="h-4 w-72" />
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Subscribers
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Manage all cable TV subscribers for Palayan Branch.
-              </p>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  Subscribers
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Manage all cable TV subscribers for Palayan Branch.
+                </p>
+              </div>
+              <TourButton tour="subscribers" />
             </>
           )}
         </div>
 
         {summary ? (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div data-tour="subs-summary" className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
               {
                 label: "Total",
@@ -246,7 +252,7 @@ export default function SubscribersPage() {
               {
                 label: "Active",
                 value: summary.active,
-                color: "text-green-600 dark:text-green-400",
+                color: "text-green-700 dark:text-green-400",
               },
               {
                 label: "Unpaid",
@@ -297,15 +303,17 @@ export default function SubscribersPage() {
         ) : (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Input
+              data-tour="subs-search"
+              aria-label="Search subscribers"
               type="text"
-              placeholder="Search by name, email, address, MAC…"
+              placeholder="Search by name, contact number, address, MAC…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1"
             />
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-full sm:w-40">
+              <SelectTrigger data-tour="subs-status" aria-label="Filter by status" className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -318,84 +326,43 @@ export default function SubscribersPage() {
             </Select>
 
             <Button
+              data-tour="subs-export"
               onClick={() => setShowPreview(true)}
-              className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+              className="bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
             >
               Export CSV
             </Button>
 
-            <Button
-              onClick={() => setShowAdd(true)}
-              className="whitespace-nowrap"
-            >
-              Add Subscriber
-            </Button>
+            {can("subscribers.manage") && (
+              <Button
+                data-tour="subs-add"
+                onClick={() => setShowAdd(true)}
+                className="whitespace-nowrap"
+              >
+                Add Subscriber
+              </Button>
+            )}
           </div>
         )}
 
+        <p className="mb-2 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+          <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
+          Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
+        </p>
+
         {/* Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div data-tour="subs-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Skeleton className="h-4 w-12" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-10" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-14" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-16" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-24" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-14" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-16" />
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-28" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-36" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-16 rounded-full" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-16" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <TableSkeleton rows={9} columns={[
+              { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Contact" },
+              { label: "MAC Address" }, { label: "Status", kind: "badge" }, { label: "Actions", kind: "actions" },
+            ]} />
           ) : error ? (
-            <div className="text-center py-16 text-sm text-red-500 dark:text-red-400">
+            <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
               {error}
             </div>
           ) : subscribers.length === 0 ? (
-            <div className="text-center py-16 text-sm text-gray-400 dark:text-gray-500">
+            <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">
               No subscribers found.
               {search || status !== "All" ? " Try adjusting your filters." : ""}
             </div>
@@ -416,53 +383,78 @@ export default function SubscribersPage() {
                 {subscribers.map((sub) => (
                   <TableRow key={sub.subscriber_id}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                      {sub.name}
+                      <button
+                        data-tour="subs-name"
+                        type="button"
+                        onClick={() => setDetailsTarget(sub)}
+                        aria-haspopup="dialog"
+                        title="View details"
+                        className="group inline-flex items-center gap-0.5 text-left font-semibold text-blue-700 dark:text-blue-400 underline decoration-blue-700/40 dark:decoration-blue-400/40 underline-offset-2 hover:decoration-current focus-visible:decoration-current"
+                      >
+                        {sub.name}
+                        <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                      </button>
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.plan?.plan_name ?? "—"}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.email}
+                      {sub.email || "—"}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.contact || sub.contact_number || "—"}
+                      <div>
+                                              {sub.contact || sub.contact_number || "—"}
+                                              <div><VerifiedBadge verified={sub.contact_verified} /></div>
+                                            </div>
                     </TableCell>
-                    <TableCell className="text-gray-500 dark:text-gray-500 font-mono text-xs">
+                    <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                       {sub.mac_address || "—"}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={sub.status} />
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div data-tour="subs-actions" className="flex flex-wrap gap-2">
+                        {can("subscribers.manage") && (
                         <Button
-                          variant="link"
+                          variant="outline"
                           size="sm"
                           onClick={() => setEditTarget(sub)}
-                          className="h-auto p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                          aria-label={`Edit ${sub.name}`}
+                          className="gap-1.5"
                         >
+                          <Pencil className="size-3.5" aria-hidden="true" />
                           Edit
                         </Button>
+                        )}
+                        {can("subscribers.archive") && (
                         <Button
-                          variant="link"
+                          variant="destructive"
                           size="sm"
                           onClick={() => setDeleteTarget(sub)}
-                          className="h-auto p-0 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                          aria-label={`Archive ${sub.name}`}
+                          className="gap-1.5"
                         >
-                          Delete
+                          <Archive className="size-3.5" aria-hidden="true" />
+                          Archive
                         </Button>
+                        )}
+                        {can("payments.view", "payments.record") && (
                         <Button
-                          variant="link"
+                          variant="outline"
                           size="sm"
+                          aria-label={`Payments for ${sub.name}`}
                           onClick={() =>
                             navigate("/payments", {
                               state: { subscriber: sub },
                             })
                           }
-                          className="h-auto p-0 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                          className="gap-1.5 border-green-700/40 text-green-700 hover:bg-green-50 dark:border-green-400/40 dark:text-green-400 dark:hover:bg-green-950"
                         >
+                          <CreditCard className="size-3.5" aria-hidden="true" />
                           Payments
                         </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -527,7 +519,7 @@ export default function SubscribersPage() {
               </Button>
               <Button
                 onClick={handleExportReport}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-700 text-white hover:bg-green-800"
               >
                 Download CSV
               </Button>
@@ -574,6 +566,20 @@ export default function SubscribersPage() {
           loading={formLoading}
         />
       </Modal>
+
+      <SubscriberDetailsModal
+        subscriber={detailsTarget}
+        onClose={() => setDetailsTarget(null)}
+        onEdit={(s) => {
+          setDetailsTarget(null);
+          setEditTarget(s);
+        }}
+        onArchive={(s) => {
+          setDetailsTarget(null);
+          setDeleteTarget(s);
+        }}
+        onPayments={(s) => navigate("/payments", { state: { subscriber: s } })}
+      />
 
       <Modal
         isOpen={!!editTarget}
@@ -630,10 +636,11 @@ export default function SubscribersPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Subscriber</AlertDialogTitle>
+            <AlertDialogTitle>Archive Subscriber</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteTarget?.name}"? This
-              cannot be undone.
+              Archive "{deleteTarget?.name}"? They will be removed from the
+              subscriber list and can no longer log in, but you can restore
+              them anytime from the Archive page.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -643,7 +650,7 @@ export default function SubscribersPage() {
               disabled={deleteLoading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleteLoading ? "Deleting..." : "Delete Subscriber"}
+              {deleteLoading ? "Archiving..." : "Archive Subscriber"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

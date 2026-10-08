@@ -3,10 +3,11 @@ import api from './axios'
 const reportApi = {
   getSubscribers: (params = {}) => api.get('/reports/subscribers', { params }),
 
-  getCollections: (params = {}) => api.get('/reports/collections', { params }),
+  getCollections: (params = {}, config = {}) =>
+    api.get('/reports/collections', { params, ...config }),
 
-  getFinancialStatement: (params = {}) =>
-    api.get('/reports/financial-statement', { params }),
+  getFinancialStatement: (params = {}, config = {}) =>
+    api.get('/reports/financial-statement', { params, ...config }),
 
   downloadSubscribers: (params = {}) =>
     api.get('/reports/subscribers', { params, responseType: 'blob' }),

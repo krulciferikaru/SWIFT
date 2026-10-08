@@ -20,6 +20,16 @@ class Payment extends Model
         'recorded_by',
     ];
 
+    // The staff member's name, so a printed receipt can say who received the payment.
+    protected $appends = ['received_by'];
+
+    protected $hidden = ['recordedBy'];
+
+    public function getReceivedByAttribute(): ?string
+    {
+        return $this->recordedBy?->name;
+    }
+
     protected function casts(): array
     {
         return [
@@ -30,7 +40,7 @@ class Payment extends Model
 
     public function subscriber(): BelongsTo
     {
-        return $this->belongsTo(Subscriber::class, 'subscriber_id', 'subscriber_id');
+        return $this->belongsTo(Subscriber::class, 'subscriber_id', 'subscriber_id')->withTrashed();
     }
 
     public function recordedBy(): BelongsTo

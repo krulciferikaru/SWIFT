@@ -11,6 +11,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import TourButton from "../../components/TourButton.jsx";
+import { errorMessage } from "../../utils/errors";
+import { capitalizeWords, BARANGAYS } from "../../utils/text";
 
 const EMPTY_FORM = {
   plan_id: "",
@@ -23,6 +26,12 @@ const EMPTY_FORM = {
   status: "Active",
 };
 
+// Keeps only hex digits and puts a colon after every pair: "aabbcc" -> "AA:BB:CC".
+function formatMac(value) {
+  const hex = value.replace(/[^0-9a-fA-F]/g, "").slice(0, 12).toUpperCase();
+  return hex.match(/.{1,2}/g)?.join(":") ?? "";
+}
+
 export default function SubscriberForm({
   initial = null,
   onSubmit,
@@ -33,6 +42,7 @@ export default function SubscriberForm({
   const [form, setForm] = useState(initial ?? EMPTY_FORM);
   const [plans, setPlans] = useState([]);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState("");
   const [duplicateMatches, setDuplicateMatches] = useState([]);
 
   useEffect(() => {
@@ -63,7 +73,10 @@ export default function SubscriberForm({
   }, [form.name, initial]);
 
   const set = (field) => (e) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: field === "name" ? capitalizeWords(e.target.value) : e.target.value,
+    }));
 
   const setValue = (field) => (value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -71,6 +84,7 @@ export default function SubscriberForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+    setFormError("");
     try {
       await onSubmit({
         ...form,
@@ -79,6 +93,9 @@ export default function SubscriberForm({
     } catch (err) {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {});
+      } else {
+        // Offline, timed out, or a server error: say so, and keep everything typed.
+        setFormError(errorMessage(err, "Could not save the subscriber. Please try again."));
       }
     }
   };
@@ -98,27 +115,46 @@ export default function SubscriberForm({
         type={type}
         value={form[key]}
         onChange={set(key)}
+        aria-required={required || undefined}
+        aria-invalid={errors[key] ? true : undefined}
+        aria-describedby={errors[key] ? `${key}-error` : undefined}
         className={errors[key] ? "border-red-400" : ""}
         {...extra}
       />
-      {errors[key] && <p className="text-red-500 text-xs">{errors[key][0]}</p>}
+      {errors[key] && (
+        <p id={`${key}-error`} role="alert" className="text-red-700 dark:text-red-400 text-xs">
+          {errors[key][0]}
+        </p>
+      )}
     </div>
   );
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+      {formError && (
+        <div role="alert" className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+          {formError}
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <TourButton tour="subscriberForm" />
+      </div>
+
       {/* Section: Plan & Status */}
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Service Plan & Status
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+          <div data-tour="sub-plan" className="space-y-1.5">
             <Label>
               Service Plan<span className="text-red-500 ml-0.5">*</span>
             </Label>
             <Select value={form.plan_id} onValueChange={setValue("plan_id")}>
               <SelectTrigger
+                aria-label="Service plan"
+                aria-invalid={errors.plan_id ? true : undefined}
                 className={errors.plan_id ? "border-red-400 w-full" : "w-full"}
               >
                 <SelectValue placeholder="Select a plan">
@@ -143,10 +179,10 @@ export default function SubscriberForm({
             )}
           </div>
 
-          <div className="space-y-1.5">
+          <div data-tour="sub-status" className="space-y-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={setValue("status")}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -161,7 +197,7 @@ export default function SubscriberForm({
 
       {/* Section: Subscriber Information */}
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Subscriber Information
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -180,7 +216,7 @@ export default function SubscriberForm({
               <ul className="space-y-1">
                 {duplicateMatches.map((m) => (
                   <li key={m.subscriber_id} className="text-xs">
-                    {m.name} — {m.email} ({m.status})
+                    {m.name} — {m.contact_number || m.email || "no contact"} ({m.status})
                   </li>
                 ))}
               </ul>
@@ -190,28 +226,62 @@ export default function SubscriberForm({
               </p>
             </div>
           )}
-          {field("Contact Number", "contact_number", "text", {
-            placeholder: "09XX-XXX-XXXX",
-          })}
+          {field(
+            "Contact Number",
+            "contact_number",
+            "text",
+            { placeholder: "09XX-XXX-XXXX" },
+            true,
+          )}
         </div>
-        {field("Email Address", "email", "email", {}, true)}
-        {field(
-          "Address",
-          "address",
-          "text",
-          { placeholder: "e.g. Palayan City, Nueva Ecija" },
-          true,
-        )}
+        {field("Email Address (optional)", "email", "email")}
+        <div className="space-y-1.5">
+          <Label htmlFor="address">
+            Address<span className="text-red-500 ml-0.5">*</span>
+          </Label>
+          <select
+            id="address"
+            value={form.address}
+            onChange={set("address")}
+            aria-required="true"
+            aria-invalid={errors.address ? true : undefined}
+            aria-describedby={errors.address ? "address-error" : undefined}
+            className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? "border-red-400" : "border-input"}`}
+          >
+            <option value="">Select a barangay</option>
+            {/* Keep an older free-text address selectable when editing. */}
+            {form.address && !BARANGAYS.includes(form.address) && (
+              <option value={form.address}>{form.address}</option>
+            )}
+            {BARANGAYS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+          {errors.address && (
+            <p id="address-error" role="alert" className="text-red-700 dark:text-red-400 text-xs">
+              {errors.address[0]}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Section: Connection Details */}
       <div className="space-y-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Connection Details
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field("MAC Address", "mac_address", "text", {
             placeholder: "XX:XX:XX:XX:XX:XX",
+            maxLength: 17,
+            autoComplete: "off",
+            spellCheck: false,
+            onChange: (e) => {
+              const next = formatMac(e.target.value);
+              setForm((prev) => ({ ...prev, mac_address: next }));
+            },
           })}
           {field("Connection Date", "connection_date", "date", {}, true)}
         </div>

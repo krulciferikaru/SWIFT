@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Subscriber extends Model
 {
+    use SoftDeletes;
+
     // Your existing table is named 'subscriber' (not 'subscribers')
     protected $table = 'subscriber';
 
@@ -29,7 +33,16 @@ class Subscriber extends Model
 
     protected $hidden = [
         'password',
+        'user',
     ];
+
+    protected $appends = ['contact_verified'];
+
+    // Names are stored with each word capitalized, however staff typed them.
+    public function setNameAttribute(?string $value): void
+    {
+        $this->attributes['name'] = \App\Support\Text::capitalizeWords($value);
+    }
 
     protected function casts(): array
     {
@@ -44,7 +57,24 @@ class Subscriber extends Model
 
     public function plan(): BelongsTo
     {
-        return $this->belongsTo(Plan::class, 'plan_id', 'plan_id');
+        // withTrashed: an archived plan must keep billing its existing subscribers.
+        return $this->belongsTo(Plan::class, 'plan_id', 'plan_id')->withTrashed();
+    }
+
+    /** The login account linked to this subscriber, if they have one. */
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class, 'subscriber_id', 'subscriber_id');
+    }
+
+    /** True only when the account's verified number is still the number on this record. */
+    public function getContactVerifiedAttribute(): bool
+    {
+        $user = $this->relationLoaded('user') ? $this->user : null;
+
+        return $user !== null
+            && $user->contact_verified_at !== null
+            && $user->contact_number === $this->contact_number;
     }
 
     public function payments(): HasMany

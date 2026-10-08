@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -57,6 +58,8 @@ class UserController extends Controller
             'account_status' => 'active',
         ]);
 
+        Audit::log('user.created', $user, null, ['role' => $user->role]);
+
         return response()->json([
             'success' => true,
             'message' => 'Staff account created successfully.',
@@ -70,7 +73,12 @@ class UserController extends Controller
             'account_status' => ['required', Rule::in(['pending', 'active', 'inactive'])],
         ]);
 
+        $previous = $user->account_status;
         $user->update($validated);
+
+        Audit::log('user.status_changed', $user, null, [
+            'account_status' => ['old' => $previous, 'new' => $user->account_status],
+        ]);
 
         return response()->json([
             'message' => 'Account status updated.',
@@ -94,8 +102,59 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        Audit::log('user.password_reset', $user);
+
         return response()->json([
             'message' => "{$user->name}'s password has been reset.",
+        ]);
+    }
+
+    /** GET /api/permissions: the list of switches the admin can set for a secretary. */
+    public function permissionCatalog(): JsonResponse
+    {
+        $items = [];
+        foreach (config('permissions.grantable') as $key => $info) {
+            $items[] = ['key' => $key, 'label' => $info['label'], 'help' => $info['help']];
+        }
+
+        return response()->json(['success' => true, 'data' => $items]);
+    }
+
+    /**
+     * PATCH /api/users/{user}/permissions
+     *
+     * Sets exactly which tasks a secretary may do. Send `permissions: null` to go back to the
+     * default (everything). Admins can't be restricted, and subscribers have no staff abilities.
+     */
+    public function updatePermissions(Request $request, User $user): JsonResponse
+    {
+        if ($user->role !== 'secretary') {
+            return response()->json([
+                'message' => 'Only secretary accounts have adjustable permissions.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'permissions' => ['present', 'nullable', 'array'],
+            'permissions.*' => ['string', Rule::in(array_keys(config('permissions.grantable')))],
+        ]);
+
+        $before = $user->effective_permissions;
+        $user->update([
+            'permissions' => is_null($validated['permissions'])
+                ? null
+                : array_values(array_unique($validated['permissions'])),
+        ]);
+        $after = $user->fresh()->effective_permissions;
+
+        Audit::log('user.permissions_changed', $user, null, [
+            'added' => array_values(array_diff($after, $before)),
+            'removed' => array_values(array_diff($before, $after)),
+        ]);
+
+        return response()->json([
+            'message' => "{$user->name}'s permissions were updated.",
+            'user' => $user->fresh(),
         ]);
     }
 }
