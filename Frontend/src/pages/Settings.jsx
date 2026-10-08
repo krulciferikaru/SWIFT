@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
+import PhoneVerification from '../components/PhoneVerification.jsx'
 import { useToast } from '../hooks/useToast'
 import smsApi from '../api/sms'
 import subscriberApi from '../api/subscribers'
@@ -174,6 +175,18 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {user?.contact_number && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Mobile number</CardTitle>
+            <CardDescription>Verifying your number confirms that reminders and notices reach you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PhoneVerification />
+          </CardContent>
+        </Card>
+      )}
 
       {canSendSms && (
         <Card data-tour="settings-sms">

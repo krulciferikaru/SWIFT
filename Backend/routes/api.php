@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
@@ -29,6 +30,11 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    Route::post('/me/phone/send-code', [PhoneVerificationController::class, 'send'])
+        ->middleware('throttle:phone-code');
+    Route::post('/me/phone/verify', [PhoneVerificationController::class, 'verify'])
+        ->middleware('throttle:phone-verify');
 
     Route::get('/me/billing', [PaymentController::class, 'myBilling']);
     Route::get('/me/payments', [PaymentController::class, 'myPayments']);
