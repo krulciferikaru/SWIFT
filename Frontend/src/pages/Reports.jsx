@@ -280,7 +280,7 @@ export default function Reports() {
                       Collections by Plan
                     </p>
                     <div className="overflow-hidden">
-                      <Table>
+                      <Table stack={false}>
                         <TableHeader>
                           <TableRow className="bg-slate-100 dark:bg-slate-900/80">
                             <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Plan</TableHead>
@@ -308,7 +308,7 @@ export default function Reports() {
                       Collections by Method
                     </p>
                     <div className="overflow-hidden">
-                      <Table>
+                      <Table stack={false}>
                         <TableHeader>
                           <TableRow className="bg-slate-50 dark:bg-slate-900/60">
                             <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Method</TableHead>
@@ -338,7 +338,7 @@ export default function Reports() {
                       Payment Ledger
                     </p>
                     <div className="overflow-hidden">
-                      <Table>
+                      <Table stack={false}>
                         <TableHeader>
                           <TableRow className="bg-slate-100 dark:bg-slate-900/80">
                             <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Date</TableHead>
@@ -431,7 +431,7 @@ export default function Reports() {
                     Financial Position by Plan
                   </p>
                   <div className="overflow-hidden">
-                    <Table>
+                    <Table stack={false}>
                       <TableHeader>
                         <TableRow className="bg-slate-100 dark:bg-slate-900/80">
                           <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Plan</TableHead>
@@ -463,7 +463,7 @@ export default function Reports() {
                     Subscriber Ledger
                   </p>
                   <div className="overflow-hidden">
-                    <Table>
+                    <Table stack={false}>
                       <TableHeader>
                         <TableRow className="bg-slate-100 dark:bg-slate-900/80">
                           <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Subscriber</TableHead>

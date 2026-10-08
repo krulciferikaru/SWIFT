@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import subscriberApi from "../api/subscribers";
 import { useAuth } from "../context/AuthContext";
 import paymentsApi from "../api/payments";
+import PaymentHistory from "../components/PaymentHistory.jsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -420,32 +421,19 @@ export default function Payments() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Recent Payments</CardTitle>
+                    <CardTitle className="text-base">Payment History</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 max-h-72 overflow-y-auto">
-                    {history.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        No payments recorded yet.
-                      </p>
-                    ) : (
-                      history.map((p) => (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span className="text-gray-500 dark:text-gray-400">
-                            {new Date(p.payment_date).toLocaleDateString()} ·{" "}
-                            {p.or_number}
-                          </span>
-                          <span className="text-gray-900 dark:text-gray-100">
-                            ₱
-                            {Number(p.amount).toLocaleString("en-PH", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </span>
-                        </div>
-                      ))
-                    )}
+                  <CardContent>
+                    <PaymentHistory
+                      maxHeightClass="max-h-80"
+                      payments={history}
+                      subscriber={{
+                        name: selected.name,
+                        address: selected.address,
+                        contact_number: selected.contact_number,
+                        plan_name: selected.plan?.plan_name,
+                      }}
+                    />
                   </CardContent>
                 </Card>
               </div>

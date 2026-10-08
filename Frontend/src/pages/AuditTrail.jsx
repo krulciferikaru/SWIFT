@@ -207,7 +207,7 @@ export default function AuditTrail() {
         <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
         {loading ? (
           <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</p>
         ) : logs.length === 0 ? (
@@ -233,7 +233,7 @@ export default function AuditTrail() {
                   </TableCell>
                   <TableCell className="text-gray-900 dark:text-gray-100">{ACTION_LABELS[log.action] ?? log.action}</TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">{log.subject_label ?? '—'}</TableCell>
-                  <TableCell><Changes changes={log.changes} /></TableCell>
+                  <TableCell className="whitespace-normal min-w-56"><Changes changes={log.changes} /></TableCell>
                 </TableRow>
               ))}
             </TableBody>
