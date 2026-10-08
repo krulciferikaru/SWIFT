@@ -19,6 +19,7 @@ class User extends Authenticatable
         'password',
         'role',
         'account_status',
+        'permissions',
         'subscriber_id',
     ];
 
@@ -27,16 +28,60 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = ['effective_permissions', 'contact_verified'];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'permissions' => 'array',
+            'contact_verified_at' => 'datetime',
         ];
+    }
+
+    /** Every permission key this user holds right now. */
+    public function permissionList(): array
+    {
+        $grantable = array_keys(config('permissions.grantable'));
+
+        return match ($this->role) {
+            'admin' => [...$grantable, ...config('permissions.admin_only')],
+            // null means "never customised": a secretary gets everything grantable.
+            'secretary' => array_values(array_intersect($this->permissions ?? $grantable, $grantable)),
+            default => [],
+        };
+    }
+
+    public function getContactVerifiedAttribute(): bool
+    {
+        return $this->contact_verified_at !== null;
+    }
+
+    public function getEffectivePermissionsAttribute(): array
+    {
+        return $this->permissionList();
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->permissionList(), true);
+    }
+
+    public function hasAnyPermission(array $permissions): bool
+    {
+        return count(array_intersect($permissions, $this->permissionList())) > 0;
     }
 
     protected static function booted(): void
     {
+        // A new number has to be verified again.
+        static::saving(function (User $user): void {
+            if ($user->exists && $user->isDirty('contact_number') && ! $user->isDirty('contact_verified_at')) {
+                $user->contact_verified_at = null;
+            }
+        });
+
         static::deleting(function (User $user): void {
             if ($user->subscriber_id && $user->subscriber) {
                 $user->subscriber->delete();

@@ -45,8 +45,12 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // True when the signed-in user holds at least one of the given permissions.
+  const can = (...permissions) =>
+    permissions.some((p) => user?.effective_permissions?.includes(p))
+
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout, refetch: fetchCurrentUser }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, can, login, logout, refetch: fetchCurrentUser }}>
       {children}
     </AuthContext.Provider>
   )

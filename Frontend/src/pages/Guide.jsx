@@ -170,6 +170,7 @@ const SECTIONS = [
         <p>This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
+          <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
           <li className="flex items-start gap-1.5">
             <KeyRound className="size-4 mt-0.5 shrink-0" />
@@ -215,6 +216,7 @@ const SECTIONS = [
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
           <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>
           <li><strong>Replay welcome tour</strong> — walks through the menu again, the same tour shown on your first visit.</li>
+          <li><strong>Mobile number</strong> — appears if your account has a number. Click <em>Verify</em>, then enter the 6-digit code we text you. The code works for 10 minutes, and you can ask for a new one after a minute. Changing your number means verifying again. Staff see a green <em>Verified</em> tag next to verified numbers.</li>
           {role !== 'subscriber' && (
             <>
               <li><strong>Send SMS</strong> — send a one-off text message to any Philippine mobile number. Enter the number and a message (up to 300 characters), then click <em>Send SMS</em>. Messages go out through PhilSMS and may use SMS credit.</li>

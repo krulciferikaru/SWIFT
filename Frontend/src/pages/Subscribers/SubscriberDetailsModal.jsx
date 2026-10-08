@@ -4,10 +4,13 @@ import Modal from '../../components/Modal'
 import StatusBadge from '../../components/StatusBadge'
 import DetailField, { peso, longDate } from '../../components/DetailField'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '../../context/AuthContext'
+import { VerifiedBadge } from '../../components/PhoneVerification.jsx'
 import { Skeleton } from '@/components/ui/skeleton'
 import paymentsApi from '../../api/payments'
 
 export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, onArchive, onPayments }) {
+  const { can } = useAuth()
   const [billing, setBilling] = useState(null)
   const [billingState, setBillingState] = useState('idle') // idle | loading | error
 
@@ -49,26 +52,34 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
       size="lg"
       footer={(requestClose) => (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => onArchive(s)}
-            aria-label={`Archive ${s?.name}`}
-          >
-            Archive
-          </Button>
+          {can('subscribers.archive') ? (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => onArchive(s)}
+              aria-label={`Archive ${s?.name}`}
+            >
+              Archive
+            </Button>
+          ) : (
+            <span />
+          )}
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={requestClose}>
               Close
             </Button>
-            <Button type="button" variant="outline" className="gap-1.5" onClick={() => onPayments(s)}>
-              <CreditCard className="size-4" />
-              Payments
-            </Button>
-            <Button type="button" className="gap-1.5" onClick={() => onEdit(s)}>
-              <Pencil className="size-4" />
-              Edit
-            </Button>
+            {can('payments.view', 'payments.record') && (
+              <Button type="button" variant="outline" className="gap-1.5" onClick={() => onPayments(s)}>
+                <CreditCard className="size-4" />
+                Payments
+              </Button>
+            )}
+            {can('subscribers.manage') && (
+              <Button type="button" className="gap-1.5" onClick={() => onEdit(s)}>
+                <Pencil className="size-4" />
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -89,7 +100,14 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
               Contact and connection
             </h3>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailField label="Contact number">{s.contact || s.contact_number}</DetailField>
+              <DetailField label="Contact number">
+                {(s.contact || s.contact_number) && (
+                  <span className="inline-flex flex-wrap items-center gap-x-2">
+                    {s.contact || s.contact_number}
+                    <VerifiedBadge verified={s.contact_verified} />
+                  </span>
+                )}
+              </DetailField>
               <DetailField label="Email">{s.email}</DetailField>
               <DetailField label="Address" className="sm:col-span-2">{s.address}</DetailField>
               <DetailField label="MAC address">

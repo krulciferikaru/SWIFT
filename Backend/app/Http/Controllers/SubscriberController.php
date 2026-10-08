@@ -37,7 +37,7 @@ class SubscriberController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Subscriber::with('plan')
+        $query = Subscriber::with(['plan', 'user:id,subscriber_id,contact_number,contact_verified_at'])
             ->select([
                 'subscriber_id',
                 'plan_id',
@@ -117,6 +117,7 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::with([
             'plan',
+            'user:id,subscriber_id,contact_number,contact_verified_at',
             'payments' => fn($q) => $q->latest('payment_date')->limit(12),
         ])->findOrFail($id);
 

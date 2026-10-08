@@ -36,10 +36,12 @@ export default function PlanDetailsModal({ plan: current, canArchive, onClose, o
             <Button type="button" variant="outline" onClick={requestClose}>
               Close
             </Button>
-            <Button type="button" className="gap-1.5" onClick={() => onEdit(plan)}>
-              <Pencil className="size-4" />
-              Edit
-            </Button>
+            {canArchive && (
+              <Button type="button" className="gap-1.5" onClick={() => onEdit(plan)}>
+                <Pencil className="size-4" />
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       )}

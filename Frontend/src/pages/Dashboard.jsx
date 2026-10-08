@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PhoneVerification from "../components/PhoneVerification.jsx";
 import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
@@ -60,7 +61,7 @@ function collectionRateColor(rate) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [summary, setSummary] = useState(null);
   const [pendingList, setPendingList] = useState([]);
   const [unpaidList, setUnpaidList] = useState([]);
@@ -95,20 +96,22 @@ export default function Dashboard() {
       setLoading(false);
       return;
     }
+    // A secretary may be missing some permissions; a blocked request just leaves its card empty.
+    const ifAllowed = (allowed, request) => (allowed ? request().catch(() => null) : Promise.resolve(null));
     Promise.all([
       subscriberApi.getSummary(),
-      api.get("/subscribers/pending"),
-      subscriberApi.getAll({ status: "Unpaid", per_page: 5 }),
-      api.get("/subscribers/pending-claims"),
-      paymentsApi.getFinancialSummary(),
+      ifAllowed(can("approvals.manage"), () => api.get("/subscribers/pending")),
+      ifAllowed(can("subscribers.view"), () => subscriberApi.getAll({ status: "Unpaid", per_page: 5 })),
+      ifAllowed(can("approvals.manage"), () => api.get("/subscribers/pending-claims")),
+      ifAllowed(can("reports.view"), () => paymentsApi.getFinancialSummary()),
     ])
       .then(([summaryRes, pendingRes, unpaidRes, claimsRes, financialRes]) => {
         setSummary(summaryRes.data.data);
-        setPendingList(pendingRes.data ?? []);
-        const unpaidData = unpaidRes.data.data;
+        setPendingList(pendingRes?.data ?? []);
+        const unpaidData = unpaidRes?.data.data;
         setUnpaidList(Array.isArray(unpaidData) ? unpaidData : (unpaidData?.data ?? []));
-        setClaimsList(claimsRes.data ?? []);
-        setFinancials(financialRes.data.data);
+        setClaimsList(claimsRes?.data ?? []);
+        setFinancials(financialRes?.data.data ?? null);
         setLastUpdated(new Date());
       })
       .catch(() => {})
@@ -195,6 +198,8 @@ export default function Dashboard() {
           </div>
           <TourButton tour="dashboardSubscriber" />
         </div>
+
+        <PhoneVerification variant="banner" />
 
         <div data-tour="me-summary" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
@@ -596,24 +601,30 @@ export default function Dashboard() {
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {can("payments.view", "payments.record") && (
           <Link to="/payments" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Record a Payment</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Search a subscriber and log a payment</p>
               </div>
             </Link>
+          )}
+          {can("subscribers.view") && (
           <Link to="/subscribers" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Manage Subscribers</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">View, add, or edit subscriber records</p>
               </div>
             </Link>
+          )}
+          {can("reports.view") && (
           <Link to="/reports" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">View Reports</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Collection, balance, and subscriber reports</p>
               </div>
             </Link>
+          )}
           <Link to="/plans" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Service Plans</p>

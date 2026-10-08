@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
+import PhoneVerification from '../components/PhoneVerification.jsx'
 import { useToast } from '../hooks/useToast'
 import smsApi from '../api/sms'
 import subscriberApi from '../api/subscribers'
@@ -20,7 +21,7 @@ const SMS_MESSAGE_MAX = 300
 
 export default function Settings() {
   const { theme, toggleTheme } = useTheme()
-  const { user } = useAuth()
+  const { user, can } = useAuth()
   const [confirmLogout, setConfirmLogout] = useState(true)
   const showTourButtons = useShowTourButtons()
   const { toast, showToast } = useToast()
@@ -30,7 +31,7 @@ export default function Settings() {
   const [unpaidCount, setUnpaidCount] = useState(null)
   const [sendingReminders, setSendingReminders] = useState(false)
 
-  const canSendSms = user?.role === 'admin' || user?.role === 'secretary'
+  const canSendSms = can('sms.send')
 
   useEffect(() => {
     const skip = localStorage.getItem('skipLogoutConfirm') === 'true'
@@ -174,6 +175,18 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {user?.contact_number && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Mobile number</CardTitle>
+            <CardDescription>Verifying your number confirms that reminders and notices reach you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PhoneVerification />
+          </CardContent>
+        </Card>
+      )}
 
       {canSendSms && (
         <Card data-tour="settings-sms">

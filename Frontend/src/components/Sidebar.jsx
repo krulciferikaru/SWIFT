@@ -80,13 +80,24 @@ const navItemsByRole = {
   ],
 };
 
+// Which permission a staff member needs to see each menu item (admin-only pages included).
+const PATH_PERMISSION = {
+  "/subscribers": "subscribers.view",
+  "/approvals": "approvals.manage",
+  "/payments": ["payments.view", "payments.record"],
+  "/reports": "reports.view",
+  "/archive": "archive.manage",
+  "/users": "users.manage",
+  "/audit": "audit.view",
+};
+
 export default function Sidebar({ open: pinned, onToggle }) {
   const [hovered, setHovered] = useState(false);
   // While collapsed, hovering expands the sidebar temporarily as an overlay.
   const open = pinned || hovered;
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { pendingCount, refreshPendingCount, claimsCount, refreshClaimsCount } =
     useApprovals();
@@ -109,8 +120,10 @@ export default function Sidebar({ open: pinned, onToggle }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen]);
 
-  const navItems = navItemsByRole[user?.role] || [];
-  const canSeeApprovals = user?.role === "admin" || user?.role === "secretary";
+  const navItems = (navItemsByRole[user?.role] || []).filter(
+    (item) => !PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path])),
+  );
+  const canSeeApprovals = can("approvals.manage");
   const totalApprovalsCount = pendingCount + claimsCount;
 
   useEffect(() => {
