@@ -115,7 +115,7 @@ const SECTIONS = [
         <p>This is where you'll spend the most time day-to-day.</p>
         <ol className="list-decimal pl-5 space-y-1">
           <li>Search for the subscriber by name, contact number, or MAC address.</li>
-          <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Recent Payments</strong> history.</li>
+          <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Payment History</strong>. Each payment has a <em>Receipt</em> button: it opens a receipt you can print for the subscriber.</li>
           <li>Fill in the <strong>Record Payment</strong> form: amount, OR (official receipt) number, date, and payment method (Cash, GCash, or Others). As you type an amount, it shows you a live preview of which month(s) that payment will cover.</li>
           <li>Click <strong>Record Payment</strong> to save it.</li>
         </ol>

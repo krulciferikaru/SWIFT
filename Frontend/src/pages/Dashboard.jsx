@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PhoneVerification from "../components/PhoneVerification.jsx";
+import PaymentHistory from "../components/PaymentHistory.jsx";
 import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
@@ -72,6 +73,7 @@ export default function Dashboard() {
 
   const [myBilling, setMyBilling] = useState(null);
   const [myPayments, setMyPayments] = useState([]);
+  const [mySubscriber, setMySubscriber] = useState(null);
   const [myLoading, setMyLoading] = useState(true);
 
   const isStaff = user?.role === "admin" || user?.role === "secretary";
@@ -86,6 +88,7 @@ export default function Dashboard() {
       .then(([billingRes, paymentsRes]) => {
         setMyBilling(billingRes.data.data);
         setMyPayments(paymentsRes.data.data);
+        setMySubscriber(paymentsRes.data.subscriber ?? null);
       })
       .catch(() => {})
       .finally(() => setMyLoading(false));
@@ -281,22 +284,7 @@ export default function Dashboard() {
             <CardTitle className="text-base">Payment History</CardTitle>
           </CardHeader>
           <CardContent>
-            {myPayments.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No payments recorded yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {myPayments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-800 pb-2 last:border-0">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      {new Date(p.payment_date).toLocaleDateString()} · {p.or_number} · {p.payment_method}
-                    </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {formatCurrency(p.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <PaymentHistory payments={myPayments} subscriber={mySubscriber} />
           </CardContent>
         </Card>
       </div>

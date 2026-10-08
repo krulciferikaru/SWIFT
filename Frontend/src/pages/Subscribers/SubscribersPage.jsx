@@ -441,8 +441,10 @@ export default function SubscribersPage() {
                       {sub.email || "—"}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.contact || sub.contact_number || "—"}
-                      <div><VerifiedBadge verified={sub.contact_verified} /></div>
+                      <div>
+                                              {sub.contact || sub.contact_number || "—"}
+                                              <div><VerifiedBadge verified={sub.contact_verified} /></div>
+                                            </div>
                     </TableCell>
                     <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                       {sub.mac_address || "—"}
