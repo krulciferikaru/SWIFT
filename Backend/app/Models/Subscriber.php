@@ -38,6 +38,12 @@ class Subscriber extends Model
 
     protected $appends = ['contact_verified'];
 
+    // Names are stored with each word capitalized, however staff typed them.
+    public function setNameAttribute(?string $value): void
+    {
+        $this->attributes['name'] = \App\Support\Text::capitalizeWords($value);
+    }
+
     protected function casts(): array
     {
         return [

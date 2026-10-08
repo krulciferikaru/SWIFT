@@ -9,9 +9,18 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
+    public const BARANGAYS = [
+        'Malete, Palayan City',
+        'Santolan, Palayan City',
+        'Caballero, Palayan City',
+        'Ganaderia, Palayan City',
+        'Caimito, Palayan City',
+    ];
+
     // Public self-registration for subscribers only
     public function register(Request $request)
     {
@@ -49,7 +58,7 @@ class AuthController extends Controller
             'contact_number' => $contactRule,
             'email' => $emailRule,
             'password' => 'required|string|min:8|confirmed',
-            'address' => 'nullable|string|max:255',
+            'address' => ['required', 'string', Rule::in(self::BARANGAYS)],
         ]);
 
         if ($validator->fails()) {

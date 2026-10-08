@@ -30,6 +30,11 @@ class User extends Authenticatable
 
     protected $appends = ['effective_permissions', 'contact_verified'];
 
+    public function setNameAttribute(?string $value): void
+    {
+        $this->attributes['name'] = \App\Support\Text::capitalizeWords($value);
+    }
+
     protected function casts(): array
     {
         return [

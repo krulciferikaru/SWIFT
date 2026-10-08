@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import TourButton from "../../components/TourButton.jsx";
 import { errorMessage } from "../../utils/errors";
+import { capitalizeWords } from "../../utils/text";
 
 const EMPTY_FORM = {
   plan_id: "",
@@ -72,7 +73,10 @@ export default function SubscriberForm({
   }, [form.name, initial]);
 
   const set = (field) => (e) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: field === "name" ? capitalizeWords(e.target.value) : e.target.value,
+    }));
 
   const setValue = (field) => (value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
