@@ -276,8 +276,15 @@ export const TOURS = {
         selector: t('plans-table'),
         title: 'Your plans',
         description:
-          'Name, monthly rate, speed and whether the plan is Active. Every subscriber is assigned one of these. Click a plan name to see its full details.',
+          'Name, monthly rate, speed and whether the plan is Active. Every subscriber is assigned one of these.',
         side: 'top',
+      },
+      {
+        selector: t('plans-name'),
+        title: 'Click a name for the details',
+        description:
+          'Every plan name is a link, shown in blue with an arrow. Click it to open a window with the full details of that plan and the same Edit and Archive buttons.',
+        side: 'right',
       },
       {
         selector: t('plans-row-actions'),

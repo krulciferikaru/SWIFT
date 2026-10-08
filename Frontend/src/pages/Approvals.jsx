@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios";
+import { Check, RotateCcw, X } from "lucide-react";
 import { useOnReconnect } from "../hooks/useOnline";
 import subscriberApi from "../api/subscribers";
 import {
@@ -555,17 +556,20 @@ export default function Approvals() {
                             onClick={() => handleApproveClaim(claimUser)}
                             aria-label={`Approve ${claimUser.name}`}
                             disabled={actionLoading === claimUser.id}
-                            className="bg-green-700 text-white hover:bg-green-800"
+                            className="gap-1.5 bg-green-700 text-white hover:bg-green-800"
                           >
+                            <Check className="size-3.5" aria-hidden="true" />
                             Approve
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
+                            className="gap-1.5"
                             onClick={() => setRejectClaimTarget(claimUser)}
                             aria-label={`Reject ${claimUser.name}`}
                             disabled={actionLoading === claimUser.id}
                           >
+                            <X className="size-3.5" aria-hidden="true" />
                             Reject
                           </Button>
                         </>
@@ -575,8 +579,9 @@ export default function Approvals() {
                           onClick={() => handleReapproveClaim(claimUser)}
                           aria-label={`Re-approve ${claimUser.name}`}
                           disabled={actionLoading === claimUser.id}
-                          className="bg-green-700 text-white hover:bg-green-800"
+                          className="gap-1.5 bg-green-700 text-white hover:bg-green-800"
                         >
+                          <RotateCcw className="size-3.5" aria-hidden="true" />
                           Re-approve
                         </Button>
                       )}
@@ -634,18 +639,21 @@ export default function Approvals() {
                         onClick={() => handleApprove(subscriber)}
                         aria-label={`${tab === "pending" ? "Approve" : "Re-approve"} ${subscriber.name}`}
                         disabled={actionLoading === subscriber.subscriber_id}
-                        className="bg-green-700 text-white hover:bg-green-800"
+                        className="gap-1.5 bg-green-700 text-white hover:bg-green-800"
                       >
+                        {tab === "pending" ? <Check className="size-3.5" aria-hidden="true" /> : <RotateCcw className="size-3.5" aria-hidden="true" />}
                         {tab === "pending" ? "Approve" : "Re-approve"}
                       </Button>
                       {tab === "pending" && (
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="gap-1.5"
                           onClick={() => setRejectTarget(subscriber)}
                           aria-label={`Reject ${subscriber.name}`}
                           disabled={actionLoading === subscriber.subscriber_id}
                         >
+                          <X className="size-3.5" aria-hidden="true" />
                           Reject
                         </Button>
                       )}
