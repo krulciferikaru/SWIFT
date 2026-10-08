@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import usersApi from '../api/users'
+import { capitalizeWords } from '../utils/text'
 import { TableSkeleton } from '../components/Skeletons.jsx'
 import { useAuth } from '../context/AuthContext'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -131,7 +132,8 @@ export default function Users() {
   }
 
   const handleStaffFormChange = (e) => {
-    setStaffForm({ ...staffForm, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setStaffForm({ ...staffForm, [name]: name === 'name' ? capitalizeWords(value) : value })
   }
 
   const submitCreate = async (e) => {

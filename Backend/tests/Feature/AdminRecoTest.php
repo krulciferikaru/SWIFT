@@ -40,7 +40,7 @@ class AdminRecoTest extends TestCase
     public function test_register_with_names_and_contact_then_login_by_contact(): void
     {
         $this->postJson('/api/register', [
-            'first_name' => 'Juan', 'last_name' => 'Cruz', 'contact_number' => '09171112222',
+            'first_name' => 'juan', 'last_name' => 'cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
             'password' => 'password1', 'password_confirmation' => 'password1',
         ])->assertCreated();
 

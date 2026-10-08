@@ -6,6 +6,7 @@ import CompanyContact from '../components/CompanyContact.jsx'
 import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import api from '../api/axios'
+import { capitalizeWords, BARANGAYS } from '../utils/text'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -37,7 +38,9 @@ export default function Register() {
   }, [authLoading, isAuthenticated, navigate])
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    const nameFields = ['first_name', 'last_name']
+    setForm({ ...form, [name]: nameFields.includes(name) ? capitalizeWords(value) : value })
   }
 
   const handleSubmit = async (e) => {
@@ -158,13 +161,22 @@ export default function Register() {
 
             <div className="space-y-1.5">
               <Label htmlFor="address">Address</Label>
-              <Input
+              <select
                 id="address"
                 name="address"
                 value={form.address}
                 onChange={handleChange}
-                placeholder="e.g. Palayan City, Nueva Ecija"
-              />
+                required
+                className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? 'border-red-400' : 'border-input'}`}
+              >
+                <option value="">Select your barangay</option>
+                {BARANGAYS.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+              {errors.address && <p className="text-red-500 text-xs">{errors.address[0]}</p>}
             </div>
 
             <div className="space-y-1.5">
