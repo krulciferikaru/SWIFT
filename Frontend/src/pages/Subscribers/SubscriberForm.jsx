@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import TourButton from "../../components/TourButton.jsx";
 import { errorMessage } from "../../utils/errors";
-import { capitalizeWords } from "../../utils/text";
+import { capitalizeWords, BARANGAYS } from "../../utils/text";
 
 const EMPTY_FORM = {
   plan_id: "",
@@ -235,13 +235,36 @@ export default function SubscriberForm({
           )}
         </div>
         {field("Email Address (optional)", "email", "email")}
-        {field(
-          "Address",
-          "address",
-          "text",
-          { placeholder: "e.g. Palayan City, Nueva Ecija" },
-          true,
-        )}
+        <div className="space-y-1.5">
+          <Label htmlFor="address">
+            Address<span className="text-red-500 ml-0.5">*</span>
+          </Label>
+          <select
+            id="address"
+            value={form.address}
+            onChange={set("address")}
+            aria-required="true"
+            aria-invalid={errors.address ? true : undefined}
+            aria-describedby={errors.address ? "address-error" : undefined}
+            className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? "border-red-400" : "border-input"}`}
+          >
+            <option value="">Select a barangay</option>
+            {/* Keep an older free-text address selectable when editing. */}
+            {form.address && !BARANGAYS.includes(form.address) && (
+              <option value={form.address}>{form.address}</option>
+            )}
+            {BARANGAYS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+          {errors.address && (
+            <p id="address-error" role="alert" className="text-red-700 dark:text-red-400 text-xs">
+              {errors.address[0]}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Section: Connection Details */}
