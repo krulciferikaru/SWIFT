@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
+import { TableSkeleton } from '../components/Skeletons.jsx'
 import { Archive, ChevronRight, MousePointerClick, Pencil } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
@@ -148,6 +149,7 @@ export default function Plans() {
         <div className="flex items-center justify-between mb-6">
           {loading ? (
             <>
+              <h1 className="sr-only">Service Plans</h1>
               <Skeleton className="h-8 w-40" />
               <Skeleton className="h-9 w-28" />
             </>
@@ -162,30 +164,10 @@ export default function Plans() {
           )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-10" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <TableSkeleton rows={5} columns={[
+            { label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' },
+            { label: 'Status', kind: 'badge' }, { label: 'Actions', kind: 'actions' },
+          ]} />
         </div>
       </div>
     )

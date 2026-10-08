@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { TableSkeleton } from "../../components/Skeletons.jsx";
 import { Archive, ChevronRight, CreditCard, MousePointerClick, Pencil } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
@@ -216,6 +217,7 @@ export default function SubscribersPage() {
         <div className="mb-6 flex items-start justify-between gap-3">
           {initialLoading ? (
             <div className="space-y-2">
+              <h1 className="sr-only">Subscribers</h1>
               <Skeleton className="h-8 w-40" />
               <Skeleton className="h-4 w-72" />
             </div>
@@ -351,60 +353,10 @@ export default function SubscribersPage() {
         {/* Table */}
         <div data-tour="subs-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Skeleton className="h-4 w-12" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-10" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-14" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-16" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-24" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-14" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-16" />
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-28" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-36" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-16 rounded-full" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-16" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <TableSkeleton rows={9} columns={[
+              { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Contact" },
+              { label: "MAC Address" }, { label: "Status", kind: "badge" }, { label: "Actions", kind: "actions" },
+            ]} />
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
               {error}

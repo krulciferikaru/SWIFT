@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import paymentsApi from "../api/payments";
 import PaymentHistory from "../components/PaymentHistory.jsx";
 import { errorMessage } from "../utils/errors";
+import { CardListSkeleton, LoadingStatus } from "../components/Skeletons.jsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -231,6 +232,7 @@ export default function Payments() {
       {loading ? (
         <>
           <div className="space-y-2">
+            <h1 className="sr-only">Payments</h1>
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-72" />
           </div>
@@ -368,17 +370,24 @@ export default function Payments() {
           </Card>
 
           {loadingDetail ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="space-y-3">
-                    {Array.from({ length: 4 }).map((_, j) => (
-                      <Skeleton key={j} className="h-8 w-full" />
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <LoadingStatus className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <CardListSkeleton rows={4} />
+                <CardListSkeleton rows={4} />
+              </div>
+              <Card>
+                <CardHeader><Skeleton className="h-5 w-36" /></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 max-w-md">
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                  <Skeleton className="h-9 w-full max-w-md" />
+                </CardContent>
+              </Card>
+            </LoadingStatus>
           ) : (
             <>
               {/* Breakdown + history side-by-side, so "did they already pay?" doesn't require scrolling */}

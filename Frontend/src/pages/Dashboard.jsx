@@ -5,6 +5,7 @@ import PhoneVerification from "../components/PhoneVerification.jsx";
 import PaymentHistory from "../components/PaymentHistory.jsx";
 import DashboardActivity from "../components/DashboardActivity.jsx";
 import AccountStatusBanner from "../components/AccountStatusBanner.jsx";
+import { CardListSkeleton, LoadingStatus, StatCardsSkeleton } from "../components/Skeletons.jsx";
 import CompanyContact from "../components/CompanyContact.jsx";
 import TextSizeControl from "../components/TextSizeControl.jsx";
 import subscriberApi from "../api/subscribers";
@@ -161,23 +162,19 @@ export default function Dashboard() {
   if (!isStaff) {
     if (myLoading) {
       return (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-40" />
-            <Skeleton className="h-4 w-64" />
+        <LoadingStatus className="space-y-6" heading="My Account">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-44" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+            <Skeleton className="h-9 w-40" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="space-y-3">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-8 w-20" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <Skeleton className="h-48 w-full rounded-lg" />
-        </div>
+          <Skeleton className="h-28 w-full rounded-lg" />
+          <StatCardsSkeleton />
+          <CardListSkeleton rows={4} />
+          <CardListSkeleton rows={3} />
+        </LoadingStatus>
       );
     }
 
@@ -302,48 +299,56 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-40" />
-          <Skeleton className="h-4 w-64" />
+      <LoadingStatus className="space-y-6" heading="Dashboard">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-72 max-w-full" />
+          </div>
+          <Skeleton className="h-9 w-32" />
         </div>
-        <Skeleton className="h-28 w-full rounded-lg" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton className="h-8 w-32" />
-              </CardContent>
-            </Card>
-          ))}
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <Skeleton className="h-10 w-full sm:w-96" />
+          </div>
+          <StatCardsSkeleton />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-8 w-14" />
-              </CardContent>
-            </Card>
-          ))}
+
+        <StatCardsSkeleton />
+
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-3 w-72 max-w-full" />
+          </div>
+          <StatCardsSkeleton count={5} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-5" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="lg:col-span-1">
-            <CardContent>
-              <Skeleton className="h-55 w-full rounded-full mx-auto max-w-55" />
-            </CardContent>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-55 w-full rounded-md" /></CardContent>
           </Card>
-          <Card className="lg:col-span-2">
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-md" />
-              ))}
-            </CardContent>
+          <Card>
+            <CardHeader><Skeleton className="h-5 w-36" /></CardHeader>
+            <CardContent><Skeleton className="mx-auto h-55 w-55 max-w-full rounded-full" /></CardContent>
           </Card>
         </div>
-      </div>
+
+        <Card>
+          <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-md" />
+            ))}
+          </CardContent>
+        </Card>
+      </LoadingStatus>
     );
   }
 

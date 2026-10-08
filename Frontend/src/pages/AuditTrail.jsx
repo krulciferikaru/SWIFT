@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import TourButton from '../components/TourButton.jsx'
+import { TableSkeleton } from '../components/Skeletons.jsx'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 
@@ -221,7 +222,9 @@ export default function AuditTrail() {
 
       <div data-tour="audit-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
         {loading ? (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+          <TableSkeleton rows={8} columns={[
+            { label: 'When' }, { label: 'Who' }, { label: 'Action' }, { label: 'Record' }, { label: 'Details' },
+          ]} />
         ) : logs.length === 0 ? (
           <p className="p-6 text-sm text-gray-500 dark:text-gray-400">No activity matches these filters.</p>
         ) : (
