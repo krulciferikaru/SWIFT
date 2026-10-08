@@ -182,6 +182,7 @@ const SECTIONS = [
   },
   {
     id: 'audit',
+    tour: 'audit',
     icon: ScrollText,
     title: 'Audit Trail',
     summary: 'Admin-only: see who did what, and when.',

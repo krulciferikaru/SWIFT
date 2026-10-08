@@ -39,6 +39,13 @@ export const TOURS = {
         side: 'right',
       },
       {
+        selector: t('nav-audit'),
+        title: 'Audit Trail',
+        description: 'Admins can see who did what, and when: sign-ins, edits, payments, approvals and more.',
+        side: 'right',
+        roles: ['admin'],
+      },
+      {
         selector: t('theme-toggle'),
         title: 'Light and dark mode',
         description: 'Switch the appearance whenever you like.',
@@ -110,6 +117,13 @@ export const TOURS = {
     title: 'My Account tour',
     steps: [
       {
+        selector: t('me-verify'),
+        title: 'Verify your mobile number',
+        description:
+          'Click Verify now and we text you a 6-digit code. Type it in to confirm the number is yours, so reminders and notices reach you. This prompt disappears once you are verified.',
+        side: 'bottom',
+      },
+      {
         selector: t('me-summary'),
         title: 'Your account at a glance',
         description:
@@ -126,7 +140,7 @@ export const TOURS = {
         selector: t('me-payments'),
         title: 'Payment history',
         description:
-          'The payments the company has recorded for you. For payments, refunds or reconnection, contact the company directly.',
+          'Every payment the company has recorded for you, newest first, with the total paid. Use the year filter to narrow it, and click Receipt beside a payment to see and print a receipt. For payments, refunds or reconnection, contact the company directly.',
         side: 'top',
       },
     ],
@@ -169,7 +183,7 @@ export const TOURS = {
         selector: t('subs-table'),
         title: 'Subscriber list',
         description:
-          'Click a name to see everything about that subscriber in one place, including their balance, with the same buttons. Each row also has Edit, Archive and Payments. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing.',
+          'Click a name to see everything about that subscriber in one place, including their balance, with the same buttons. Each row also has Edit, Archive and Payments. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing. A green Verified tag beside a contact number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
         side: 'top',
       },
     ],
@@ -284,6 +298,13 @@ export const TOURS = {
           'Enter the amount, OR number, date and method. A live preview shows which months the payment covers. Click Record Payment to save.',
         side: 'left',
       },
+      {
+        selector: t('payments-history'),
+        title: 'Payment history and receipts',
+        description:
+          'Every payment for this subscriber, newest first, with the total paid and a year filter. Click Receipt beside a payment to see a receipt you can print and hand to the subscriber.',
+        side: 'top',
+      },
     ],
   },
 
@@ -342,6 +363,13 @@ export const TOURS = {
         side: 'top',
       },
       {
+        selector: t('users-permissions'),
+        title: 'Permissions',
+        description:
+          'Choose exactly what a secretary may do: for example view subscribers but not record payments. Tick the tasks, then Save. Reset to default gives them everything again. Pages and buttons they are not allowed to use disappear for them. Admins always have everything.',
+        side: 'left',
+      },
+      {
         selector: t('users-status'),
         title: 'Account status',
         description:
@@ -378,6 +406,13 @@ export const TOURS = {
         title: 'Tour options',
         description:
           'Hide the "Take a tour" buttons if you no longer need them, or replay the welcome tour whenever you like.',
+        side: 'bottom',
+      },
+      {
+        selector: t('settings-phone'),
+        title: 'Verify your mobile number',
+        description:
+          'If your account has a mobile number, verify it here: we text you a 6-digit code, and you type it in. A new code can be requested after a minute, and a code works for 10 minutes. If you change your number, verify it again.',
         side: 'bottom',
       },
       {
@@ -449,7 +484,7 @@ TOURS.subscriberForm = {
     {
       selector: dlg('#mac_address'),
       title: 'MAC Address',
-      description: 'Optional. The address of the subscriber\'s equipment, written XX:XX:XX:XX:XX:XX.',
+      description: 'Optional. The address of the subscriber\'s equipment. Just type the 12 letters and numbers: the colons are filled in for you (XX:XX:XX:XX:XX:XX).',
       side: 'top',
     },
     {
@@ -592,6 +627,26 @@ TOURS.archive = {
   ],
 }
 
+TOURS.audit = {
+  title: 'Audit Trail tour',
+  steps: [
+    {
+      selector: t('audit-filters'),
+      title: 'Find an entry',
+      description:
+        'Search by the name of a person or the record they touched, narrow it to one kind of activity (sign-ins, payments, plans and so on), or pick a date range.',
+      side: 'bottom',
+    },
+    {
+      selector: t('audit-table'),
+      title: 'Who did what, and when',
+      description:
+        'Each row shows when it happened, who did it, what they did and which record it was. Edits list what changed, with the old value crossed out beside the new one. Entries cannot be edited or deleted from SWIFT, and passwords are never recorded.',
+      side: 'top',
+    },
+  ],
+}
+
 export const TOUR_PAGES = {
   dashboard: '/dashboard',
   subscribers: '/subscribers',
@@ -602,4 +657,5 @@ export const TOUR_PAGES = {
   archive: '/archive',
   users: '/users',
   settings: '/settings',
+  audit: '/audit',
 }

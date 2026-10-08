@@ -326,6 +326,7 @@ export default function Users() {
                       <div className="flex flex-wrap gap-2">
                       {user.role === 'secretary' && (
                         <Button
+                          data-tour="users-permissions"
                           variant="outline"
                           size="sm"
                           className="gap-1.5"

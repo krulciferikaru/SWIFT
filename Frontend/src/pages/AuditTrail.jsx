@@ -4,6 +4,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import TourButton from '../components/TourButton.jsx'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 
@@ -171,14 +172,17 @@ export default function AuditTrail() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Audit Trail</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          A record of who did what and when. Entries can’t be edited or deleted from the system.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Audit Trail</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            A record of who did what and when. Entries can’t be edited or deleted from the system.
+          </p>
+        </div>
+        <TourButton tour="audit" />
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 mb-4">
+      <div data-tour="audit-filters" className="flex flex-wrap items-end gap-3 mb-4">
         <div className="space-y-1">
           <Label htmlFor="audit-search">Search</Label>
           <Input
@@ -211,7 +215,7 @@ export default function AuditTrail() {
         <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
+      <div data-tour="audit-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
         {loading ? (
           <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</p>
         ) : logs.length === 0 ? (

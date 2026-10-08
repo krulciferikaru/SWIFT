@@ -420,7 +420,7 @@ export default function Payments() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card data-tour="payments-history">
                   <CardHeader>
                     <CardTitle className="text-base">Payment History</CardTitle>
                   </CardHeader>

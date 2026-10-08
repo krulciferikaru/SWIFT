@@ -130,6 +130,28 @@ export function PaymentSample() {
           </div>
         </CardContent>
       </Card>
+
+      <Card data-tour="payments-history">
+        <CardHeader>
+          <CardTitle className="text-base">Payment History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+            2 payments · <strong className="text-gray-900 dark:text-gray-100">₱1,200.00</strong> paid
+          </p>
+          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            {[['₱600.00', 'Mar 10, 2026 · OR-0002 · GCash'], ['₱600.00', 'Feb 10, 2026 · OR-0001 · Cash']].map(([amount, detail]) => (
+              <li key={detail} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{amount}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{detail}</p>
+                </div>
+                <Button type="button" variant="outline" size="sm">Receipt</Button>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   )
 }

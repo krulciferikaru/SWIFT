@@ -177,7 +177,7 @@ export default function Settings() {
       </Card>
 
       {user?.contact_number && (
-        <Card>
+        <Card data-tour="settings-phone">
           <CardHeader>
             <CardTitle className="text-base">Mobile number</CardTitle>
             <CardDescription>Verifying your number confirms that reminders and notices reach you.</CardDescription>
