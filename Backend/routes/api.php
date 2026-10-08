@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
@@ -48,6 +49,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard counts: any staff member.
     Route::get('/subscribers/summary', [SubscriberController::class, 'summary'])
         ->middleware('role:admin,secretary');
+    Route::get('/dashboard/period', [DashboardController::class, 'period'])
+        ->middleware('role:admin,secretary', 'throttle:reports');
 
     Route::middleware('permission:reports.view')->group(function () {
         Route::get('/reports/subscribers', [ReportController::class, 'subscribers'])

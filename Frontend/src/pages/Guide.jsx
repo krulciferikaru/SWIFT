@@ -40,6 +40,10 @@ const SECTIONS = [
     body: (
       <>
         <p>Shows an overview of subscriber counts and recent activity at a glance. There's nothing to configure here — it's just a starting point. Use the sidebar on the left to go to the feature you need.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Activity</strong> — choose <em>Today</em>, <em>This month</em>, <em>This quarter</em>, <em>This year</em> or <em>All time</em> to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. Your choice is remembered.</li>
+          <li><strong>Right now</strong> — the subscriber counts (Active, Unpaid and so on) and the outstanding balance are current numbers. The system does not keep a history of statuses, so these cannot be filtered by period.</li>
+        </ul>
       </>
     ),
   },
