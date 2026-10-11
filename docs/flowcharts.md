@@ -6,11 +6,11 @@ Boxes marked **company process** are done by people, not by the system. Wording 
 
 ## 1. Registration and activation
 
-A person registers with a name, contact number and password (email is optional). What happens next depends on whether the contact number is already on file.
+A person registers with a name, contact number, address (chosen from the barangay list) and password (email is optional). What happens next depends on whether the contact number is already on file.
 
 ```mermaid
 flowchart TD
-  A["Person registers<br/>name, contact number, password"] --> B{"Is the contact number<br/>already a subscriber on file?"}
+  A["Person registers<br/>name, contact number, barangay, password"] --> B{"Is the contact number<br/>already a subscriber on file?"}
 
   B -- "No" --> C["New subscriber record<br/>status: Pending"]
   C --> D["Staff review it in<br/>Pending Approvals"]
@@ -100,3 +100,53 @@ flowchart LR
 ```
 
 Details and the release checklist are in [Deployment and releases](deployment.md).
+
+## 7. Signing in
+
+Wrong passwords are counted per account, so the pause cannot be avoided by trying from other places.
+
+```mermaid
+flowchart TD
+  A["Person enters mobile number or email and password"] --> B{"Is sign-in for this account paused?<br/>(5 wrong passwords in 15 minutes)"}
+  B -- "Yes" --> C["The page counts down and the button<br/>is disabled. It unlocks by itself"]
+  C -. "countdown ends" .-> A
+  B -- "No" --> D{"Password correct?"}
+  D -- "No" --> E["Message shown, password cleared.<br/>From 2 attempts left: a warning.<br/>The 5th wrong one pauses sign-in"]
+  E --> A
+  D -- "Yes" --> F{"Account active and not archived?"}
+  F -- "No" --> G["Message: awaiting approval, rejected,<br/>deactivated or not available"]
+  F -- "Yes" --> H{"Keep me signed in ticked?"}
+  H -- "Yes" --> I["Signed in for 30 days on this device"]
+  H -- "No" --> J["Signed in until the browser closes<br/>or for 12 hours"]
+```
+
+## 8. A sensitive action asks for the password again
+
+Changing permissions, resetting a password and permanently deleting from the Archive.
+
+```mermaid
+flowchart TD
+  A["Admin presses Save, Reset Password<br/>or Delete on a sensitive action"] --> B{"Allowed to do this?<br/>(permission check)"}
+  B -- "No" --> C["Refused. No password is asked for"]
+  B -- "Yes" --> D{"Password confirmed in the last<br/>10 minutes on this sign-in?"}
+  D -- "Yes" --> E["The action is carried out"]
+  D -- "No" --> F["Window: Confirm your password"]
+  F -- "Cancel" --> G["Nothing changes"]
+  F -- "Wrong password" --> H["Message, and a line in the audit trail"]
+  H --> F
+  F -- "Correct password" --> I["Confirmed for 10 minutes"]
+  I --> E
+```
+
+## 9. Verifying a mobile number
+
+```mermaid
+flowchart TD
+  A["Person presses Verify on My Account<br/>or in Settings"] --> B["A 6-digit code is texted to their number<br/>(one a minute, three every 10 minutes)"]
+  B --> C["Person types the code"]
+  C --> D{"Correct, within 10 minutes,<br/>fewer than 5 wrong tries?"}
+  D -- "Yes" --> E["Number marked Verified<br/>(green tag for staff, line in the audit trail)"]
+  D -- "No" --> F["Message. Ask for a new code"]
+  F --> B
+  E --> G["If the number is changed later,<br/>the verification is cleared"]
+```

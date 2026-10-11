@@ -2,16 +2,19 @@
 
 ## Scheduled jobs
 
-Two jobs are registered in `Backend/routes/console.php`. Both run **daily**.
+Three jobs are registered in `Backend/routes/console.php`. All run **daily**.
 
 | Job | Command | What it does |
 |---|---|---|
 | Status recalculation | `subscribers:recalculate-status` | For every **active** subscriber, recomputes Active / Unpaid / Disconnected from their payment history (rules in [Billing and payments](billing-and-payments.md)). It does **not** send SMS. It never moves anyone out of Disconnected. |
 | Due-date reminder | `subscribers:send-due-reminders` | Sends an SMS to every active, non-disconnected subscriber whose monthly bill is **due tomorrow** and not already fully paid. |
+| Clean-up of old sign-ins | `sanctum:prune-expired --hours=24` | Deletes sign-in tokens that expired more than a day ago (a sign-in lasts 12 hours, or 30 days if "Keep me signed in" was ticked). It sends no SMS. |
 
 ### When they run
 
-The application time zone is **UTC**, so "daily" means **00:00 UTC, which is 8:00 AM in the Philippines**. Dates used by the system (for example "today" when a month is billed) follow UTC, so between midnight and 8:00 AM Philippine time the system still thinks it is the previous day. This only matters around the change of a day or month.
+The application time zone is **UTC**, so "daily" means **00:00 UTC, which is 8:00 AM in the Philippines**. Billing dates (for example "today" when a month is billed) follow UTC, so between midnight and 8:00 AM Philippine time those calculations still think it is the previous day. This only matters around the change of a day or month.
+
+Two things deliberately use **Philippine time** instead, so they never flip at 8 AM: the dashboard's **Activity** filter (what "today", "this month" and so on mean) and the **next due date** a subscriber sees on their account.
 
 ### What starts the scheduler
 
@@ -32,15 +35,18 @@ All SMS go through PhilSMS. If no token is configured (as on evaluation), nothin
 | The due date is tomorrow | Reminder that the monthly bill is due tomorrow | Daily job |
 | Staff send reminders | Reminder with the outstanding balance, to **every Unpaid subscriber** | Settings, Payment Reminders |
 | Staff send a one-off message | Any text (up to 300 characters) to any Philippine mobile number | Settings, Send SMS |
+| Someone asks to verify their mobile number | A 6-digit code that works for 10 minutes. It is the only message that goes to a number that has not been verified yet | My Account or Settings, Verify |
 
 Notes:
 
 - The automatic status job changes a status **silently**. A subscriber only receives a status SMS when staff change the status manually.
 - Account claims (someone registering with the contact number of an existing subscriber) do not send an SMS when approved or rejected.
-- SMS to subscribers are only sent to accounts that have a contact number.
+- SMS to subscribers are only sent to accounts that have a contact number. Unverified numbers still receive notices; verification only proves the number belongs to the person.
+- Verification codes are limited (one a minute, three every 10 minutes per person) because each one costs a message, and a code stops working after 5 wrong tries.
 
 ## Known limits
 
 - **Coverage:** PhilSMS currently reaches **Globe** numbers only. Other networks need extra registration with the provider. **To confirm** with PhilSMS whether this is still the case and what is needed.
 - **Cost:** each message may use credit on the PhilSMS account.
-- **No email notifications:** the system does not send email.
+- **No email notifications:** the system does not send email. Email reminders are on the [Future improvements](future-improvements.md) list.
+- **Evaluation site:** SMS is switched off there, so verification codes never arrive. Test the code flow on production only.
