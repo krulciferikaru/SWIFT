@@ -35,7 +35,7 @@ export const TOURS = {
       {
         selector: t('nav-reports'),
         title: 'Reports',
-        description: 'Monthly collections and financial statements, downloadable as PDF or Excel.',
+        description: 'The collection report for any month, year or date range, with filters, downloadable as PDF or Excel.',
         side: 'right',
       },
       {
@@ -375,22 +375,16 @@ export const TOURS = {
       },
       {
         selector: t('reports-filters'),
-        title: 'Filter the reports',
+        title: 'Filter the report',
         description:
-          'Narrow the reports before you read or download them: pick one subscriber, a service plan, a payment method, part of an OR number, or a subscriber status. The reports and the PDF and Excel files follow the filters, and each file says which filters were used. Clear filters puts everything back.',
+          'Narrow the report before you read or download it: pick one subscriber, a service plan, a payment method, or part of an OR number. The report and the PDF and Excel files follow the filters, and each file says which filters were used. Clear filters puts everything back.',
         side: 'bottom',
       },
       {
         selector: t('reports-collections'),
-        title: 'Monthly Collection Report',
+        title: 'Collection Report',
         description:
           'How much was collected, by plan and by payment method, plus the full payment ledger. Use PDF or XLSX to download.',
-        side: 'top',
-      },
-      {
-        selector: t('reports-financial'),
-        title: 'Financial Statement',
-        description: 'Who owes what: receivables, paid and outstanding balances, per plan and per subscriber.',
         side: 'top',
       },
     ],

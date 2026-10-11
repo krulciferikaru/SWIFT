@@ -132,17 +132,16 @@ const SECTIONS = [
     tour: 'reports',
     icon: FileText,
     title: 'Reports',
-    summary: 'Collection totals and financial statements by month, last 3 months, year, or your own dates, with filters — exportable to PDF/Excel.',
+    summary: 'The collection report by month, last 3 months, year, or your own dates, with filters — exportable to PDF/Excel.',
     roles: ['admin', 'secretary'],
     body: (
       <>
         <p>Choose <strong>Monthly</strong> (pick a month), <strong>Last 3 Months</strong> (the past three months up to today), <strong>Annual</strong> (pick a year), or <strong>Date range</strong> (your own start and end dates, up to 5 years) at the top, then review:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Collection Report</strong> — how much was collected in the selected period, broken down by plan and by payment method, plus a full payment ledger.</li>
-          <li><strong>Financial Statement</strong> — who owes what: total receivables, paid, and outstanding balances, broken down by plan and per-subscriber.</li>
         </ul>
-        <p>Open <strong>Filters</strong> to narrow the reports first: one <em>subscriber</em>, a <em>service plan</em>, a <em>payment method</em> or part of an <em>OR number</em> (Collection Report), or a <em>subscriber status</em> (Financial Statement). A yellow "Filtered by" line shows what is applied, and the downloaded files say which filters were used too.</p>
-        <p>Each report has <strong>PDF</strong> and <strong>XLSX</strong> (Excel) download buttons if you need to print or send it somewhere.</p>
+        <p>Open <strong>Filters</strong> to narrow the report first: one <em>subscriber</em>, a <em>service plan</em>, a <em>payment method</em>, or part of an <em>OR number</em>. A yellow "Filtered by" line shows what is applied, and the downloaded files say which filters were used too.</p>
+        <p>The report has <strong>PDF</strong> and <strong>XLSX</strong> (Excel) download buttons if you need to print or send it somewhere.</p>
       </>
     ),
   },

@@ -102,22 +102,10 @@ class ReportFiltersTest extends TestCase
             ->assertJsonPath('data.summary.total_collected', 900);
     }
 
-    public function test_the_financial_statement_filters_by_status_and_plan(): void
-    {
-        $this->getJson('/api/reports/financial-statement?range=monthly&month=2026-04&status=Unpaid')
-            ->assertOk()
-            ->assertJsonPath('data.summary.subscriber_count', 1)
-            ->assertJsonPath('data.subscribers.0.name', 'Maria Santos')
-            ->assertJsonPath('data.filter_labels.0', 'Status: Unpaid');
-
-        $this->getJson('/api/reports/financial-statement?range=monthly&month=2026-04&plan_id='.$this->juan->plan_id)
-            ->assertJsonPath('data.summary.subscriber_count', 1);
-    }
-
     public function test_bad_filter_values_are_rejected(): void
     {
         $this->collections(['subscriber_id' => 99999])->assertStatus(422);
-        $this->getJson('/api/reports/financial-statement?status=Nope')->assertStatus(422);
+        $this->collections(['plan_id' => 99999])->assertStatus(422);
     }
 
     public function test_the_excel_file_states_the_filters(): void

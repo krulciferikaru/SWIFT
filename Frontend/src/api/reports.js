@@ -6,8 +6,6 @@ const reportApi = {
   getCollections: (params = {}, config = {}) =>
     api.get('/reports/collections', { params, ...config }),
 
-  getFinancialStatement: (params = {}, config = {}) =>
-    api.get('/reports/financial-statement', { params, ...config }),
 
   downloadSubscribers: (params = {}) =>
     api.get('/reports/subscribers', { params, responseType: 'blob' }),
@@ -21,11 +19,7 @@ const reportApi = {
   downloadCollectionsXlsx: (params = {}) =>
     api.get('/reports/collections/xlsx', { params, responseType: 'blob' }),
 
-  downloadFinancialStatementPdf: (params = {}) =>
-    api.get('/reports/financial-statement/pdf', { params, responseType: 'blob' }),
 
-  downloadFinancialStatementXlsx: (params = {}) =>
-    api.get('/reports/financial-statement/xlsx', { params, responseType: 'blob' }),
 
   previewSubscribers: (params = {}) =>
     api.get('/reports/subscribers', { params, responseType: 'blob' }),

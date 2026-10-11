@@ -102,17 +102,6 @@ class ReportController extends Controller
         ]);
     }
 
-    public function financialStatement(Request $request): JsonResponse
-    {
-        $period = $this->resolvePeriod($request);
-        $data = $this->buildFinancialStatementData($period, $this->resolveFilters($request));
-
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
-    }
-
     public function collectionsPdf(Request $request)
     {
         $period = $this->resolvePeriod($request);
@@ -133,29 +122,6 @@ class ReportController extends Controller
         return $this->exports->downloadXlsx(
             $this->downloadFilename('collections_report', $period, 'xlsx'),
             $this->buildCollectionsXlsxRows($data)
-        );
-    }
-
-    public function financialStatementPdf(Request $request)
-    {
-        $period = $this->resolvePeriod($request);
-        $data = $this->buildFinancialStatementData($period, $this->resolveFilters($request));
-
-        return $this->exports->downloadPdf(
-            $this->downloadFilename('financial_statement', $period, 'pdf'),
-            'reports.financial-statement',
-            $data
-        );
-    }
-
-    public function financialStatementXlsx(Request $request)
-    {
-        $period = $this->resolvePeriod($request);
-        $data = $this->buildFinancialStatementData($period, $this->resolveFilters($request));
-
-        return $this->exports->downloadXlsx(
-            $this->downloadFilename('financial_statement', $period, 'xlsx'),
-            $this->buildFinancialStatementXlsxRows($data)
         );
     }
 
@@ -230,7 +196,7 @@ class ReportController extends Controller
 
     /**
      * Optional narrowing for the on-screen report and the PDF / Excel files:
-     * ?subscriber_id= ?plan_id= ?payment_method= ?status= ?or_number=
+     * ?subscriber_id= ?plan_id= ?payment_method= ?or_number=
      */
     private function resolveFilters(Request $request): array
     {
@@ -238,7 +204,6 @@ class ReportController extends Controller
             'subscriber_id' => ['nullable', 'integer', 'exists:subscriber,subscriber_id'],
             'plan_id' => ['nullable', 'integer', 'exists:plan,plan_id'],
             'payment_method' => ['nullable', 'string', 'max:50'],
-            'status' => ['nullable', 'in:Active,Unpaid,Disconnected'],
             'or_number' => ['nullable', 'string', 'max:50'],
         ]);
 
@@ -246,7 +211,6 @@ class ReportController extends Controller
             'subscriber_id' => isset($v['subscriber_id']) ? (int) $v['subscriber_id'] : null,
             'plan_id' => isset($v['plan_id']) ? (int) $v['plan_id'] : null,
             'payment_method' => ($v['payment_method'] ?? '') !== '' ? $v['payment_method'] : null,
-            'status' => ($v['status'] ?? '') !== '' ? $v['status'] : null,
             'or_number' => ($v['or_number'] ?? '') !== '' ? trim($v['or_number']) : null,
         ];
     }
@@ -267,9 +231,6 @@ class ReportController extends Controller
         if (in_array('payment_method', $use, true) && $filters['payment_method']) {
             $labels[] = 'Payment method: ' . $filters['payment_method'];
         }
-        if (in_array('status', $use, true) && $filters['status']) {
-            $labels[] = 'Status: ' . $filters['status'];
-        }
         if (in_array('or_number', $use, true) && $filters['or_number']) {
             $labels[] = 'OR number contains: ' . $filters['or_number'];
         }
@@ -279,7 +240,7 @@ class ReportController extends Controller
 
     private function buildCollectionsData(array $period, array $filters = []): array
     {
-        $filters += ['subscriber_id' => null, 'plan_id' => null, 'payment_method' => null, 'status' => null, 'or_number' => null];
+        $filters += ['subscriber_id' => null, 'plan_id' => null, 'payment_method' => null, 'or_number' => null];
 
         $baseQuery = Payment::query()
             ->whereBetween('payment_date', [
@@ -373,107 +334,6 @@ class ReportController extends Controller
         ];
     }
 
-    private function buildFinancialStatementData(array $period, array $filters = []): array
-    {
-        $filters += ['subscriber_id' => null, 'plan_id' => null, 'payment_method' => null, 'status' => null, 'or_number' => null];
-
-        $subscribers = Subscriber::with('plan')
-            ->where('account_status', 'active')
-            ->when($filters['subscriber_id'], fn ($q, $id) => $q->where('subscriber_id', $id))
-            ->when($filters['plan_id'], fn ($q, $plan) => $q->where('plan_id', $plan))
-            ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
-            ->orderBy('name')
-            ->get();
-
-        $rows = [];
-        $planSummary = [];
-        $summary = [
-            'subscriber_count' => 0,
-            'total_owed' => 0.0,
-            'total_paid' => 0.0,
-            'total_outstanding' => 0.0,
-            'total_advance_credit' => 0.0,
-            'total_months_behind' => 0,
-            'active_subscribers' => 0,
-            'unpaid_subscribers' => 0,
-            'disconnected_subscribers' => 0,
-        ];
-
-        foreach ($subscribers as $subscriber) {
-            /** @var Subscriber $subscriber */
-
-            $breakdown = $this->billing->getBreakdown($subscriber, $period['end']);
-            $planId = $subscriber->plan?->plan_id ?? 0;
-            $planName = $subscriber->plan?->plan_name ?? 'Unassigned';
-
-            $rows[] = [
-                'subscriber_id' => $subscriber->subscriber_id,
-                'name' => $subscriber->name,
-                'plan_name' => $planName,
-                'status' => $subscriber->status,
-                'monthly_rate' => (float) $breakdown['monthly_rate'],
-                'total_owed' => (float) $breakdown['total_owed'],
-                'total_paid' => (float) $breakdown['total_paid'],
-                'balance' => (float) $breakdown['balance'],
-                'advance_credit' => (float) $breakdown['advance_credit'],
-                'months_behind' => (int) $breakdown['months_behind'],
-            ];
-
-            $summary['subscriber_count']++;
-            $summary['total_owed'] += (float) $breakdown['total_owed'];
-            $summary['total_paid'] += (float) $breakdown['total_paid'];
-            $summary['total_outstanding'] += (float) $breakdown['balance'];
-            $summary['total_advance_credit'] += (float) $breakdown['advance_credit'];
-            $summary['total_months_behind'] += (int) $breakdown['months_behind'];
-
-            $summaryKey = match ($subscriber->status) {
-                'Active' => 'active_subscribers',
-                'Unpaid' => 'unpaid_subscribers',
-                'Disconnected' => 'disconnected_subscribers',
-                default => null,
-            };
-
-            if ($summaryKey) {
-                $summary[$summaryKey]++;
-            }
-
-            if (! isset($planSummary[$planId])) {
-                $planSummary[$planId] = [
-                    'plan_id' => $planId,
-                    'plan_name' => $planName,
-                    'subscriber_count' => 0,
-                    'total_owed' => 0.0,
-                    'total_paid' => 0.0,
-                    'total_outstanding' => 0.0,
-                    'total_advance_credit' => 0.0,
-                ];
-            }
-
-            $planSummary[$planId]['subscriber_count']++;
-            $planSummary[$planId]['total_owed'] += (float) $breakdown['total_owed'];
-            $planSummary[$planId]['total_paid'] += (float) $breakdown['total_paid'];
-            $planSummary[$planId]['total_outstanding'] += (float) $breakdown['balance'];
-            $planSummary[$planId]['total_advance_credit'] += (float) $breakdown['advance_credit'];
-        }
-
-        return [
-            'report_type' => 'financial_statement',
-            'report_title' => 'Financial Statement',
-            'range' => $period['range'],
-            'month' => $period['month'],
-            'period_label' => $period['label'],
-            'period' => [
-                'start' => $period['start']->toDateString(),
-                'end' => $period['end']->toDateString(),
-            ],
-            'filters' => $filters,
-            'filter_labels' => $this->filterLabels($filters, ['subscriber_id', 'plan_id', 'status']),
-            'summary' => $summary,
-            'by_plan' => array_values($planSummary),
-            'subscribers' => $rows,
-        ];
-    }
-
     private function downloadFilename(string $prefix, array $period, string $extension): string
     {
         return $prefix . '_' . $period['month'] . '.' . $extension;
@@ -553,62 +413,6 @@ class ReportController extends Controller
                 $payment['or_number'] ?? '—',
                 $payment['payment_method'] ?? '—',
                 $payment['amount'],
-            ];
-        }
-
-        return $rows;
-    }
-
-    private function buildFinancialStatementXlsxRows(array $data): array
-    {
-        $rows = [
-            [$data['report_title']],
-            ['Period: ' . $data['period_label'] . ' (' . $data['period']['start'] . ' to ' . $data['period']['end'] . ')'],
-            ['Filters: ' . ($data['filter_labels'] ? implode('; ', $data['filter_labels']) : 'none')],
-            [],
-            ['Summary'],
-            ['Subscribers', $data['summary']['subscriber_count']],
-            ['Total Receivables', $data['summary']['total_owed']],
-            ['Total Paid', $data['summary']['total_paid']],
-            ['Outstanding', $data['summary']['total_outstanding']],
-            ['Credit', $data['summary']['total_advance_credit']],
-            [],
-            ['Status Snapshot'],
-            ['Active', $data['summary']['active_subscribers']],
-            ['Unpaid', $data['summary']['unpaid_subscribers']],
-            ['Disconnected', $data['summary']['disconnected_subscribers']],
-            ['Months Behind', $data['summary']['total_months_behind']],
-            [],
-            ['Financial Position by Plan'],
-            ['Plan', 'Subscribers', 'Receivables', 'Paid', 'Outstanding', 'Credit'],
-        ];
-
-        foreach ($data['by_plan'] as $plan) {
-            $rows[] = [
-                $plan['plan_name'],
-                $plan['subscriber_count'],
-                $plan['total_owed'],
-                $plan['total_paid'],
-                $plan['total_outstanding'],
-                $plan['total_advance_credit'],
-            ];
-        }
-
-        $rows[] = [];
-        $rows[] = ['Subscriber Ledger'];
-        $rows[] = ['Subscriber', 'Plan', 'Status', 'Monthly Rate', 'Receivables', 'Paid', 'Balance', 'Credit', 'Months Behind'];
-
-        foreach ($data['subscribers'] as $subscriber) {
-            $rows[] = [
-                $subscriber['name'] ?? '—',
-                $subscriber['plan_name'] ?? '—',
-                $subscriber['status'] ?? '—',
-                $subscriber['monthly_rate'],
-                $subscriber['total_owed'],
-                $subscriber['total_paid'],
-                $subscriber['balance'],
-                $subscriber['advance_credit'],
-                $subscriber['months_behind'],
             ];
         }
 

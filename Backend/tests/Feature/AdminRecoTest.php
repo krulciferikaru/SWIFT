@@ -91,6 +91,5 @@ class AdminRecoTest extends TestCase
         $this->getJson('/api/reports/collections?range=three_months')->assertOk()->assertJsonPath('data.range', 'three_months');
         $this->getJson('/api/reports/collections?range=annual&year=2025')
             ->assertOk()->assertJsonPath('data.period.start', '2025-01-01')->assertJsonPath('data.period.end', '2025-12-31');
-        $this->getJson('/api/reports/financial-statement?range=monthly&month=2026-02')->assertOk()->assertJsonPath('data.period_label', 'February 2026');
     }
 }

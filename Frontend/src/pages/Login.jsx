@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { LifeBuoy } from 'lucide-react'
+import { ChevronDown, LifeBuoy } from 'lucide-react'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
-import CompanyContact from '../components/CompanyContact.jsx'
+import AuthLayout from '../components/AuthLayout.jsx'
 import PasswordField from '../components/PasswordField.jsx'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 const formatCountdown = (seconds) => {
   const m = Math.floor(seconds / 60)
@@ -30,6 +30,7 @@ export default function Login() {
   const [lockedUntil, setLockedUntil] = useState(null) // time (ms) sign-in is paused until
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const passwordRef = useRef(null)
   const navigate = useNavigate()
   const { login, isAuthenticated, loading: authLoading } = useAuth()
@@ -104,110 +105,115 @@ export default function Login() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-1">
-          <div aria-hidden="true" className="text-2xl font-bold text-primary">SWIFT</div>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            Subscriber and Web-based Information and Financial Tracking System
+    <AuthLayout>
+      <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Sign in</h1>
+      <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
+        Sign in to manage SWIFT billing and subscriber services.
+      </p>
+
+      <div className="mt-8 space-y-4" aria-live="polite">
+        {error && (
+          <div role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">
+            {error}
+            {locked && (
+              <span aria-hidden="true" className="mt-1 block font-mono text-base font-semibold">
+                Try again in {formatCountdown(secondsLeft)}
+              </span>
+            )}
+          </div>
+        )}
+        {warning && !error.startsWith('Too many') && (
+          <div role="status" className="rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            {warning}
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="login">Contact number or email</Label>
+          <Input
+            id="login"
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="09XX-XXX-XXXX"
+            autoComplete="username"
+            required
+            autoFocus
+            className="h-11"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <PasswordField
+            id="password"
+            ref={passwordRef}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+            className="h-11"
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <input
+              id="remember"
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className="size-4"
+              aria-describedby="remember-hint"
+            />
+            <Label htmlFor="remember" className="cursor-pointer font-normal">Keep me signed in</Label>
+          </div>
+          <button
+            type="button"
+            onClick={() => setHelpOpen((o) => !o)}
+            aria-expanded={helpOpen}
+            aria-controls="signin-help"
+            className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            Can't sign in?
+            <ChevronDown className={`size-4 transition-transform ${helpOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+        </div>
+        {remember && (
+          <p id="remember-hint" className="-mt-2 text-xs text-gray-600 dark:text-gray-400">
+            Stays signed in for 30 days on this device. Don't use this on a shared computer.
           </p>
-          <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-            Jubal Brothers Cable TV Corp. · Palayan Branch
-          </p>
-          <CardTitle as="h1" className="pt-3">Sign in</CardTitle>
-          <CardDescription>Sign in to manage SWIFT billing and subscriber services.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div role="alert" className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">
-              {error}
-              {locked && (
-                <span aria-hidden="true" className="mt-1 block font-mono text-base font-semibold">
-                  Try again in {formatCountdown(secondsLeft)}
-                </span>
-              )}
-            </div>
-          )}
-          {warning && !error.startsWith('Too many') && (
-            <div role="status" className="mb-4 rounded bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-              {warning}
-            </div>
-          )}
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="login">Contact Number or Email</Label>
-              <Input
-                id="login"
-                type="text"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="09XX-XXX-XXXX"
-                autoComplete="username"
-                required
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <PasswordField
-                id="password"
-                ref={passwordRef}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </div>
-
-            <div className="flex items-start gap-2">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="mt-0.5 size-4"
-              />
-              <div>
-                <Label htmlFor="remember" className="cursor-pointer font-medium">Keep me signed in</Label>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  For 30 days on this device. Don't use this on a shared computer.
-                </p>
-              </div>
-            </div>
-
-            <Button type="submit" disabled={loading || locked} className="w-full">
-              {loading ? 'Signing in...' : locked ? `Try again in ${formatCountdown(secondsLeft)}` : 'Sign In'}
-            </Button>
-          </form>
-
-          <p className="mt-4 text-sm text-center text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Register
-            </Link>
-          </p>
-
-          <CompanyContact variant="inline" />
-
-          <details className="mt-4 rounded-md border border-gray-200 p-3 text-sm dark:border-gray-700">
-            <summary className="flex cursor-pointer items-center gap-2 font-medium text-gray-900 dark:text-gray-100">
+        {helpOpen && (
+          <div id="signin-help" className="rounded-lg bg-gray-50 p-4 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-300">
+            <p className="mb-2 flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100">
               <LifeBuoy className="size-4 shrink-0" aria-hidden="true" />
-              Can't sign in?
-            </summary>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-gray-700 dark:text-gray-300">
-              <li>Sign in with the mobile number or email you registered with.</li>
-              <li>Passwords are case-sensitive. Use <strong>Show</strong> to check what you typed.</li>
-              <li>
-                Forgot your password? Contact the office to have it reset. Staff can ask an administrator.
-              </li>
+              Trouble signing in?
+            </p>
+            <ul className="list-disc space-y-1.5 pl-5">
+              <li>Use the mobile number or email you registered with.</li>
+              <li>Passwords are case-sensitive. Tap <strong>Show</strong> to check what you typed.</li>
+              <li>Forgot your password? Contact the office to have it reset. Staff can ask an administrator.</li>
               <li>After 5 wrong passwords, sign-in for that account pauses for 15 minutes.</li>
               <li>"Awaiting approval" means staff have not approved your registration yet.</li>
             </ul>
-          </details>
-        </CardContent>
-      </Card>
-    </main>
+          </div>
+        )}
+
+        <Button type="submit" disabled={loading || locked} className="h-11 w-full text-base">
+          {loading ? 'Signing in...' : locked ? `Try again in ${formatCountdown(secondsLeft)}` : 'Sign in'}
+        </Button>
+      </form>
+
+      <div className="mt-8 border-t border-gray-200 pt-6 dark:border-gray-800">
+        <p className="mb-3 text-center text-sm text-gray-600 dark:text-gray-400">New to SWIFT?</p>
+        <Link to="/register" className={cn(buttonVariants({ variant: 'outline' }), 'h-11 w-full text-base')}>
+          Create an account
+        </Link>
+      </div>
+    </AuthLayout>
   )
 }
