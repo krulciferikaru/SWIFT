@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Download, RefreshCw } from 'lucide-react'
 import reportApi from '../api/reports'
 import { useToast } from '../hooks/useToast'
@@ -18,6 +18,9 @@ import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 import { useReportData, describeRequestError } from '../hooks/useReportData'
 import { ReportSkeleton } from "../components/Skeletons.jsx";
+import SubscriberPicker from "../components/SubscriberPicker.jsx";
+import { usePaymentMethods } from "../hooks/usePaymentMethods";
+import planApi from "../api/plans";
 
 function money(value) {
   return `PHP ${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -54,6 +57,16 @@ function methodBadgeClass(method) {
   return 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
 }
 
+/** "Filtered by: Subscriber: Juan Cruz; Payment method: GCash", shown above a report's numbers. */
+function FilterNote({ labels }) {
+  if (!labels || labels.length === 0) return null
+  return (
+    <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+      <strong>Filtered by:</strong> {labels.join('; ')}
+    </p>
+  )
+}
+
 function useCurrentMonth() {
   return new Date().toISOString().slice(0, 7)
 }
@@ -73,6 +86,7 @@ const RANGE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'three_months', label: 'Last 3 Months' },
   { value: 'annual', label: 'Annual' },
+  { value: 'custom', label: 'Date range' },
 ]
 
 const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => String(new Date().getFullYear() - i))
@@ -84,13 +98,64 @@ export default function Reports() {
   const [exporting, setExporting] = useState('')
   const { toast, showToast } = useToast()
 
+  // A custom date range: from the 1st of this month to today until the person changes it.
+  const today = new Date().toISOString().slice(0, 10)
+  const [customFrom, setCustomFrom] = useState(`${useCurrentMonth()}-01`)
+  const [customTo, setCustomTo] = useState(today)
+  const customError = !customFrom || !customTo
+    ? 'Choose both dates.'
+    : customTo < customFrom
+      ? 'The end date is before the start date.'
+      : (new Date(customTo) - new Date(customFrom)) / 86400000 > 1830
+        ? 'Choose a range of 5 years or less.'
+        : ''
+  // Only a valid range is ever sent, so typing a half-finished date does not trigger a request.
+  const validCustom = useRef({ from: customFrom, to: customTo })
+  if (!customError) validCustom.current = { from: customFrom, to: customTo }
+
+  // Narrowing the reports. The subscriber, plan, method, status and OR number each apply to the
+  // report(s) they make sense for; the rest ignore them.
+  const [subscriber, setSubscriber] = useState(null) // { id, name }
+  const [planId, setPlanId] = useState('')
+  const [method, setMethod] = useState('')
+  const [status, setStatus] = useState('')
+  const [orNumber, setOrNumber] = useState('')
+  const [plans, setPlans] = useState([])
+  const { methods } = usePaymentMethods()
+  useEffect(() => {
+    planApi.getAll().then((res) => setPlans(Array.isArray(res.data) ? res.data : (res.data?.data ?? []))).catch(() => {})
+  }, [])
+  const activeFilterCount = [subscriber, planId, method, status, orNumber.trim()].filter(Boolean).length
+  const clearFilters = () => {
+    setSubscriber(null)
+    setPlanId('')
+    setMethod('')
+    setStatus('')
+    setOrNumber('')
+  }
+
   // Query params + file-name key for the selected range.
   const params = useMemo(() => {
-    if (range === 'annual') return { range, year }
-    if (range === 'three_months') return { range }
-    return { range, month }
-  }, [range, month, year])
-  const periodKey = range === 'annual' ? year : range === 'three_months' ? 'last-3-months' : month
+    let p
+    if (range === 'annual') p = { range, year }
+    else if (range === 'three_months') p = { range }
+    else if (range === 'custom') p = { range, from: validCustom.current.from, to: validCustom.current.to }
+    else p = { range, month }
+    if (subscriber) p.subscriber_id = subscriber.id
+    if (planId) p.plan_id = planId
+    if (method) p.payment_method = method
+    if (status) p.status = status
+    if (orNumber.trim()) p.or_number = orNumber.trim()
+    return p
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, month, year, customFrom, customTo, customError, subscriber, planId, method, status, orNumber])
+  const periodKey = range === 'annual'
+    ? year
+    : range === 'three_months'
+      ? 'last-3-months'
+      : range === 'custom'
+        ? `${validCustom.current.from}_to_${validCustom.current.to}`
+        : month
 
   const { collections, statement, loading, error, online, reload } = useReportData(params)
 
@@ -208,6 +273,18 @@ export default function Reports() {
               ))}
             </select>
           )}
+          {range === 'custom' && (
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1">
+                <label htmlFor="report-from" className="text-xs font-medium text-gray-700 dark:text-gray-300">From</label>
+                <Input id="report-from" type="date" value={customFrom} max={customTo || today} onChange={(e) => setCustomFrom(e.target.value)} className="sm:w-40" aria-invalid={customError ? true : undefined} />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="report-to" className="text-xs font-medium text-gray-700 dark:text-gray-300">To</label>
+                <Input id="report-to" type="date" value={customTo} min={customFrom || undefined} max={today} onChange={(e) => setCustomTo(e.target.value)} className="sm:w-40" aria-invalid={customError ? true : undefined} />
+              </div>
+            </div>
+          )}
           <Button onClick={reload} disabled={loading || !online} variant="outline" className="gap-2">
             <RefreshCw className="size-4" />
             Reload
@@ -215,6 +292,55 @@ export default function Reports() {
           <TourButton tour="reports" />
         </div>
       </div>
+
+      {range === 'custom' && customError && (
+        <p role="alert" className="text-sm text-red-700 dark:text-red-400">{customError} Showing the last valid range.</p>
+      )}
+
+      <details data-tour="reports-filters" open={activeFilterCount > 0 ? true : undefined} className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <summary className="cursor-pointer text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Filters{activeFilterCount > 0 && <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">{activeFilterCount} on</span>}
+        </summary>
+        <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+          Narrow the reports before you read or download them. Subscriber and plan apply to both reports; payment method and OR number to the Collection Report; status to the Financial Statement.
+        </p>
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-1.5">
+            <label htmlFor="filter-subscriber" className="text-sm font-medium text-gray-900 dark:text-gray-100">Subscriber</label>
+            <SubscriberPicker id="filter-subscriber" value={subscriber} onChange={setSubscriber} />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="filter-plan" className="text-sm font-medium text-gray-900 dark:text-gray-100">Service plan</label>
+            <select id="filter-plan" value={planId} onChange={(e) => setPlanId(e.target.value)} className="h-9 w-full rounded-md border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900">
+              <option value="">All plans</option>
+              {plans.map((p) => <option key={p.plan_id} value={p.plan_id}>{p.plan_name}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="filter-method" className="text-sm font-medium text-gray-900 dark:text-gray-100">Payment method <span className="font-normal text-gray-600 dark:text-gray-400">(collections)</span></label>
+            <select id="filter-method" value={method} onChange={(e) => setMethod(e.target.value)} className="h-9 w-full rounded-md border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900">
+              <option value="">All methods</option>
+              {methods.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="filter-or" className="text-sm font-medium text-gray-900 dark:text-gray-100">OR number <span className="font-normal text-gray-600 dark:text-gray-400">(collections)</span></label>
+            <Input id="filter-or" value={orNumber} onChange={(e) => setOrNumber(e.target.value)} placeholder="Part of an OR number" maxLength={50} />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="filter-status" className="text-sm font-medium text-gray-900 dark:text-gray-100">Subscriber status <span className="font-normal text-gray-600 dark:text-gray-400">(statement)</span></label>
+            <select id="filter-status" value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-full rounded-md border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900">
+              <option value="">All statuses</option>
+              <option value="Active">Active</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Disconnected">Disconnected</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <Button type="button" variant="outline" onClick={clearFilters} disabled={activeFilterCount === 0}>Clear filters</Button>
+          </div>
+        </div>
+      </details>
 
       {error && (
         <div
@@ -261,6 +387,8 @@ export default function Reports() {
                 {exporting === 'collections-xlsx' ? 'Downloading…' : 'XLSX'}
               </Button>
             </div>
+
+            <FilterNote labels={displayCollections?.filter_labels} />
 
             {loading ? (
               <ReportSkeleton cards={3} />
@@ -402,6 +530,8 @@ export default function Reports() {
                 {exporting === 'statement-xlsx' ? 'Downloading…' : 'XLSX'}
               </Button>
             </div>
+
+            <FilterNote labels={displayStatement?.filter_labels} />
 
             {loading ? (
               <ReportSkeleton cards={4} />

@@ -48,8 +48,11 @@ class PaymentController extends Controller
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_date' => ['required', 'date'],
             'or_number' => ['required', 'string', 'max:50'],
-            'payment_method' => ['required', 'in:Cash,GCash,Others'],
+            // One of the methods an admin has switched on (Settings, Payment methods).
+            'payment_method' => ['required', \Illuminate\Validation\Rule::exists('payment_methods', 'name')->where('is_active', true)],
             'notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'payment_method.exists' => 'Choose one of the available payment methods.',
         ]);
 
         $payment = Payment::create([

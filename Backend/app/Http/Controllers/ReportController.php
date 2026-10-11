@@ -94,7 +94,7 @@ class ReportController extends Controller
     public function collections(Request $request): JsonResponse
     {
         $period = $this->resolvePeriod($request);
-        $data = $this->buildCollectionsData($period);
+        $data = $this->buildCollectionsData($period, $this->resolveFilters($request));
 
         return response()->json([
             'success' => true,
@@ -105,7 +105,7 @@ class ReportController extends Controller
     public function financialStatement(Request $request): JsonResponse
     {
         $period = $this->resolvePeriod($request);
-        $data = $this->buildFinancialStatementData($period);
+        $data = $this->buildFinancialStatementData($period, $this->resolveFilters($request));
 
         return response()->json([
             'success' => true,
@@ -116,7 +116,7 @@ class ReportController extends Controller
     public function collectionsPdf(Request $request)
     {
         $period = $this->resolvePeriod($request);
-        $data = $this->buildCollectionsData($period);
+        $data = $this->buildCollectionsData($period, $this->resolveFilters($request));
 
         return $this->exports->downloadPdf(
             $this->downloadFilename('collections_report', $period, 'pdf'),
@@ -128,7 +128,7 @@ class ReportController extends Controller
     public function collectionsXlsx(Request $request)
     {
         $period = $this->resolvePeriod($request);
-        $data = $this->buildCollectionsData($period);
+        $data = $this->buildCollectionsData($period, $this->resolveFilters($request));
 
         return $this->exports->downloadXlsx(
             $this->downloadFilename('collections_report', $period, 'xlsx'),
@@ -139,7 +139,7 @@ class ReportController extends Controller
     public function financialStatementPdf(Request $request)
     {
         $period = $this->resolvePeriod($request);
-        $data = $this->buildFinancialStatementData($period);
+        $data = $this->buildFinancialStatementData($period, $this->resolveFilters($request));
 
         return $this->exports->downloadPdf(
             $this->downloadFilename('financial_statement', $period, 'pdf'),
@@ -151,7 +151,7 @@ class ReportController extends Controller
     public function financialStatementXlsx(Request $request)
     {
         $period = $this->resolvePeriod($request);
-        $data = $this->buildFinancialStatementData($period);
+        $data = $this->buildFinancialStatementData($period, $this->resolveFilters($request));
 
         return $this->exports->downloadXlsx(
             $this->downloadFilename('financial_statement', $period, 'xlsx'),
@@ -160,7 +160,8 @@ class ReportController extends Controller
     }
 
     /**
-     * Resolves the report window from ?range=monthly|three_months|annual.
+     * Resolves the report window from ?range=monthly|three_months|annual|custom.
+     *   custom        -> ?from=YYYY-MM-DD&to=YYYY-MM-DD (at most 5 years; never past today)
      *   monthly       -> ?month=YYYY-MM (defaults to the current month)
      *   three_months  -> rolling window: the same day 3 months ago through today
      *   annual        -> ?year=YYYY (defaults to the current year; the current
@@ -169,15 +170,34 @@ class ReportController extends Controller
     private function resolvePeriod(Request $request): array
     {
         $validated = $request->validate([
-            'range' => ['nullable', 'in:monthly,three_months,annual'],
+            'range' => ['nullable', 'in:monthly,three_months,annual,custom'],
             'month' => ['nullable', 'date_format:Y-m'],
             'year' => ['nullable', 'date_format:Y'],
+            'from' => ['required_if:range,custom', 'nullable', 'date_format:Y-m-d'],
+            'to' => [
+                'required_if:range,custom', 'nullable', 'date_format:Y-m-d', 'after_or_equal:from',
+                function ($attribute, $value, $fail) use ($request) {
+                    $from = $request->input('from');
+                    if ($from && $value && Carbon::parse($from)->diffInDays(Carbon::parse($value)) > 1830) {
+                        $fail('Choose a date range of 5 years or less.');
+                    }
+                },
+            ],
         ]);
 
         $range = $validated['range'] ?? 'monthly';
         $today = now()->endOfDay();
 
-        if ($range === 'three_months') {
+        if ($range === 'custom') {
+            $start = Carbon::createFromFormat('Y-m-d', $validated['from'])->startOfDay();
+            $end = Carbon::createFromFormat('Y-m-d', $validated['to'])->endOfDay();
+            $label = $start->format('M j, Y') . ' - ' . $end->format('M j, Y');
+            $key = $start->toDateString() . '_to_' . $end->toDateString();
+            // Nothing is billed or collected in the future.
+            if ($end->gt($today)) {
+                $end = $today;
+            }
+        } elseif ($range === 'three_months') {
             $start = now()->subMonths(3)->startOfDay();
             $end = $today;
             $key = 'last-3-months';
@@ -208,12 +228,68 @@ class ReportController extends Controller
         ];
     }
 
-    private function buildCollectionsData(array $period): array
+    /**
+     * Optional narrowing for the on-screen report and the PDF / Excel files:
+     * ?subscriber_id= ?plan_id= ?payment_method= ?status= ?or_number=
+     */
+    private function resolveFilters(Request $request): array
     {
-        $baseQuery = Payment::query()->whereBetween('payment_date', [
-            $period['start']->toDateString(),
-            $period['end']->toDateString(),
+        $v = $request->validate([
+            'subscriber_id' => ['nullable', 'integer', 'exists:subscriber,subscriber_id'],
+            'plan_id' => ['nullable', 'integer', 'exists:plan,plan_id'],
+            'payment_method' => ['nullable', 'string', 'max:50'],
+            'status' => ['nullable', 'in:Active,Unpaid,Disconnected'],
+            'or_number' => ['nullable', 'string', 'max:50'],
         ]);
+
+        return [
+            'subscriber_id' => isset($v['subscriber_id']) ? (int) $v['subscriber_id'] : null,
+            'plan_id' => isset($v['plan_id']) ? (int) $v['plan_id'] : null,
+            'payment_method' => ($v['payment_method'] ?? '') !== '' ? $v['payment_method'] : null,
+            'status' => ($v['status'] ?? '') !== '' ? $v['status'] : null,
+            'or_number' => ($v['or_number'] ?? '') !== '' ? trim($v['or_number']) : null,
+        ];
+    }
+
+    /** The filters in words, for the top of a report: ["Subscriber: Juan Cruz", "Payment method: GCash"]. */
+    private function filterLabels(array $filters, array $use): array
+    {
+        $labels = [];
+
+        if (in_array('subscriber_id', $use, true) && $filters['subscriber_id']) {
+            $name = Subscriber::withTrashed()->find($filters['subscriber_id'])?->name;
+            $labels[] = 'Subscriber: ' . ($name ?? '#' . $filters['subscriber_id']);
+        }
+        if (in_array('plan_id', $use, true) && $filters['plan_id']) {
+            $name = \App\Models\Plan::withTrashed()->find($filters['plan_id'])?->plan_name;
+            $labels[] = 'Plan: ' . ($name ?? '#' . $filters['plan_id']);
+        }
+        if (in_array('payment_method', $use, true) && $filters['payment_method']) {
+            $labels[] = 'Payment method: ' . $filters['payment_method'];
+        }
+        if (in_array('status', $use, true) && $filters['status']) {
+            $labels[] = 'Status: ' . $filters['status'];
+        }
+        if (in_array('or_number', $use, true) && $filters['or_number']) {
+            $labels[] = 'OR number contains: ' . $filters['or_number'];
+        }
+
+        return $labels;
+    }
+
+    private function buildCollectionsData(array $period, array $filters = []): array
+    {
+        $filters += ['subscriber_id' => null, 'plan_id' => null, 'payment_method' => null, 'status' => null, 'or_number' => null];
+
+        $baseQuery = Payment::query()
+            ->whereBetween('payment_date', [
+                $period['start']->toDateString(),
+                $period['end']->toDateString(),
+            ])
+            ->when($filters['subscriber_id'], fn ($q, $id) => $q->where('subscriber_id', $id))
+            ->when($filters['payment_method'], fn ($q, $m) => $q->where('payment_method', $m))
+            ->when($filters['or_number'], fn ($q, $or) => $q->where('or_number', 'like', '%' . $or . '%'))
+            ->when($filters['plan_id'], fn ($q, $plan) => $q->whereHas('subscriber', fn ($s) => $s->where('plan_id', $plan)));
 
         $payments = (clone $baseQuery)
             ->with(['subscriber.plan'])
@@ -244,6 +320,10 @@ class ReportController extends Controller
                 $period['start']->toDateString(),
                 $period['end']->toDateString(),
             ])
+            ->when($filters['subscriber_id'], fn ($q, $id) => $q->where('payments.subscriber_id', $id))
+            ->when($filters['payment_method'], fn ($q, $m) => $q->where('payments.payment_method', $m))
+            ->when($filters['or_number'], fn ($q, $or) => $q->where('payments.or_number', 'like', '%' . $or . '%'))
+            ->when($filters['plan_id'], fn ($q, $plan) => $q->where('subscriber.plan_id', $plan))
             ->selectRaw('COALESCE(plan.plan_id, 0) as plan_id, COALESCE(plan.plan_name, "Unassigned") as plan_name, COUNT(*) as payment_count, COUNT(DISTINCT payments.subscriber_id) as subscriber_count, SUM(payments.amount) as total_collected')
             ->groupBy('plan.plan_id', 'plan.plan_name')
             ->orderByDesc('total_collected')
@@ -280,6 +360,8 @@ class ReportController extends Controller
                 'start' => $period['start']->toDateString(),
                 'end' => $period['end']->toDateString(),
             ],
+            'filters' => $filters,
+            'filter_labels' => $this->filterLabels($filters, ['subscriber_id', 'plan_id', 'payment_method', 'or_number']),
             'summary' => [
                 'payment_count' => (clone $baseQuery)->count(),
                 'paying_subscribers' => (clone $baseQuery)->distinct()->count('subscriber_id'),
@@ -291,9 +373,17 @@ class ReportController extends Controller
         ];
     }
 
-    private function buildFinancialStatementData(array $period): array
+    private function buildFinancialStatementData(array $period, array $filters = []): array
     {
-        $subscribers = Subscriber::with('plan')->where('account_status', 'active')->orderBy('name')->get();
+        $filters += ['subscriber_id' => null, 'plan_id' => null, 'payment_method' => null, 'status' => null, 'or_number' => null];
+
+        $subscribers = Subscriber::with('plan')
+            ->where('account_status', 'active')
+            ->when($filters['subscriber_id'], fn ($q, $id) => $q->where('subscriber_id', $id))
+            ->when($filters['plan_id'], fn ($q, $plan) => $q->where('plan_id', $plan))
+            ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
+            ->orderBy('name')
+            ->get();
 
         $rows = [];
         $planSummary = [];
@@ -376,6 +466,8 @@ class ReportController extends Controller
                 'start' => $period['start']->toDateString(),
                 'end' => $period['end']->toDateString(),
             ],
+            'filters' => $filters,
+            'filter_labels' => $this->filterLabels($filters, ['subscriber_id', 'plan_id', 'status']),
             'summary' => $summary,
             'by_plan' => array_values($planSummary),
             'subscribers' => $rows,
@@ -416,6 +508,7 @@ class ReportController extends Controller
         $rows = [
             [$data['report_title']],
             ['Period: ' . $data['period_label'] . ' (' . $data['period']['start'] . ' to ' . $data['period']['end'] . ')'],
+            ['Filters: ' . ($data['filter_labels'] ? implode('; ', $data['filter_labels']) : 'none')],
             [],
             ['Summary'],
             ['Payments', $data['summary']['payment_count']],
@@ -471,6 +564,7 @@ class ReportController extends Controller
         $rows = [
             [$data['report_title']],
             ['Period: ' . $data['period_label'] . ' (' . $data['period']['start'] . ' to ' . $data['period']['end'] . ')'],
+            ['Filters: ' . ($data['filter_labels'] ? implode('; ', $data['filter_labels']) : 'none')],
             [],
             ['Summary'],
             ['Subscribers', $data['summary']['subscriber_count']],

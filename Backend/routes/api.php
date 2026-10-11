@@ -4,6 +4,7 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CompanyInfoController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
@@ -140,7 +141,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/users/{user}/password', [UserController::class, 'resetPassword']);
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions']);
+
+        Route::post('/payment-methods', [PaymentMethodController::class, 'store']);
+        Route::put('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
+        Route::delete('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy']);
     });
+
+    // The payment form and the report filters need the list (active methods only, unless an admin asks for all).
+    Route::get('/payment-methods', [PaymentMethodController::class, 'index'])
+        ->middleware('role:admin,secretary');
 
     Route::put('/company-info', [CompanyInfoController::class, 'update'])
         ->middleware('permission:users.manage');

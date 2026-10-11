@@ -364,13 +364,20 @@ export const TOURS = {
         selector: t('reports-range'),
         title: 'Choose the period',
         description:
-          'Monthly shows one month, Last 3 Months covers the past three months up to today, and Annual shows a whole year. The reports reload when you switch.',
+          'Monthly shows one month, Last 3 Months covers the past three months up to today, Annual shows a whole year, and Date range lets you pick your own start and end dates. The reports reload when you switch.',
         side: 'bottom',
       },
       {
         selector: t('reports-month'),
         title: 'Pick the month',
         description: 'With Monthly selected, choose which month to report on.',
+        side: 'bottom',
+      },
+      {
+        selector: t('reports-filters'),
+        title: 'Filter the reports',
+        description:
+          'Narrow the reports before you read or download them: pick one subscriber, a service plan, a payment method, part of an OR number, or a subscriber status. The reports and the PDF and Excel files follow the filters, and each file says which filters were used. Clear filters puts everything back.',
         side: 'bottom',
       },
       {
@@ -462,6 +469,14 @@ export const TOURS = {
         description:
           'Hide the "Take a tour" buttons if you no longer need them, or replay the welcome tour whenever you like.',
         side: 'bottom',
+      },
+      {
+        selector: t('settings-payment-methods'),
+        title: 'Payment methods',
+        description:
+          'Admins decide which payment methods staff can choose when recording a payment, and which appear in the report filters. Add a new one, rename one (recorded payments are updated too), or switch one off. A method that has been used cannot be deleted, only switched off.',
+        side: 'top',
+        roles: ['admin'],
       },
       {
         selector: t('settings-company'),
