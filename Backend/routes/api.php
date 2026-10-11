@@ -68,12 +68,6 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('throttle:report-exports');
         Route::get('/reports/collections/xlsx', [ReportController::class, 'collectionsXlsx'])
             ->middleware('throttle:report-exports');
-        Route::get('/reports/financial-statement', [ReportController::class, 'financialStatement'])
-            ->middleware('throttle:reports');
-        Route::get('/reports/financial-statement/pdf', [ReportController::class, 'financialStatementPdf'])
-            ->middleware('throttle:report-exports');
-        Route::get('/reports/financial-statement/xlsx', [ReportController::class, 'financialStatementXlsx'])
-            ->middleware('throttle:report-exports');
         Route::get('/reports/financial-summary', [PaymentController::class, 'financialSummary']);
     });
 

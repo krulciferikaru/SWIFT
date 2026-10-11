@@ -49,6 +49,30 @@ export default function CompanyContact({ variant = 'card' }) {
     )
   }
 
+  // On the brand panel of the sign-in page: light text on the blue background.
+  if (variant === 'panel') {
+    const lines = [
+      info.mobile && [Smartphone, <a key="m" className="underline underline-offset-2" href={telHref(info.mobile)}>{info.mobile}</a>],
+      info.phone && [Phone, <a key="p" className="underline underline-offset-2" href={telHref(info.phone)}>{info.phone}</a>],
+      info.email && [Mail, <a key="e" className="underline underline-offset-2" href={`mailto:${info.email}`}>{info.email}</a>],
+      info.address && [MapPin, info.address],
+      info.office_hours && [Clock, info.office_hours],
+    ].filter(Boolean)
+    return (
+      <div className="space-y-2 text-sm text-blue-50">
+        <p className="font-semibold text-white">Need help or an account? Contact the company</p>
+        <ul className="space-y-1.5">
+          {lines.map(([Icon, content], i) => (
+            <li key={i} className="flex items-start gap-2.5">
+              <Icon className="mt-0.5 size-4 shrink-0 text-white" aria-hidden="true" />
+              <span>{content}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
   return (
     <Card data-tour="me-contact">
       <CardHeader>
