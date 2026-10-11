@@ -389,7 +389,7 @@ export default function SubscribersPage() {
                         onClick={() => setDetailsTarget(sub)}
                         aria-haspopup="dialog"
                         title="View details"
-                        className="group inline-flex items-center gap-0.5 text-left font-semibold text-blue-700 dark:text-blue-400 underline decoration-blue-700/40 dark:decoration-blue-400/40 underline-offset-2 hover:decoration-current focus-visible:decoration-current"
+                        className="group inline-flex items-center gap-0.5 text-left font-semibold text-gray-900 dark:text-gray-100 underline decoration-transparent underline-offset-2 hover:decoration-current focus-visible:decoration-current"
                       >
                         {sub.name}
                         <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
