@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import api from '../api/axios'
 import { useOnReconnect } from '../hooks/useOnline'
+import { getToken, setToken, clearToken } from '../utils/authToken'
 
 const AuthContext = createContext(null)
 
@@ -12,7 +13,7 @@ export function AuthProvider({ children }) {
   const [connectionError, setConnectionError] = useState(false)
 
   const fetchCurrentUser = useCallback(async () => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) {
       setUser(null)
       setLoading(false)
@@ -28,7 +29,7 @@ export function AuthProvider({ children }) {
       } else {
         setConnectionError(false)
         setUser(null)
-        localStorage.removeItem('token')
+        clearToken()
       }
     } finally {
       setLoading(false)
@@ -43,8 +44,8 @@ export function AuthProvider({ children }) {
     if (connectionError) fetchCurrentUser()
   })
 
-  const login = (token, userData) => {
-    localStorage.setItem('token', token)
+  const login = (token, userData, remember = false) => {
+    setToken(token, remember)
     setUser(userData) // login response already includes { user }
   }
 
@@ -54,7 +55,7 @@ export function AuthProvider({ children }) {
     } catch {
       // proceed with local logout regardless
     } finally {
-      localStorage.removeItem('token')
+      clearToken()
       setUser(null)
     }
   }

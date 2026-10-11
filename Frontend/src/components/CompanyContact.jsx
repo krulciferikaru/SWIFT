@@ -34,15 +34,42 @@ export default function CompanyContact({ variant = 'card' }) {
     ].filter(Boolean)
     if (bits.length === 0) return null
     return (
-      <p className="mt-3 text-sm text-center text-gray-600 dark:text-gray-400">
-        Need help or an account? Contact the company:{' '}
-        {bits.map((b, i) => (
-          <span key={i}>
-            {i > 0 && ' · '}
-            {b}
-          </span>
-        ))}
-      </p>
+      <div className="mt-3 space-y-1 text-sm text-center text-gray-600 dark:text-gray-400">
+        <p>
+          Need help or an account? Contact the company:{' '}
+          {bits.map((b, i) => (
+            <span key={i}>
+              {i > 0 && ' · '}
+              {b}
+            </span>
+          ))}
+        </p>
+        {info.office_hours && <p>Office hours: {info.office_hours}</p>}
+      </div>
+    )
+  }
+
+  // On the brand panel of the sign-in page: light text on the blue background.
+  if (variant === 'panel') {
+    const lines = [
+      info.mobile && [Smartphone, <a key="m" className="underline underline-offset-2" href={telHref(info.mobile)}>{info.mobile}</a>],
+      info.phone && [Phone, <a key="p" className="underline underline-offset-2" href={telHref(info.phone)}>{info.phone}</a>],
+      info.email && [Mail, <a key="e" className="underline underline-offset-2" href={`mailto:${info.email}`}>{info.email}</a>],
+      info.address && [MapPin, info.address],
+      info.office_hours && [Clock, info.office_hours],
+    ].filter(Boolean)
+    return (
+      <div className="space-y-2 text-sm text-blue-50">
+        <p className="font-semibold text-white">Need help or an account? Contact the company</p>
+        <ul className="space-y-1.5">
+          {lines.map(([Icon, content], i) => (
+            <li key={i} className="flex items-start gap-2.5">
+              <Icon className="mt-0.5 size-4 shrink-0 text-white" aria-hidden="true" />
+              <span>{content}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     )
   }
 

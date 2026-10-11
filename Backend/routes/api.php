@@ -4,10 +4,12 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CompanyInfoController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordConfirmationController;
 use App\Http\Controllers\SubscriberApprovalController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
@@ -35,6 +37,10 @@ Route::get('/company-info', [CompanyInfoController::class, 'show'])->middleware(
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Type your password again before a sensitive action (valid for 10 minutes).
+    Route::post('/me/confirm-password', [PasswordConfirmationController::class, 'store'])
+        ->middleware('throttle:confirm-password');
 
     Route::post('/me/phone/send-code', [PhoneVerificationController::class, 'send'])
         ->middleware('throttle:phone-code');
@@ -66,12 +72,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/collections/pdf', [ReportController::class, 'collectionsPdf'])
             ->middleware('throttle:report-exports');
         Route::get('/reports/collections/xlsx', [ReportController::class, 'collectionsXlsx'])
-            ->middleware('throttle:report-exports');
-        Route::get('/reports/financial-statement', [ReportController::class, 'financialStatement'])
-            ->middleware('throttle:reports');
-        Route::get('/reports/financial-statement/pdf', [ReportController::class, 'financialStatementPdf'])
-            ->middleware('throttle:report-exports');
-        Route::get('/reports/financial-statement/xlsx', [ReportController::class, 'financialStatementXlsx'])
             ->middleware('throttle:report-exports');
         Route::get('/reports/financial-summary', [PaymentController::class, 'financialSummary']);
     });
@@ -112,10 +112,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:archive.manage')->group(function () {
         Route::get('/archive/subscribers', [ArchiveController::class, 'subscribers']);
         Route::patch('/archive/subscribers/{id}/restore', [ArchiveController::class, 'restoreSubscriber']);
-        Route::delete('/archive/subscribers/{id}', [ArchiveController::class, 'deleteSubscriber']);
+        Route::delete('/archive/subscribers/{id}', [ArchiveController::class, 'deleteSubscriber'])
+            ->middleware('password.confirmed');
         Route::get('/archive/plans', [ArchiveController::class, 'plans']);
         Route::patch('/archive/plans/{id}/restore', [ArchiveController::class, 'restorePlan']);
-        Route::delete('/archive/plans/{id}', [ArchiveController::class, 'deletePlan']);
+        Route::delete('/archive/plans/{id}', [ArchiveController::class, 'deletePlan'])
+            ->middleware('password.confirmed');
     });
 
     // The Payments page and the subscriber details window both need to look subscribers up.
@@ -137,10 +139,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
-        Route::patch('/users/{user}/password', [UserController::class, 'resetPassword']);
+        Route::patch('/users/{user}/password', [UserController::class, 'resetPassword'])
+            ->middleware('password.confirmed');
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
-        Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions']);
+        Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
+            ->middleware('password.confirmed');
+
+        Route::post('/payment-methods', [PaymentMethodController::class, 'store']);
+        Route::put('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
+        Route::delete('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy']);
     });
+
+    // The payment form and the report filters need the list (active methods only, unless an admin asks for all).
+    Route::get('/payment-methods', [PaymentMethodController::class, 'index'])
+        ->middleware('role:admin,secretary');
 
     Route::put('/company-info', [CompanyInfoController::class, 'update'])
         ->middleware('permission:users.manage');

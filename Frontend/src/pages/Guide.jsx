@@ -132,16 +132,16 @@ const SECTIONS = [
     tour: 'reports',
     icon: FileText,
     title: 'Reports',
-    summary: 'Collection totals and financial statements by month, last 3 months, or year — exportable to PDF/Excel.',
+    summary: 'The collection report by month, last 3 months, year, or your own dates, with filters — exportable to PDF/Excel.',
     roles: ['admin', 'secretary'],
     body: (
       <>
-        <p>Choose <strong>Monthly</strong> (pick a month), <strong>Last 3 Months</strong> (the past three months up to today), or <strong>Annual</strong> (pick a year) at the top, then review:</p>
+        <p>Choose <strong>Monthly</strong> (pick a month), <strong>Last 3 Months</strong> (the past three months up to today), <strong>Annual</strong> (pick a year), or <strong>Date range</strong> (your own start and end dates, up to 5 years) at the top, then review:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Collection Report</strong> — how much was collected in the selected period, broken down by plan and by payment method, plus a full payment ledger.</li>
-          <li><strong>Financial Statement</strong> — who owes what: total receivables, paid, and outstanding balances, broken down by plan and per-subscriber.</li>
         </ul>
-        <p>Each report has <strong>PDF</strong> and <strong>XLSX</strong> (Excel) download buttons if you need to print or send it somewhere.</p>
+        <p>Open <strong>Filters</strong> to narrow the report first: one <em>subscriber</em>, a <em>service plan</em>, a <em>payment method</em>, or part of an <em>OR number</em>. A yellow "Filtered by" line shows what is applied, and the downloaded files say which filters were used too.</p>
+        <p>The report has <strong>PDF</strong> and <strong>XLSX</strong> (Excel) download buttons if you need to print or send it somewhere.</p>
       </>
     ),
   },
@@ -178,7 +178,7 @@ const SECTIONS = [
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
           <li className="flex items-start gap-1.5">
             <KeyRound className="size-4 mt-0.5 shrink-0" />
-            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them.</span>
+            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them. Resetting a password, changing permissions, and deleting from the Archive each ask you to type your own password first, as a safety step; it then stays confirmed for 10 minutes.</span>
           </li>
         </ul>
       </>
@@ -220,6 +220,7 @@ const SECTIONS = [
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
           <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>
+          {role === 'admin' && <li><strong>Payment methods</strong> — add, rename, switch off or delete the choices staff see when recording a payment (Cash, GCash and so on). A method that has already been used can be switched off but not deleted.</li>}
           <li><strong>Replay welcome tour</strong> — walks through the menu again, the same tour shown on your first visit.</li>
           <li><strong>Mobile number</strong> — appears if your account has a number. Click <em>Verify</em>, then enter the 6-digit code we text you. The code works for 10 minutes, and you can ask for a new one after a minute. Changing your number means verifying again. Staff see a green <em>Verified</em> tag next to verified numbers.</li>
           {role !== 'subscriber' && (
@@ -418,7 +419,7 @@ export default function Guide() {
           <CardContent className="flex items-start gap-3">
             <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <p className="text-sm text-blue-900 dark:text-blue-300">
-              Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
+              Forgot your password? There's no self-reset yet. Contact the office, or ask an Admin to reset it for you from the Manage Roles page. After 5 wrong passwords, sign-in for that account pauses for 15 minutes, and the page counts down. Tick "Keep me signed in" to stay signed in for 30 days on your own device; otherwise you are signed out when you close the browser or after a working day.
             </p>
           </CardContent>
         </Card>

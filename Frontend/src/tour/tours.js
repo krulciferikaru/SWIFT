@@ -35,7 +35,7 @@ export const TOURS = {
       {
         selector: t('nav-reports'),
         title: 'Reports',
-        description: 'Monthly collections and financial statements, downloadable as PDF or Excel.',
+        description: 'The collection report for any month, year or date range, with filters, downloadable as PDF or Excel.',
         side: 'right',
       },
       {
@@ -364,7 +364,7 @@ export const TOURS = {
         selector: t('reports-range'),
         title: 'Choose the period',
         description:
-          'Monthly shows one month, Last 3 Months covers the past three months up to today, and Annual shows a whole year. The reports reload when you switch.',
+          'Monthly shows one month, Last 3 Months covers the past three months up to today, Annual shows a whole year, and Date range lets you pick your own start and end dates. The reports reload when you switch.',
         side: 'bottom',
       },
       {
@@ -374,16 +374,17 @@ export const TOURS = {
         side: 'bottom',
       },
       {
-        selector: t('reports-collections'),
-        title: 'Monthly Collection Report',
+        selector: t('reports-filters'),
+        title: 'Filter the report',
         description:
-          'How much was collected, by plan and by payment method, plus the full payment ledger. Use PDF or XLSX to download.',
-        side: 'top',
+          'Narrow the report before you read or download it: pick one subscriber, a service plan, a payment method, or part of an OR number. The report and the PDF and Excel files follow the filters, and each file says which filters were used. Clear filters puts everything back.',
+        side: 'bottom',
       },
       {
-        selector: t('reports-financial'),
-        title: 'Financial Statement',
-        description: 'Who owes what: receivables, paid and outstanding balances, per plan and per subscriber.',
+        selector: t('reports-collections'),
+        title: 'Collection Report',
+        description:
+          'How much was collected, by plan and by payment method, plus the full payment ledger. Use PDF or XLSX to download.',
         side: 'top',
       },
     ],
@@ -429,7 +430,7 @@ export const TOURS = {
         selector: t('users-reset'),
         title: 'Reset Password',
         description:
-          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here.',
+          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here. You will be asked to type your own password first, as a safety step.',
         side: 'left',
       },
     ],
@@ -462,6 +463,14 @@ export const TOURS = {
         description:
           'Hide the "Take a tour" buttons if you no longer need them, or replay the welcome tour whenever you like.',
         side: 'bottom',
+      },
+      {
+        selector: t('settings-payment-methods'),
+        title: 'Payment methods',
+        description:
+          'Admins decide which payment methods staff can choose when recording a payment, and which appear in the report filters. Add a new one, rename one (recorded payments are updated too), or switch one off. A method that has been used cannot be deleted, only switched off.',
+        side: 'top',
+        roles: ['admin'],
       },
       {
         selector: t('settings-company'),

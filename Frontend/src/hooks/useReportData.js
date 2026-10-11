@@ -42,7 +42,7 @@ export function describeRequestError(err, what = 'load the report') {
 }
 
 export function useReportData(params) {
-  const [state, setState] = useState({ collections: null, statement: null, loading: true, error: null })
+  const [state, setState] = useState({ collections: null, loading: true, error: null })
   const [online, setOnline] = useState(() => navigator.onLine)
   const key = keyOf(params)
 
@@ -66,7 +66,7 @@ export function useReportData(params) {
       const hit = cache.get(k)
       if (hit && Date.now() - hit.at < CACHE_MS) {
         seq.current += 1
-        setState({ collections: hit.collections, statement: hit.statement, loading: false, error: null })
+        setState({ collections: hit.collections, loading: false, error: null })
         return
       }
     }
@@ -77,19 +77,15 @@ export function useReportData(params) {
     setState((s) => ({ ...s, loading: true, error: null }))
 
     try {
-      const [c, st] = await Promise.all([
-        reportApi.getCollections(p, { signal: ctl.signal }),
-        reportApi.getFinancialStatement(p, { signal: ctl.signal }),
-      ])
+      const res = await reportApi.getCollections(p, { signal: ctl.signal })
       if (id !== seq.current) return
-      const collections = c.data.data
-      const statement = st.data.data
-      cache.set(k, { at: Date.now(), collections, statement })
-      setState({ collections, statement, loading: false, error: null })
+      const collections = res.data.data
+      cache.set(k, { at: Date.now(), collections })
+      setState({ collections, loading: false, error: null })
     } catch (err) {
       if (axios.isCancel(err) || id !== seq.current) return
       const error = describeRequestError(err)
-      setState({ collections: null, statement: null, loading: false, error })
+      setState({ collections: null, loading: false, error })
       if (error.kind === 'rate_limit') {
         timers.current.retry = setTimeout(() => fetchNow(p, k, { force: true }), error.retryAfter * 1000)
       }
@@ -111,7 +107,7 @@ export function useReportData(params) {
   useEffect(() => {
     if (!online) {
       cancelPending()
-      setState({ collections: null, statement: null, loading: false, error: OFFLINE })
+      setState({ collections: null, loading: false, error: OFFLINE })
       return
     }
 

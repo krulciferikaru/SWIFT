@@ -50,6 +50,14 @@ return [
     'expiration' => null,
 
     /*
+    | How long a sign-in lasts. A normal sign-in ends after a working day; "keep me signed in"
+    | lasts longer. Each token carries its own expires_at, so changing these does not affect
+    | tokens that were already issued.
+    */
+    'login_token_hours' => (int) env('LOGIN_TOKEN_HOURS', 12),
+    'remember_token_days' => (int) env('REMEMBER_TOKEN_DAYS', 30),
+
+    /*
     |--------------------------------------------------------------------------
     | Token Prefix
     |--------------------------------------------------------------------------

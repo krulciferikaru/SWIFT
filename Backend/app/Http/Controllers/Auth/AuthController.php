@@ -8,6 +8,7 @@ use App\Models\Subscriber;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -135,6 +136,16 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Wrong-password limit per account. It counts any name typed, whether or not such an
+        // account exists, so the answer never reveals which accounts are real.
+        $lockKey = 'login-failures:'.mb_strtolower($identifier);
+        $maxFailures = config('ratelimit.login_max_failures');
+        $windowSeconds = config('ratelimit.login_lockout_minutes') * 60;
+
+        if (RateLimiter::tooManyAttempts($lockKey, $maxFailures)) {
+            return $this->lockedResponse(RateLimiter::availableIn($lockKey));
+        }
+
         $user = User::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
         $subscriber = Subscriber::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
 
@@ -146,6 +157,15 @@ class AuthController extends Controller
         }
 
         if (! $user || ! Hash::check($requestData['password'], $user->password)) {
+            RateLimiter::hit($lockKey, $windowSeconds);
+            $attemptsLeft = max($maxFailures - RateLimiter::attempts($lockKey), 0);
+
+            if ($attemptsLeft === 0) {
+                Audit::log('auth.locked', null, $identifier, [], $user);
+
+                return $this->lockedResponse(RateLimiter::availableIn($lockKey));
+            }
+
             if ($subscriber && $subscriber->account_status === 'pending') {
                 return response()->json(['message' => 'Your account is awaiting approval.'], 403);
             }
@@ -156,8 +176,13 @@ class AuthController extends Controller
 
             Audit::log('auth.login_failed', null, $identifier, [], $user);
 
-            return response()->json(['message' => 'Invalid credentials.'], 401);
+            return response()->json([
+                'message' => 'Invalid credentials.',
+                'attempts_left' => $attemptsLeft,
+            ], 401);
         }
+
+        RateLimiter::clear($lockKey);
 
         if ($user->account_status === 'pending') {
             return response()->json(['message' => 'Your account is awaiting approval.'], 403);
@@ -172,15 +197,34 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account is not available. Contact a secretary or an administrator.'], 403);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // "Keep me signed in" lasts longer; otherwise the sign-in ends after a working day.
+        $remember = filter_var($requestData['remember'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $expiresAt = $remember
+            ? now()->addDays(config('sanctum.remember_token_days'))
+            : now()->addHours(config('sanctum.login_token_hours'));
 
-        Audit::log('auth.login', $user, null, [], $user);
+        $token = $user->createToken('auth_token', ['*'], $expiresAt)->plainTextToken;
+
+        Audit::log('auth.login', $user, null, ['remembered' => $remember], $user);
 
         return response()->json([
             'message' => 'Login successful.',
             'user' => $user,
             'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
         ]);
+    }
+
+    /** 429 with how long to wait, in the body (for the countdown) and in Retry-After. */
+    private function lockedResponse(int $seconds)
+    {
+        $minutes = max((int) ceil($seconds / 60), 1);
+
+        return response()->json([
+            'message' => "Too many wrong attempts. Sign-in is paused for about {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').'.',
+            'locked' => true,
+            'retry_after' => $seconds,
+        ], 429)->header('Retry-After', (string) $seconds);
     }
 
     public function logout(Request $request)

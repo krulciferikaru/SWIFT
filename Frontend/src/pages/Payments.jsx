@@ -5,6 +5,7 @@ import paymentsApi from "../api/payments";
 import PaymentHistory from "../components/PaymentHistory.jsx";
 import { errorMessage } from "../utils/errors";
 import { CardListSkeleton, LoadingStatus } from "../components/Skeletons.jsx";
+import { usePaymentMethods } from "../hooks/usePaymentMethods";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,6 +90,7 @@ function describeCoverage(months, amount) {
 
 export default function Payments() {
   const { can } = useAuth();
+  const { methods: paymentMethods } = usePaymentMethods();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -101,6 +103,13 @@ export default function Payments() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const [form, setForm] = useState(EMPTY_FORM);
+
+  // If the chosen method was renamed or switched off, fall back to the first one on offer.
+  useEffect(() => {
+    if (paymentMethods.length > 0 && !paymentMethods.includes(form.payment_method)) {
+      setForm((f) => ({ ...f, payment_method: paymentMethods[0] }));
+    }
+  }, [paymentMethods, form.payment_method]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -539,9 +548,9 @@ export default function Payments() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="GCash">GCash</SelectItem>
-                            <SelectItem value="Others">Others</SelectItem>
+                            {paymentMethods.map((name) => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

@@ -82,7 +82,8 @@ class PermissionsTest extends TestCase
 
     public function test_admin_can_change_a_secretarys_permissions_and_it_is_logged(): void
     {
-        Sanctum::actingAs($this->makeUser('admin'));
+        Sanctum::actingAs($admin = $this->makeUser('admin'));
+        $this->passwordConfirmed($admin);
         $secretary = $this->makeUser('secretary');
 
         $this->patchJson("/api/users/{$secretary->id}/permissions", [
@@ -100,7 +101,8 @@ class PermissionsTest extends TestCase
 
     public function test_admin_only_permissions_cannot_be_granted_and_admins_cannot_be_restricted(): void
     {
-        Sanctum::actingAs($this->makeUser('admin'));
+        Sanctum::actingAs($admin = $this->makeUser('admin'));
+        $this->passwordConfirmed($admin);
         $secretary = $this->makeUser('secretary');
         $otherAdmin = $this->makeUser('admin');
 
