@@ -430,7 +430,7 @@ export const TOURS = {
         selector: t('users-reset'),
         title: 'Reset Password',
         description:
-          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here.',
+          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here. You will be asked to type your own password first, as a safety step.',
         side: 'left',
       },
     ],

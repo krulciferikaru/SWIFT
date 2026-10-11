@@ -65,6 +65,7 @@ class AdminRecoTest extends TestCase
             'connection_date' => '2026-03-15', 'account_status' => 'active', 'status' => 'Active',
         ]);
 
+        $this->passwordConfirmed($admin); // deleting for good asks for the password again
         $this->actingAs($admin)->deleteJson("/api/subscribers/{$sub->subscriber_id}")->assertOk();
         $this->assertSoftDeleted('subscriber', ['subscriber_id' => $sub->subscriber_id]);
         $this->getJson('/api/archive/subscribers')->assertOk()->assertJsonPath('data.total', 1);

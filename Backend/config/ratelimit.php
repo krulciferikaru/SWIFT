@@ -8,6 +8,8 @@ return [
     // Wrong passwords for one account: after this many inside the window, sign-in for that
     // account is paused until the window ends. The counter is per account name, not per
     // network address, so spreading guesses over many addresses does not get around it.
+    // Retyping your own password before a sensitive action.
+    'confirm_password' => (int) env('RATE_LIMIT_CONFIRM_PASSWORD_PER_MIN', 5),
     'login_max_failures' => (int) env('LOGIN_MAX_FAILURES', 5),
     'login_lockout_minutes' => (int) env('LOGIN_LOCKOUT_MINUTES', 15),
     // Texting a verification code costs an SMS each time.

@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { OFFLINE_MESSAGE, NETWORK_MESSAGE, TIMEOUT_MESSAGE } from '../utils/errors'
 import { getToken, clearToken } from '../utils/authToken'
+import { requestPasswordConfirmation } from '../utils/passwordConfirm'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
@@ -39,7 +40,23 @@ api.interceptors.request.use((config) => {
 // Global error handler
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // A sensitive action (changing permissions, resetting a password, deleting for good) wants the
+    // password typed again. Ask for it, then send the same request once more.
+    if (
+      error.response?.status === 423 &&
+      error.response.data?.password_confirmation_required &&
+      error.config &&
+      !error.config._passwordConfirmed
+    ) {
+      const confirmed = await requestPasswordConfirmation()
+      if (confirmed) {
+        error.config._passwordConfirmed = true
+        return api.request(error.config)
+      }
+      error.response.data.message = 'Cancelled. Your password was not confirmed, so nothing was changed.'
+    }
+
     if (!error.response && !axios.isCancel(error)) {
       const message = !navigator.onLine
         ? OFFLINE_MESSAGE

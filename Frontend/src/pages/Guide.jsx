@@ -178,7 +178,7 @@ const SECTIONS = [
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
           <li className="flex items-start gap-1.5">
             <KeyRound className="size-4 mt-0.5 shrink-0" />
-            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them.</span>
+            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them. Resetting a password, changing permissions, and deleting from the Archive each ask you to type your own password first, as a safety step; it then stays confirmed for 10 minutes.</span>
           </li>
         </ul>
       </>

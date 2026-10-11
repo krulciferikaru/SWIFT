@@ -76,6 +76,7 @@ class AuditTrailTest extends TestCase
     public function test_passwords_never_appear_in_the_log(): void
     {
         Sanctum::actingAs($admin = $this->makeUser('admin'));
+        $this->passwordConfirmed($admin);
         $staff = $this->makeUser('secretary');
 
         $this->patchJson("/api/users/{$staff->id}/password", [
