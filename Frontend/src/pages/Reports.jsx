@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Download, RefreshCw } from 'lucide-react'
 import reportApi from '../api/reports'
 import { useToast } from '../hooks/useToast'
@@ -17,6 +17,10 @@ import {
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 import { useReportData, describeRequestError } from '../hooks/useReportData'
+import { ReportSkeleton } from "../components/Skeletons.jsx";
+import SubscriberPicker from "../components/SubscriberPicker.jsx";
+import { usePaymentMethods } from "../hooks/usePaymentMethods";
+import planApi from "../api/plans";
 
 function money(value) {
   return `PHP ${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -53,6 +57,16 @@ function methodBadgeClass(method) {
   return 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
 }
 
+/** "Filtered by: Subscriber: Juan Cruz; Payment method: GCash", shown above a report's numbers. */
+function FilterNote({ labels }) {
+  if (!labels || labels.length === 0) return null
+  return (
+    <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+      <strong>Filtered by:</strong> {labels.join('; ')}
+    </p>
+  )
+}
+
 function useCurrentMonth() {
   return new Date().toISOString().slice(0, 7)
 }
@@ -72,6 +86,7 @@ const RANGE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'three_months', label: 'Last 3 Months' },
   { value: 'annual', label: 'Annual' },
+  { value: 'custom', label: 'Date range' },
 ]
 
 const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => String(new Date().getFullYear() - i))
@@ -83,19 +98,66 @@ export default function Reports() {
   const [exporting, setExporting] = useState('')
   const { toast, showToast } = useToast()
 
+  // A custom date range: from the 1st of this month to today until the person changes it.
+  const today = new Date().toISOString().slice(0, 10)
+  const [customFrom, setCustomFrom] = useState(`${useCurrentMonth()}-01`)
+  const [customTo, setCustomTo] = useState(today)
+  const customError = !customFrom || !customTo
+    ? 'Choose both dates.'
+    : customTo < customFrom
+      ? 'The end date is before the start date.'
+      : (new Date(customTo) - new Date(customFrom)) / 86400000 > 1830
+        ? 'Choose a range of 5 years or less.'
+        : ''
+  // Only a valid range is ever sent, so typing a half-finished date does not trigger a request.
+  const validCustom = useRef({ from: customFrom, to: customTo })
+  if (!customError) validCustom.current = { from: customFrom, to: customTo }
+
+  // Narrowing the reports. The subscriber, plan, method, status and OR number each apply to the
+  // report(s) they make sense for; the rest ignore them.
+  const [subscriber, setSubscriber] = useState(null) // { id, name }
+  const [planId, setPlanId] = useState('')
+  const [method, setMethod] = useState('')
+  const [orNumber, setOrNumber] = useState('')
+  const [plans, setPlans] = useState([])
+  const { methods } = usePaymentMethods()
+  useEffect(() => {
+    planApi.getAll().then((res) => setPlans(Array.isArray(res.data) ? res.data : (res.data?.data ?? []))).catch(() => {})
+  }, [])
+  const activeFilterCount = [subscriber, planId, method, orNumber.trim()].filter(Boolean).length
+  const clearFilters = () => {
+    setSubscriber(null)
+    setPlanId('')
+    setMethod('')
+    setOrNumber('')
+  }
+
   // Query params + file-name key for the selected range.
   const params = useMemo(() => {
-    if (range === 'annual') return { range, year }
-    if (range === 'three_months') return { range }
-    return { range, month }
-  }, [range, month, year])
-  const periodKey = range === 'annual' ? year : range === 'three_months' ? 'last-3-months' : month
+    let p
+    if (range === 'annual') p = { range, year }
+    else if (range === 'three_months') p = { range }
+    else if (range === 'custom') p = { range, from: validCustom.current.from, to: validCustom.current.to }
+    else p = { range, month }
+    if (subscriber) p.subscriber_id = subscriber.id
+    if (planId) p.plan_id = planId
+    if (method) p.payment_method = method
+    if (orNumber.trim()) p.or_number = orNumber.trim()
+    return p
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, month, year, customFrom, customTo, customError, subscriber, planId, method, orNumber])
+  const periodKey = range === 'annual'
+    ? year
+    : range === 'three_months'
+      ? 'last-3-months'
+      : range === 'custom'
+        ? `${validCustom.current.from}_to_${validCustom.current.to}`
+        : month
 
-  const { collections, statement, loading, error, online, reload } = useReportData(params)
+  const { collections, loading, error, online, reload } = useReportData(params)
 
   // Only ever real data: when the request fails or you are offline there is nothing to show.
   const displayCollections = collections
-  const displayStatement = statement
 
   const collectionSummaryCards = useMemo(() => {
     if (!displayCollections) return []
@@ -105,16 +167,6 @@ export default function Reports() {
       { label: 'Collected', value: money(displayCollections.summary.total_collected), tone: 'bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/40 dark:border-violet-800 dark:text-violet-300' },
     ]
   }, [displayCollections])
-
-  const statementSummaryCards = useMemo(() => {
-    if (!displayStatement) return []
-    return [
-      { label: 'Subscribers', value: displayStatement.summary.subscriber_count, tone: 'bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200' },
-      { label: 'Receivables', value: money(displayStatement.summary.total_owed), tone: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300' },
-      { label: 'Paid', value: money(displayStatement.summary.total_paid), tone: 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300' },
-      { label: 'Outstanding', value: money(displayStatement.summary.total_outstanding), tone: 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300' },
-    ]
-  }, [displayStatement])
 
   const exportReport = async (kind, format) => {
     const key = `${kind}-${format}`
@@ -126,15 +178,9 @@ export default function Reports() {
       if (kind === 'collections' && format === 'pdf') {
         response = await reportApi.downloadCollectionsPdf(params)
         filename = `collections_report_${periodKey}.pdf`
-      } else if (kind === 'collections' && format === 'xlsx') {
+      } else {
         response = await reportApi.downloadCollectionsXlsx(params)
         filename = `collections_report_${periodKey}.xlsx`
-      } else if (kind === 'statement' && format === 'pdf') {
-        response = await reportApi.downloadFinancialStatementPdf(params)
-        filename = `financial_statement_${periodKey}.pdf`
-      } else {
-        response = await reportApi.downloadFinancialStatementXlsx(params)
-        filename = `financial_statement_${periodKey}.xlsx`
       }
 
       downloadBlob(response.data, filename)
@@ -157,10 +203,10 @@ export default function Reports() {
             Reports
           </div> */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Collection and financial overview
+            Collection report
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
-            Review collection totals and subscriber financial position for the selected month, the last 3 months, or a full year.
+            Review what was collected for a month, the last 3 months, a full year, or your own dates, and narrow it with filters.
             Export the report to PDF or Excel when needed.
           </p>
         </div>
@@ -207,6 +253,18 @@ export default function Reports() {
               ))}
             </select>
           )}
+          {range === 'custom' && (
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1">
+                <label htmlFor="report-from" className="text-xs font-medium text-gray-700 dark:text-gray-300">From</label>
+                <Input id="report-from" type="date" value={customFrom} max={customTo || today} onChange={(e) => setCustomFrom(e.target.value)} className="sm:w-40" aria-invalid={customError ? true : undefined} />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="report-to" className="text-xs font-medium text-gray-700 dark:text-gray-300">To</label>
+                <Input id="report-to" type="date" value={customTo} min={customFrom || undefined} max={today} onChange={(e) => setCustomTo(e.target.value)} className="sm:w-40" aria-invalid={customError ? true : undefined} />
+              </div>
+            </div>
+          )}
           <Button onClick={reload} disabled={loading || !online} variant="outline" className="gap-2">
             <RefreshCw className="size-4" />
             Reload
@@ -214,6 +272,45 @@ export default function Reports() {
           <TourButton tour="reports" />
         </div>
       </div>
+
+      {range === 'custom' && customError && (
+        <p role="alert" className="text-sm text-red-700 dark:text-red-400">{customError} Showing the last valid range.</p>
+      )}
+
+      <details data-tour="reports-filters" open={activeFilterCount > 0 ? true : undefined} className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <summary className="cursor-pointer text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Filters{activeFilterCount > 0 && <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">{activeFilterCount} on</span>}
+        </summary>
+        <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+          Narrow the report before you read or download it. The report and the PDF and Excel files follow the filters you choose.</p>
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-1.5">
+            <label htmlFor="filter-subscriber" className="text-sm font-medium text-gray-900 dark:text-gray-100">Subscriber</label>
+            <SubscriberPicker id="filter-subscriber" value={subscriber} onChange={setSubscriber} />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="filter-plan" className="text-sm font-medium text-gray-900 dark:text-gray-100">Service plan</label>
+            <select id="filter-plan" value={planId} onChange={(e) => setPlanId(e.target.value)} className="h-9 w-full rounded-md border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900">
+              <option value="">All plans</option>
+              {plans.map((p) => <option key={p.plan_id} value={p.plan_id}>{p.plan_name}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="filter-method" className="text-sm font-medium text-gray-900 dark:text-gray-100">Payment method</label>
+            <select id="filter-method" value={method} onChange={(e) => setMethod(e.target.value)} className="h-9 w-full rounded-md border border-gray-200 bg-white px-3 text-sm dark:border-gray-700 dark:bg-gray-900">
+              <option value="">All methods</option>
+              {methods.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="filter-or" className="text-sm font-medium text-gray-900 dark:text-gray-100">OR number</label>
+            <Input id="filter-or" value={orNumber} onChange={(e) => setOrNumber(e.target.value)} placeholder="Part of an OR number" maxLength={50} />
+          </div>
+          <div className="flex items-end">
+            <Button type="button" variant="outline" onClick={clearFilters} disabled={activeFilterCount === 0}>Clear filters</Button>
+          </div>
+        </div>
+      </details>
 
       {error && (
         <div
@@ -261,8 +358,10 @@ export default function Reports() {
               </Button>
             </div>
 
+            <FilterNote labels={displayCollections?.filter_labels} />
+
             {loading ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading report…</p>
+              <ReportSkeleton cards={3} />
             ) : displayCollections ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -280,7 +379,7 @@ export default function Reports() {
                       Collections by Plan
                     </p>
                     <div className="overflow-hidden">
-                      <Table>
+                      <Table stack={false}>
                         <TableHeader>
                           <TableRow className="bg-slate-100 dark:bg-slate-900/80">
                             <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Plan</TableHead>
@@ -308,7 +407,7 @@ export default function Reports() {
                       Collections by Method
                     </p>
                     <div className="overflow-hidden">
-                      <Table>
+                      <Table stack={false}>
                         <TableHeader>
                           <TableRow className="bg-slate-50 dark:bg-slate-900/60">
                             <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Method</TableHead>
@@ -338,7 +437,7 @@ export default function Reports() {
                       Payment Ledger
                     </p>
                     <div className="overflow-hidden">
-                      <Table>
+                      <Table stack={false}>
                         <TableHeader>
                           <TableRow className="bg-slate-100 dark:bg-slate-900/80">
                             <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Date</TableHead>
@@ -370,130 +469,6 @@ export default function Reports() {
               </>
             ) : (
               error ? null : <p className="text-sm text-gray-500 dark:text-gray-400">No collections data.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card data-tour="reports-financial" className="overflow-hidden border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <CardHeader className="border-b border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/80">
-            <CardTitle className="text-slate-900 dark:text-slate-100">Financial Statement</CardTitle>
-            <CardDescription className="text-slate-600 dark:text-slate-400">
-              Subscriber balances, outstanding amounts, and plan-level financial position as of the end of the selected period.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5 pt-6">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() => exportReport('statement', 'pdf')}
-                disabled={exporting === 'statement-pdf' || loading || !online || !displayStatement}
-                className="gap-2"
-              >
-                <Download className="size-4" />
-                {exporting === 'statement-pdf' ? 'Downloading…' : 'PDF'}
-              </Button>
-              <Button
-                onClick={() => exportReport('statement', 'xlsx')}
-                disabled={exporting === 'statement-xlsx' || loading || !online || !displayStatement}
-                variant="outline"
-                className="gap-2"
-              >
-                <Download className="size-4" />
-                {exporting === 'statement-xlsx' ? 'Downloading…' : 'XLSX'}
-              </Button>
-            </div>
-
-            {loading ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading report…</p>
-            ) : displayStatement ? (
-              <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {statementSummaryCards.map((card) => (
-                    <div key={card.label} className={`rounded-xl border px-4 py-3 shadow-sm ${card.tone}`}>
-                      <p className="text-[11px] font-medium uppercase tracking-[0.12em]">{card.label}</p>
-                      <p className="mt-2 text-lg font-bold">{card.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/50">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Active</p>
-                    <p className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">{displayStatement.summary.active_subscribers}</p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/50">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Unpaid / Disconnected</p>
-                    <p className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">{displayStatement.summary.unpaid_subscribers} / {displayStatement.summary.disconnected_subscribers}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
-                  <p className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-slate-800 dark:text-slate-100">
-                    Financial Position by Plan
-                  </p>
-                  <div className="overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-100 dark:bg-slate-900/80">
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Plan</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Subscribers</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Receivables</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Paid</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Outstanding</TableHead>
-                          <TableHead className="text-right text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Credit</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {displayStatement.by_plan.map((row, index) => (
-                          <TableRow key={row.plan_id} className={index % 2 === 0 ? 'bg-white dark:bg-slate-900/40' : 'bg-slate-50 dark:bg-slate-900/80'}>
-                            <TableCell className="font-bold text-slate-800 dark:text-slate-100">{row.plan_name}</TableCell>
-                            <TableCell className="font-medium text-slate-700 dark:text-slate-300">{row.subscriber_count}</TableCell>
-                            <TableCell className="font-medium text-slate-700 dark:text-slate-300">{money(row.total_owed)}</TableCell>
-                            <TableCell className="font-medium text-slate-700 dark:text-slate-300">{money(row.total_paid)}</TableCell>
-                            <TableCell className="font-medium text-slate-700 dark:text-slate-300">{money(row.total_outstanding)}</TableCell>
-                            <TableCell className="text-right font-black text-slate-900 dark:text-slate-100">{money(row.total_advance_credit)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
-                  <p className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-slate-800 dark:text-slate-100">
-                    Subscriber Ledger
-                  </p>
-                  <div className="overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-100 dark:bg-slate-900/80">
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Subscriber</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Plan</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Status</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Monthly Rate</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Balance</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-slate-300">Behind</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {displayStatement.subscribers.map((row, index) => (
-                          <TableRow key={row.subscriber_id} className={index % 2 === 0 ? 'bg-white dark:bg-slate-900/40' : 'bg-slate-50 dark:bg-slate-900/80'}>
-                            <TableCell className="font-bold text-slate-800 dark:text-slate-100">{row.name}</TableCell>
-                            <TableCell className="text-slate-700 dark:text-slate-300">{row.plan_name}</TableCell>
-                            <TableCell>
-                              <Badge className={statusBadgeClass(row.status)}>{row.status}</Badge>
-                            </TableCell>
-                            <TableCell className="font-medium text-slate-700 dark:text-slate-300">{money(row.monthly_rate)}</TableCell>
-                            <TableCell className="font-medium text-slate-700 dark:text-slate-300">{money(row.balance)}</TableCell>
-                            <TableCell className="font-bold text-slate-800 dark:text-slate-100">{row.months_behind}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </>
-            ) : (
-              error ? null : <p className="text-sm text-gray-500 dark:text-gray-400">No financial statement data.</p>
             )}
           </CardContent>
         </Card>

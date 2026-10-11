@@ -16,7 +16,7 @@ export const TOURS = {
         selector: t('nav'),
         title: 'Navigation',
         description:
-          'Everything in SWIFT is reached from this menu. Hover it when it is collapsed to see the labels.',
+          'Everything in SWIFT is reached from this menu, grouped into sections: Overview, Customers, Billing and Administration, with Settings and the Guide at the bottom. You only see the pages your role allows. Hover the menu when it is collapsed to see the labels.',
         side: 'right',
       },
       {
@@ -35,8 +35,15 @@ export const TOURS = {
       {
         selector: t('nav-reports'),
         title: 'Reports',
-        description: 'Monthly collections and financial statements, downloadable as PDF or Excel.',
+        description: 'The collection report for any month, year or date range, with filters, downloadable as PDF or Excel.',
         side: 'right',
+      },
+      {
+        selector: t('nav-audit'),
+        title: 'Audit Trail',
+        description: 'Admins can see who did what, and when: sign-ins, edits, payments, approvals and more.',
+        side: 'right',
+        roles: ['admin'],
       },
       {
         selector: t('theme-toggle'),
@@ -65,6 +72,13 @@ export const TOURS = {
     title: 'Dashboard tour',
     steps: [
       {
+        selector: t('dash-activity'),
+        title: 'Activity by period',
+        description:
+          'Pick Today, This month, This quarter, This year or All time to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. Your choice is remembered.',
+        side: 'bottom',
+      },
+      {
         selector: t('dash-attention'),
         title: 'Needs Attention',
         description:
@@ -82,7 +96,7 @@ export const TOURS = {
         selector: t('dash-counts'),
         title: 'Subscriber counts',
         description:
-          'Total subscribers, pending applications, account claims, and how many are Active or Unpaid. Each card opens the matching page.',
+          'Total subscribers, pending applications, account claims, and how many are Active or Unpaid, as of right now. These are current numbers, so they do not follow the period filter above. Each card opens the matching page.',
         side: 'bottom',
       },
       {
@@ -110,10 +124,31 @@ export const TOURS = {
     title: 'My Account tour',
     steps: [
       {
+        selector: t('me-verify'),
+        title: 'Verify your mobile number',
+        description:
+          'Click Verify now and we text you a 6-digit code. Type it in to confirm the number is yours, so reminders and notices reach you. This prompt disappears once you are verified.',
+        side: 'bottom',
+      },
+      {
+        selector: t('text-size'),
+        title: 'Make the text bigger',
+        description:
+          'If the writing is hard to read, tap the bigger A. Everything in SWIFT gets larger, and the choice is remembered on this device.',
+        side: 'bottom',
+      },
+      {
+        selector: t('me-status'),
+        title: 'Your service status',
+        description:
+          'This box says in plain words whether your service is active, needs a payment, or is disconnected, how much you owe, and when your next bill is due.',
+        side: 'bottom',
+      },
+      {
         selector: t('me-summary'),
         title: 'Your account at a glance',
         description:
-          'Your plan and monthly rate, your current balance, and how many months you are behind.',
+          'Your monthly bill, the amount you owe, and how many months are unpaid.',
         side: 'bottom',
       },
       {
@@ -126,7 +161,14 @@ export const TOURS = {
         selector: t('me-payments'),
         title: 'Payment history',
         description:
-          'The payments the company has recorded for you. For payments, refunds or reconnection, contact the company directly.',
+          'Every payment the company has recorded for you, newest first, with the total paid. Use the year filter to narrow it, and click Receipt beside a payment to see and print a receipt.',
+        side: 'top',
+      },
+      {
+        selector: t('me-contact'),
+        title: 'Contact the company',
+        description:
+          'How to reach the company for payments, refunds, reconnection or questions, and how to pay. The company fills this in, so it appears once they have added their details.',
         side: 'top',
       },
     ],
@@ -169,8 +211,22 @@ export const TOURS = {
         selector: t('subs-table'),
         title: 'Subscriber list',
         description:
-          'Each row has Edit, Archive and Payments. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing.',
+          'One row per subscriber. A green Verified tag beside a contact number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
         side: 'top',
+      },
+      {
+        selector: t('subs-name'),
+        title: 'Click a name for the details',
+        description:
+          'Every name is a link, shown in blue with an arrow. Click it to open a window with everything about that subscriber in one place, including their balance, with the same Edit, Archive and Payments buttons.',
+        side: 'right',
+      },
+      {
+        selector: t('subs-actions'),
+        title: 'Edit, Archive and Payments',
+        description:
+          'Edit changes their details. Archive hides the subscriber and pauses their login, but nothing is lost: restore them from the Archive page. Payments opens that subscriber\'s billing and receipts. Buttons you are not allowed to use are not shown.',
+        side: 'left',
       },
     ],
   },
@@ -252,6 +308,13 @@ export const TOURS = {
         side: 'top',
       },
       {
+        selector: t('plans-name'),
+        title: 'Click a name for the details',
+        description:
+          'Every plan name is a link, shown in blue with an arrow. Click it to open a window with the full details of that plan and the same Edit and Archive buttons.',
+        side: 'right',
+      },
+      {
         selector: t('plans-row-actions'),
         title: 'Edit or archive',
         description:
@@ -284,6 +347,13 @@ export const TOURS = {
           'Enter the amount, OR number, date and method. A live preview shows which months the payment covers. Click Record Payment to save.',
         side: 'left',
       },
+      {
+        selector: t('payments-history'),
+        title: 'Payment history and receipts',
+        description:
+          'Every payment for this subscriber, newest first, with the total paid and a year filter. Click Receipt beside a payment to see a receipt you can print and hand to the subscriber.',
+        side: 'top',
+      },
     ],
   },
 
@@ -294,7 +364,7 @@ export const TOURS = {
         selector: t('reports-range'),
         title: 'Choose the period',
         description:
-          'Monthly shows one month, Last 3 Months covers the past three months up to today, and Annual shows a whole year. The reports reload when you switch.',
+          'Monthly shows one month, Last 3 Months covers the past three months up to today, Annual shows a whole year, and Date range lets you pick your own start and end dates. The reports reload when you switch.',
         side: 'bottom',
       },
       {
@@ -304,16 +374,17 @@ export const TOURS = {
         side: 'bottom',
       },
       {
-        selector: t('reports-collections'),
-        title: 'Monthly Collection Report',
+        selector: t('reports-filters'),
+        title: 'Filter the report',
         description:
-          'How much was collected, by plan and by payment method, plus the full payment ledger. Use PDF or XLSX to download.',
-        side: 'top',
+          'Narrow the report before you read or download it: pick one subscriber, a service plan, a payment method, or part of an OR number. The report and the PDF and Excel files follow the filters, and each file says which filters were used. Clear filters puts everything back.',
+        side: 'bottom',
       },
       {
-        selector: t('reports-financial'),
-        title: 'Financial Statement',
-        description: 'Who owes what: receivables, paid and outstanding balances, per plan and per subscriber.',
+        selector: t('reports-collections'),
+        title: 'Collection Report',
+        description:
+          'How much was collected, by plan and by payment method, plus the full payment ledger. Use PDF or XLSX to download.',
         side: 'top',
       },
     ],
@@ -342,6 +413,13 @@ export const TOURS = {
         side: 'top',
       },
       {
+        selector: t('users-permissions'),
+        title: 'Permissions',
+        description:
+          'Choose exactly what a secretary may do: for example view subscribers but not record payments. Tick the tasks, then Save. Reset to default gives them everything again. Pages and buttons they are not allowed to use disappear for them. Admins always have everything.',
+        side: 'left',
+      },
+      {
         selector: t('users-status'),
         title: 'Account status',
         description:
@@ -352,7 +430,7 @@ export const TOURS = {
         selector: t('users-reset'),
         title: 'Reset Password',
         description:
-          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here.',
+          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here. You will be asked to type your own password first, as a safety step.',
         side: 'left',
       },
     ],
@@ -368,6 +446,12 @@ export const TOURS = {
         side: 'bottom',
       },
       {
+        selector: t('text-size'),
+        title: 'Text size',
+        description: 'Make everything in SWIFT bigger. The choice is remembered on this device.',
+        side: 'bottom',
+      },
+      {
         selector: t('settings-account'),
         title: 'Logout confirmation',
         description: 'Turn off the "are you sure?" prompt if you do not want it every time you log out.',
@@ -378,6 +462,29 @@ export const TOURS = {
         title: 'Tour options',
         description:
           'Hide the "Take a tour" buttons if you no longer need them, or replay the welcome tour whenever you like.',
+        side: 'bottom',
+      },
+      {
+        selector: t('settings-payment-methods'),
+        title: 'Payment methods',
+        description:
+          'Admins decide which payment methods staff can choose when recording a payment, and which appear in the report filters. Add a new one, rename one (recorded payments are updated too), or switch one off. A method that has been used cannot be deleted, only switched off.',
+        side: 'top',
+        roles: ['admin'],
+      },
+      {
+        selector: t('settings-company'),
+        title: 'Company contact information',
+        description:
+          'Admins enter the company\'s phone, email, address, office hours and how to pay. Subscribers see it on their dashboard, and the sign-in page shows it too. Anything left empty is not shown.',
+        side: 'top',
+        roles: ['admin'],
+      },
+      {
+        selector: t('settings-phone'),
+        title: 'Verify your mobile number',
+        description:
+          'If your account has a mobile number, verify it here: we text you a 6-digit code, and you type it in. A new code can be requested after a minute, and a code works for 10 minutes. If you change your number, verify it again.',
         side: 'bottom',
       },
       {
@@ -449,7 +556,7 @@ TOURS.subscriberForm = {
     {
       selector: dlg('#mac_address'),
       title: 'MAC Address',
-      description: 'Optional. The address of the subscriber\'s equipment, written XX:XX:XX:XX:XX:XX.',
+      description: 'Optional. The address of the subscriber\'s equipment. Just type the 12 letters and numbers: the colons are filled in for you (XX:XX:XX:XX:XX:XX).',
       side: 'top',
     },
     {
@@ -592,6 +699,26 @@ TOURS.archive = {
   ],
 }
 
+TOURS.audit = {
+  title: 'Audit Trail tour',
+  steps: [
+    {
+      selector: t('audit-filters'),
+      title: 'Find an entry',
+      description:
+        'Search by the name of a person or the record they touched, narrow it to one kind of activity (sign-ins, payments, plans and so on), or pick a date range.',
+      side: 'bottom',
+    },
+    {
+      selector: t('audit-table'),
+      title: 'Who did what, and when',
+      description:
+        'Each row shows when it happened, who did it, what they did and which record it was. Edits list what changed, with the old value crossed out beside the new one. Entries cannot be edited or deleted from SWIFT, and passwords are never recorded.',
+      side: 'top',
+    },
+  ],
+}
+
 export const TOUR_PAGES = {
   dashboard: '/dashboard',
   subscribers: '/subscribers',
@@ -602,4 +729,5 @@ export const TOUR_PAGES = {
   archive: '/archive',
   users: '/users',
   settings: '/settings',
+  audit: '/audit',
 }

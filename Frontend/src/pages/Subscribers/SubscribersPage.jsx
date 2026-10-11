@@ -27,6 +27,11 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { TableSkeleton } from "../../components/Skeletons.jsx";
+import { Archive, ChevronRight, CreditCard, MousePointerClick, Pencil } from "lucide-react";
+import { errorMessage } from "../../utils/errors";
+import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
 import Modal from "../../components/Modal";
 import StatusBadge from "../../components/StatusBadge";
@@ -39,9 +44,11 @@ import subscriberApi from "../../api/subscribers";
 import { useNavigate } from "react-router-dom";
 import TourButton from "../../components/TourButton.jsx";
 import Toast from "../../components/Toast.jsx";
+import SubscriberDetailsModal from "./SubscriberDetailsModal";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 
 export default function SubscribersPage() {
+  const { can } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
@@ -69,6 +76,7 @@ export default function SubscribersPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [detailsTarget, setDetailsTarget] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -159,8 +167,8 @@ export default function SubscribersPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
       showToast("Report downloaded successfully.");
-    } catch {
-      showToast("Failed to download report.", "error");
+    } catch (err) {
+      showToast(errorMessage(err, "Failed to download report."), "error");
     }
   };
 
@@ -209,6 +217,7 @@ export default function SubscribersPage() {
         <div className="mb-6 flex items-start justify-between gap-3">
           {initialLoading ? (
             <div className="space-y-2">
+              <h1 className="sr-only">Subscribers</h1>
               <Skeleton className="h-8 w-40" />
               <Skeleton className="h-4 w-72" />
             </div>
@@ -324,73 +333,30 @@ export default function SubscribersPage() {
               Export CSV
             </Button>
 
-            <Button
-              data-tour="subs-add"
-              onClick={() => setShowAdd(true)}
-              className="whitespace-nowrap"
-            >
-              Add Subscriber
-            </Button>
+            {can("subscribers.manage") && (
+              <Button
+                data-tour="subs-add"
+                onClick={() => setShowAdd(true)}
+                className="whitespace-nowrap"
+              >
+                Add Subscriber
+              </Button>
+            )}
           </div>
         )}
+
+        <p className="mb-2 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+          <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
+          Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
+        </p>
 
         {/* Table */}
         <div data-tour="subs-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <Skeleton className="h-4 w-12" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-10" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-14" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-16" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-24" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-14" />
-                  </TableHead>
-                  <TableHead>
-                    <Skeleton className="h-4 w-16" />
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-28" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-36" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-5 w-16 rounded-full" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-16" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <TableSkeleton rows={9} columns={[
+              { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Contact" },
+              { label: "MAC Address" }, { label: "Status", kind: "badge" }, { label: "Actions", kind: "actions" },
+            ]} />
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
               {error}
@@ -417,7 +383,17 @@ export default function SubscribersPage() {
                 {subscribers.map((sub) => (
                   <TableRow key={sub.subscriber_id}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                      {sub.name}
+                      <button
+                        data-tour="subs-name"
+                        type="button"
+                        onClick={() => setDetailsTarget(sub)}
+                        aria-haspopup="dialog"
+                        title="View details"
+                        className="group inline-flex items-center gap-0.5 text-left font-semibold text-blue-700 dark:text-blue-400 underline decoration-blue-700/40 dark:decoration-blue-400/40 underline-offset-2 hover:decoration-current focus-visible:decoration-current"
+                      >
+                        {sub.name}
+                        <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                      </button>
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.plan?.plan_name ?? "—"}
@@ -426,7 +402,10 @@ export default function SubscribersPage() {
                       {sub.email || "—"}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.contact || sub.contact_number || "—"}
+                      <div>
+                                              {sub.contact || sub.contact_number || "—"}
+                                              <div><VerifiedBadge verified={sub.contact_verified} /></div>
+                                            </div>
                     </TableCell>
                     <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                       {sub.mac_address || "—"}
@@ -435,27 +414,34 @@ export default function SubscribersPage() {
                       <StatusBadge status={sub.status} />
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div data-tour="subs-actions" className="flex flex-wrap gap-2">
+                        {can("subscribers.manage") && (
                         <Button
-                          variant="link"
+                          variant="outline"
                           size="sm"
                           onClick={() => setEditTarget(sub)}
                           aria-label={`Edit ${sub.name}`}
-                          className="h-auto p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                          className="gap-1.5"
                         >
+                          <Pencil className="size-3.5" aria-hidden="true" />
                           Edit
                         </Button>
+                        )}
+                        {can("subscribers.archive") && (
                         <Button
-                          variant="link"
+                          variant="destructive"
                           size="sm"
                           onClick={() => setDeleteTarget(sub)}
                           aria-label={`Archive ${sub.name}`}
-                          className="h-auto p-0 text-red-700 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                          className="gap-1.5"
                         >
+                          <Archive className="size-3.5" aria-hidden="true" />
                           Archive
                         </Button>
+                        )}
+                        {can("payments.view", "payments.record") && (
                         <Button
-                          variant="link"
+                          variant="outline"
                           size="sm"
                           aria-label={`Payments for ${sub.name}`}
                           onClick={() =>
@@ -463,10 +449,12 @@ export default function SubscribersPage() {
                               state: { subscriber: sub },
                             })
                           }
-                          className="h-auto p-0 text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                          className="gap-1.5 border-green-700/40 text-green-700 hover:bg-green-50 dark:border-green-400/40 dark:text-green-400 dark:hover:bg-green-950"
                         >
+                          <CreditCard className="size-3.5" aria-hidden="true" />
                           Payments
                         </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -578,6 +566,20 @@ export default function SubscribersPage() {
           loading={formLoading}
         />
       </Modal>
+
+      <SubscriberDetailsModal
+        subscriber={detailsTarget}
+        onClose={() => setDetailsTarget(null)}
+        onEdit={(s) => {
+          setDetailsTarget(null);
+          setEditTarget(s);
+        }}
+        onArchive={(s) => {
+          setDetailsTarget(null);
+          setDeleteTarget(s);
+        }}
+        onPayments={(s) => navigate("/payments", { state: { subscriber: s } })}
+      />
 
       <Modal
         isOpen={!!editTarget}

@@ -95,6 +95,25 @@ class BillingService
     }
 
     /**
+     * The day of the month a subscriber's bill is due, and the next date that falls on
+     * (today counts). Dates follow Philippine time, where the subscribers are.
+     *
+     * @return array{due_day: int, next_due_date: string}
+     */
+    public function nextDue(Subscriber $subscriber): array
+    {
+        $today = Carbon::now('Asia/Manila')->startOfDay();
+        $connectionDay = Carbon::parse($subscriber->connection_date)->day;
+
+        $thisMonth = $today->copy()->day(min($connectionDay, $today->daysInMonth));
+        $next = $thisMonth->gte($today)
+            ? $thisMonth
+            : ($m = $today->copy()->addMonthNoOverflow())->day(min($connectionDay, $m->daysInMonth));
+
+        return ['due_day' => $connectionDay, 'next_due_date' => $next->toDateString()];
+    }
+
+    /**
      * A subscriber's recurring due day is the day-of-month they connected on
      * (capped to the last day of shorter months, e.g. a connection on the
      * 31st is due on the 28th/29th/30th in months that don't have a 31st).

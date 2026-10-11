@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PhoneVerification from "../components/PhoneVerification.jsx";
+import PaymentHistory from "../components/PaymentHistory.jsx";
+import DashboardActivity from "../components/DashboardActivity.jsx";
+import AccountStatusBanner from "../components/AccountStatusBanner.jsx";
+import { CardListSkeleton, LoadingStatus, StatCardsSkeleton } from "../components/Skeletons.jsx";
+import CompanyContact from "../components/CompanyContact.jsx";
+import TextSizeControl from "../components/TextSizeControl.jsx";
 import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
@@ -60,7 +67,7 @@ function collectionRateColor(rate) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [summary, setSummary] = useState(null);
   const [pendingList, setPendingList] = useState([]);
   const [unpaidList, setUnpaidList] = useState([]);
@@ -71,6 +78,7 @@ export default function Dashboard() {
 
   const [myBilling, setMyBilling] = useState(null);
   const [myPayments, setMyPayments] = useState([]);
+  const [mySubscriber, setMySubscriber] = useState(null);
   const [myLoading, setMyLoading] = useState(true);
 
   const isStaff = user?.role === "admin" || user?.role === "secretary";
@@ -85,6 +93,7 @@ export default function Dashboard() {
       .then(([billingRes, paymentsRes]) => {
         setMyBilling(billingRes.data.data);
         setMyPayments(paymentsRes.data.data);
+        setMySubscriber(paymentsRes.data.subscriber ?? null);
       })
       .catch(() => {})
       .finally(() => setMyLoading(false));
@@ -95,20 +104,22 @@ export default function Dashboard() {
       setLoading(false);
       return;
     }
+    // A secretary may be missing some permissions; a blocked request just leaves its card empty.
+    const ifAllowed = (allowed, request) => (allowed ? request().catch(() => null) : Promise.resolve(null));
     Promise.all([
       subscriberApi.getSummary(),
-      api.get("/subscribers/pending"),
-      subscriberApi.getAll({ status: "Unpaid", per_page: 5 }),
-      api.get("/subscribers/pending-claims"),
-      paymentsApi.getFinancialSummary(),
+      ifAllowed(can("approvals.manage"), () => api.get("/subscribers/pending")),
+      ifAllowed(can("subscribers.view"), () => subscriberApi.getAll({ status: "Unpaid", per_page: 5 })),
+      ifAllowed(can("approvals.manage"), () => api.get("/subscribers/pending-claims")),
+      ifAllowed(can("reports.view"), () => paymentsApi.getFinancialSummary()),
     ])
       .then(([summaryRes, pendingRes, unpaidRes, claimsRes, financialRes]) => {
         setSummary(summaryRes.data.data);
-        setPendingList(pendingRes.data ?? []);
-        const unpaidData = unpaidRes.data.data;
+        setPendingList(pendingRes?.data ?? []);
+        const unpaidData = unpaidRes?.data.data;
         setUnpaidList(Array.isArray(unpaidData) ? unpaidData : (unpaidData?.data ?? []));
-        setClaimsList(claimsRes.data ?? []);
-        setFinancials(financialRes.data.data);
+        setClaimsList(claimsRes?.data ?? []);
+        setFinancials(financialRes?.data.data ?? null);
         setLastUpdated(new Date());
       })
       .catch(() => {})
@@ -151,23 +162,19 @@ export default function Dashboard() {
   if (!isStaff) {
     if (myLoading) {
       return (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-40" />
-            <Skeleton className="h-4 w-64" />
+        <LoadingStatus className="space-y-6" heading="My Account">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-44" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+            <Skeleton className="h-9 w-40" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="space-y-3">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-8 w-20" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <Skeleton className="h-48 w-full rounded-lg" />
-        </div>
+          <Skeleton className="h-28 w-full rounded-lg" />
+          <StatCardsSkeleton />
+          <CardListSkeleton rows={4} />
+          <CardListSkeleton rows={3} />
+        </LoadingStatus>
       );
     }
 
@@ -193,8 +200,15 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Account</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Welcome back, {user?.name}.</p>
           </div>
-          <TourButton tour="dashboardSubscriber" />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <TextSizeControl />
+            <TourButton tour="dashboardSubscriber" />
+          </div>
         </div>
+
+        <AccountStatusBanner billing={myBilling} />
+
+        <PhoneVerification variant="banner" />
 
         <div data-tour="me-summary" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
@@ -202,7 +216,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mb-2">
                 <Wifi className="size-5 text-primary" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Monthly Rate</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Your monthly bill</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {formatCurrency(myBilling.monthly_rate)}
               </p>
@@ -214,7 +228,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mb-2">
                 <Wallet className="size-5 text-amber-500" />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Current Balance</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Amount you owe</p>
               <p className={`text-2xl font-bold mt-1 ${myBilling.balance > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
                 {formatCurrency(myBilling.balance)}
               </p>
@@ -231,17 +245,11 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mb-2">
                 <CircleCheck className={`size-5 ${statusColor}`} />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Months Behind</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unpaid months</p>
               <p className={`text-2xl font-bold mt-1 ${statusColor}`}>{myBilling.months_behind}</p>
             </CardContent>
           </Card>
         </div>
-
-        {myBilling.balance > 0 && (
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded text-sm text-amber-800 dark:text-amber-400">
-            You have an outstanding balance. Please settle your payment to avoid service interruption.
-          </div>
-        )}
 
         <Card data-tour="me-breakdown">
           <CardHeader>
@@ -261,7 +269,7 @@ export default function Dashboard() {
                       ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900 capitalize"
                       : m.status === "partial"
                         ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900 capitalize"
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 capitalize"
+                        : "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900 capitalize"
                   }
                 >
                   {m.status}
@@ -276,24 +284,11 @@ export default function Dashboard() {
             <CardTitle className="text-base">Payment History</CardTitle>
           </CardHeader>
           <CardContent>
-            {myPayments.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No payments recorded yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {myPayments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-800 pb-2 last:border-0">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      {new Date(p.payment_date).toLocaleDateString()} · {p.or_number} · {p.payment_method}
-                    </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {formatCurrency(p.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <PaymentHistory payments={myPayments} subscriber={mySubscriber} />
           </CardContent>
         </Card>
+
+        <CompanyContact />
       </div>
     );
   }
@@ -304,48 +299,56 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-40" />
-          <Skeleton className="h-4 w-64" />
+      <LoadingStatus className="space-y-6" heading="Dashboard">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-72 max-w-full" />
+          </div>
+          <Skeleton className="h-9 w-32" />
         </div>
-        <Skeleton className="h-28 w-full rounded-lg" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton className="h-8 w-32" />
-              </CardContent>
-            </Card>
-          ))}
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <Skeleton className="h-10 w-full sm:w-96" />
+          </div>
+          <StatCardsSkeleton />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-8 w-14" />
-              </CardContent>
-            </Card>
-          ))}
+
+        <StatCardsSkeleton />
+
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-3 w-72 max-w-full" />
+          </div>
+          <StatCardsSkeleton count={5} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-5" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="lg:col-span-1">
-            <CardContent>
-              <Skeleton className="h-55 w-full rounded-full mx-auto max-w-55" />
-            </CardContent>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-55 w-full rounded-md" /></CardContent>
           </Card>
-          <Card className="lg:col-span-2">
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-md" />
-              ))}
-            </CardContent>
+          <Card>
+            <CardHeader><Skeleton className="h-5 w-36" /></CardHeader>
+            <CardContent><Skeleton className="mx-auto h-55 w-55 max-w-full rounded-full" /></CardContent>
           </Card>
         </div>
-      </div>
+
+        <Card>
+          <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-md" />
+            ))}
+          </CardContent>
+        </Card>
+      </LoadingStatus>
     );
   }
 
@@ -437,6 +440,9 @@ export default function Dashboard() {
         </Card>
       )}
 
+      {/* Activity in a chosen period (today / month / quarter / year / all time) */}
+      <DashboardActivity />
+
       {/* 2. Financial Snapshot */}
       {financials && (
         <div data-tour="dash-financials" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -483,6 +489,12 @@ export default function Dashboard() {
       )}
 
       {/* 3. Subscriber counts */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Right now</h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Current numbers, as of today. They cannot be filtered by period.
+        </p>
+      </div>
       <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link to="/subscribers">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
@@ -596,24 +608,30 @@ export default function Dashboard() {
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {can("payments.view", "payments.record") && (
           <Link to="/payments" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Record a Payment</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Search a subscriber and log a payment</p>
               </div>
             </Link>
+          )}
+          {can("subscribers.view") && (
           <Link to="/subscribers" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Manage Subscribers</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">View, add, or edit subscriber records</p>
               </div>
             </Link>
+          )}
+          {can("reports.view") && (
           <Link to="/reports" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">View Reports</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Collection, balance, and subscriber reports</p>
               </div>
             </Link>
+          )}
           <Link to="/plans" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Service Plans</p>

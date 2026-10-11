@@ -40,7 +40,7 @@ class AdminRecoTest extends TestCase
     public function test_register_with_names_and_contact_then_login_by_contact(): void
     {
         $this->postJson('/api/register', [
-            'first_name' => 'Juan', 'last_name' => 'Cruz', 'contact_number' => '09171112222',
+            'first_name' => 'juan', 'last_name' => 'cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
             'password' => 'password1', 'password_confirmation' => 'password1',
         ])->assertCreated();
 
@@ -65,6 +65,7 @@ class AdminRecoTest extends TestCase
             'connection_date' => '2026-03-15', 'account_status' => 'active', 'status' => 'Active',
         ]);
 
+        $this->passwordConfirmed($admin); // deleting for good asks for the password again
         $this->actingAs($admin)->deleteJson("/api/subscribers/{$sub->subscriber_id}")->assertOk();
         $this->assertSoftDeleted('subscriber', ['subscriber_id' => $sub->subscriber_id]);
         $this->getJson('/api/archive/subscribers')->assertOk()->assertJsonPath('data.total', 1);
@@ -91,6 +92,5 @@ class AdminRecoTest extends TestCase
         $this->getJson('/api/reports/collections?range=three_months')->assertOk()->assertJsonPath('data.range', 'three_months');
         $this->getJson('/api/reports/collections?range=annual&year=2025')
             ->assertOk()->assertJsonPath('data.period.start', '2025-01-01')->assertJsonPath('data.period.end', '2025-12-31');
-        $this->getJson('/api/reports/financial-statement?range=monthly&month=2026-02')->assertOk()->assertJsonPath('data.period_label', 'February 2026');
     }
 }

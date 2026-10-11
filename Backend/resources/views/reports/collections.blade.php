@@ -23,6 +23,9 @@
 <body>
     <h1>{{ $report_title }}</h1>
     <div class="period">Period: {{ $period_label }} ({{ $period['start'] }} to {{ $period['end'] }})</div>
+    @if (!empty($filter_labels))
+    <div class="meta">Filters: {{ implode('; ', $filter_labels) }}</div>
+    @endif
     <h2>Summary</h2>
     <table class="summary"><tr>
         <td><span class="label">Payments</span><span class="value">{{ number_format($summary['payment_count']) }}</span></td>
@@ -155,6 +158,9 @@
         <div class="eyebrow">SWIFT Reports</div>
         <h1>{{ $report_title }}</h1>
         <div class="meta">Period: {{ $period_label }} ({{ $period['start'] }} to {{ $period['end'] }})</div>
+    @if (!empty($filter_labels))
+    <div class="meta">Filters: {{ implode('; ', $filter_labels) }}</div>
+    @endif
     </div>
 
     <div class="summary-grid">

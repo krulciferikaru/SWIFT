@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
+import PhoneVerification from '../components/PhoneVerification.jsx'
+import TextSizeControl from '../components/TextSizeControl.jsx'
+import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
+import PaymentMethodsManager from '../components/PaymentMethodsManager.jsx'
 import { useToast } from '../hooks/useToast'
 import smsApi from '../api/sms'
 import subscriberApi from '../api/subscribers'
@@ -20,7 +24,7 @@ const SMS_MESSAGE_MAX = 300
 
 export default function Settings() {
   const { theme, toggleTheme } = useTheme()
-  const { user } = useAuth()
+  const { user, can } = useAuth()
   const [confirmLogout, setConfirmLogout] = useState(true)
   const showTourButtons = useShowTourButtons()
   const { toast, showToast } = useToast()
@@ -30,7 +34,7 @@ export default function Settings() {
   const [unpaidCount, setUnpaidCount] = useState(null)
   const [sendingReminders, setSendingReminders] = useState(false)
 
-  const canSendSms = user?.role === 'admin' || user?.role === 'secretary'
+  const canSendSms = can('sms.send')
 
   useEffect(() => {
     const skip = localStorage.getItem('skipLogoutConfirm') === 'true'
@@ -115,6 +119,14 @@ export default function Settings() {
               onCheckedChange={toggleTheme}
             />
           </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 dark:border-gray-700 pt-5">
+            <div>
+              <p className="text-sm font-medium">Text size</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Make everything in SWIFT bigger and easier to read.</p>
+            </div>
+            <TextSizeControl />
+          </div>
         </CardContent>
       </Card>
 
@@ -174,6 +186,22 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {user?.contact_number && (
+        <Card data-tour="settings-phone">
+          <CardHeader>
+            <CardTitle className="text-base">Mobile number</CardTitle>
+            <CardDescription>Verifying your number confirms that reminders and notices reach you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PhoneVerification />
+          </CardContent>
+        </Card>
+      )}
+
+      {user?.role === 'admin' && <PaymentMethodsManager showToast={showToast} />}
+
+      {user?.role === 'admin' && <CompanyInfoForm showToast={showToast} />}
 
       {canSendSms && (
         <Card data-tour="settings-sms">

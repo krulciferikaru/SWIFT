@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import subscriberApi from "../api/subscribers";
+import { useAuth } from "../context/AuthContext";
 import paymentsApi from "../api/payments";
+import PaymentHistory from "../components/PaymentHistory.jsx";
+import { errorMessage } from "../utils/errors";
+import { CardListSkeleton, LoadingStatus } from "../components/Skeletons.jsx";
+import { usePaymentMethods } from "../hooks/usePaymentMethods";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +30,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "../hooks/useToast";
-import { Search, CheckCircle2, Check } from "lucide-react";
+import { Search, CheckCircle2, Check, ChevronRight } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
@@ -84,6 +89,8 @@ function describeCoverage(months, amount) {
 }
 
 export default function Payments() {
+  const { can } = useAuth();
+  const { methods: paymentMethods } = usePaymentMethods();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -96,6 +103,13 @@ export default function Payments() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const [form, setForm] = useState(EMPTY_FORM);
+
+  // If the chosen method was renamed or switched off, fall back to the first one on offer.
+  useEffect(() => {
+    if (paymentMethods.length > 0 && !paymentMethods.includes(form.payment_method)) {
+      setForm((f) => ({ ...f, payment_method: paymentMethods[0] }));
+    }
+  }, [paymentMethods, form.payment_method]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -147,8 +161,8 @@ export default function Payments() {
         ]);
         setBilling(billingRes.data.data);
         setHistory(historyRes.data.data);
-      } catch {
-        showToast("Failed to load billing details.", "error");
+      } catch (err) {
+        showToast(errorMessage(err, "Failed to load billing details."), "error");
       } finally {
         setLoadingDetail(false);
       }
@@ -227,6 +241,7 @@ export default function Payments() {
       {loading ? (
         <>
           <div className="space-y-2">
+            <h1 className="sr-only">Payments</h1>
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-72" />
           </div>
@@ -280,14 +295,20 @@ export default function Payments() {
                       <button
                         key={s.subscriber_id}
                         onClick={() => selectSubscriber(s)}
-                        className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="group flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {s.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {s.contact_number || s.email}
-                        </p>
+                        <span>
+                          <span className="block text-sm font-semibold text-blue-700 dark:text-blue-400">
+                            {s.name}
+                          </span>
+                          <span className="block text-xs text-gray-500 dark:text-gray-400">
+                            {s.contact_number || s.email}
+                          </span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center text-xs font-medium text-blue-700 dark:text-blue-400">
+                          Open billing
+                          <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                        </span>
                       </button>
                     ))
                   )}
@@ -358,17 +379,24 @@ export default function Payments() {
           </Card>
 
           {loadingDetail ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="space-y-3">
-                    {Array.from({ length: 4 }).map((_, j) => (
-                      <Skeleton key={j} className="h-8 w-full" />
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <LoadingStatus className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <CardListSkeleton rows={4} />
+                <CardListSkeleton rows={4} />
+              </div>
+              <Card>
+                <CardHeader><Skeleton className="h-5 w-36" /></CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 max-w-md">
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
+                  <Skeleton className="h-9 w-full max-w-md" />
+                </CardContent>
+              </Card>
+            </LoadingStatus>
           ) : (
             <>
               {/* Breakdown + history side-by-side, so "did they already pay?" doesn't require scrolling */}
@@ -416,39 +444,27 @@ export default function Payments() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card data-tour="payments-history">
                   <CardHeader>
-                    <CardTitle className="text-base">Recent Payments</CardTitle>
+                    <CardTitle className="text-base">Payment History</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 max-h-72 overflow-y-auto">
-                    {history.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        No payments recorded yet.
-                      </p>
-                    ) : (
-                      history.map((p) => (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span className="text-gray-500 dark:text-gray-400">
-                            {new Date(p.payment_date).toLocaleDateString()} ·{" "}
-                            {p.or_number}
-                          </span>
-                          <span className="text-gray-900 dark:text-gray-100">
-                            ₱
-                            {Number(p.amount).toLocaleString("en-PH", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </span>
-                        </div>
-                      ))
-                    )}
+                  <CardContent>
+                    <PaymentHistory
+                      maxHeightClass="max-h-80"
+                      payments={history}
+                      subscriber={{
+                        name: selected.name,
+                        address: selected.address,
+                        contact_number: selected.contact_number,
+                        plan_name: selected.plan?.plan_name,
+                      }}
+                    />
                   </CardContent>
                 </Card>
               </div>
 
               {/* Record payment form, with live coverage preview */}
+              {can("payments.record") && (
               <Card data-tour="payments-form">
                 <CardHeader>
                   <CardTitle className="text-base">Record Payment</CardTitle>
@@ -532,9 +548,9 @@ export default function Payments() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="GCash">GCash</SelectItem>
-                            <SelectItem value="Others">Others</SelectItem>
+                            {paymentMethods.map((name) => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -557,6 +573,7 @@ export default function Payments() {
                   </form>
                 </CardContent>
               </Card>
+              )}
             </>
           )}
         </>

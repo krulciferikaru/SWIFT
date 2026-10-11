@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import usersApi from '../api/users'
+import { capitalizeWords } from '../utils/text'
+import { TableSkeleton } from '../components/Skeletons.jsx'
 import { useAuth } from '../context/AuthContext'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -26,7 +28,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
-import { UserPlus, KeyRound } from 'lucide-react'
+import { useOnReconnect } from '../hooks/useOnline'
+import { UserPlus, KeyRound, SlidersHorizontal } from 'lucide-react'
+import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 
@@ -70,6 +74,7 @@ export default function Users() {
   const [creating, setCreating] = useState(false)
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
+  const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
   const [resetTarget, setResetTarget] = useState(null) // user being reset
   const [resetForm, setResetForm] = useState({ password: '', password_confirmation: '' })
   const [resetErrors, setResetErrors] = useState({})
@@ -100,6 +105,8 @@ export default function Users() {
     fetchUsers()
   }, [fetchUsers])
 
+  useOnReconnect(fetchUsers)
+
   useEffect(() => {
     setPage(1)
   }, [search, roleFilter])
@@ -125,7 +132,8 @@ export default function Users() {
   }
 
   const handleStaffFormChange = (e) => {
-    setStaffForm({ ...staffForm, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setStaffForm({ ...staffForm, [name]: name === 'name' ? capitalizeWords(value) : value })
   }
 
   const submitCreate = async (e) => {
@@ -193,6 +201,7 @@ export default function Users() {
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
         {loading ? (
           <div className="space-y-2">
+            <h1 className="sr-only">Manage Roles</h1>
             <Skeleton className="h-8 w-40" />
             <Skeleton className="h-4 w-64" />
           </div>
@@ -247,26 +256,10 @@ export default function Users() {
 
       <div data-tour="users-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-10" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-28" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-9 w-32 rounded-md" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <TableSkeleton rows={6} columns={[
+            { label: 'Name' }, { label: 'Email' }, { label: 'Role', kind: 'badge' },
+            { label: 'Account Status' }, { label: 'Actions', kind: 'actions' },
+          ]} />
         ) : users.length === 0 ? (
           <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">No users found.</div>
         ) : (
@@ -318,6 +311,20 @@ export default function Users() {
                       )}
                     </TableCell>
                     <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                      {user.role === 'secretary' && (
+                        <Button
+                          data-tour="users-permissions"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setPermTarget(user)}
+                          aria-label={`Edit permissions for ${user.name}`}
+                        >
+                          <SlidersHorizontal className="size-3.5" />
+                          Permissions
+                        </Button>
+                      )}
                       {!isSelf && (
                         <Button
                           data-tour="users-reset"
@@ -331,6 +338,7 @@ export default function Users() {
                           Reset Password
                         </Button>
                       )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -490,6 +498,16 @@ export default function Users() {
           </div>
         </form>
       </Modal>
+
+      <PermissionsModal
+        user={permTarget}
+        onClose={() => setPermTarget(null)}
+        onSaved={(updated, message) => {
+          setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u)))
+          setPermTarget(null)
+          showToast(message)
+        }}
+      />
 
       <AlertDialog open={!!pendingCreate} onOpenChange={(open) => { if (!open) setPendingCreate(null) }}>
         <AlertDialogContent>

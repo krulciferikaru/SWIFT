@@ -21,6 +21,7 @@ import {
   FileText,
   Archive,
   ShieldCheck,
+  ScrollText,
   Settings as SettingsIcon,
   KeyRound,
   Info,
@@ -39,6 +40,10 @@ const SECTIONS = [
     body: (
       <>
         <p>Shows an overview of subscriber counts and recent activity at a glance. There's nothing to configure here — it's just a starting point. Use the sidebar on the left to go to the feature you need.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Activity</strong> — choose <em>Today</em>, <em>This month</em>, <em>This quarter</em>, <em>This year</em> or <em>All time</em> to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. Your choice is remembered.</li>
+          <li><strong>Right now</strong> — the subscriber counts (Active, Unpaid and so on) and the outstanding balance are current numbers. The system does not keep a history of statuses, so these cannot be filtered by period.</li>
+        </ul>
       </>
     ),
   },
@@ -53,6 +58,7 @@ const SECTIONS = [
       <>
         <p>This is the master list of everyone signed up for service. At the top you'll see totals for Total, Pending, Active, Unpaid, and Disconnected.</p>
         <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Name</strong> — click a subscriber's name to open all of their details in one window, including their balance, months behind and advance credit. It has the same Edit, Archive and Payments buttons as the row.</li>
           <li><strong>Search box</strong> — type a name, contact number, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
           <li><strong>Status dropdown</strong> — narrow the list to only Active, Unpaid, or Disconnected subscribers.</li>
           <li><strong>Add Subscriber</strong> — opens a form to manually register a new subscriber (name, plan, contact info, etc.).</li>
@@ -93,6 +99,7 @@ const SECTIONS = [
       <>
         <p>This is where the actual plans (e.g. "Basic Internet", "Home Plus") and their monthly prices live. Every subscriber gets assigned one of these.</p>
         <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Name</strong> — click a plan's name to see its full details, with Edit and Archive buttons.</li>
           <li><strong>Add Plan</strong> — create a new plan with a name, monthly rate, speed, and description.</li>
           <li><strong>Edit</strong> — change a plan's price or details. This affects future billing, not past payments.</li>
           <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. Restore it from the Archive page.</li>
@@ -112,7 +119,7 @@ const SECTIONS = [
         <p>This is where you'll spend the most time day-to-day.</p>
         <ol className="list-decimal pl-5 space-y-1">
           <li>Search for the subscriber by name, contact number, or MAC address.</li>
-          <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Recent Payments</strong> history.</li>
+          <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Payment History</strong>. Each payment has a <em>Receipt</em> button: it opens a receipt you can print for the subscriber.</li>
           <li>Fill in the <strong>Record Payment</strong> form: amount, OR (official receipt) number, date, and payment method (Cash, GCash, or Others). As you type an amount, it shows you a live preview of which month(s) that payment will cover.</li>
           <li>Click <strong>Record Payment</strong> to save it.</li>
         </ol>
@@ -125,16 +132,16 @@ const SECTIONS = [
     tour: 'reports',
     icon: FileText,
     title: 'Reports',
-    summary: 'Collection totals and financial statements by month, last 3 months, or year — exportable to PDF/Excel.',
+    summary: 'The collection report by month, last 3 months, year, or your own dates, with filters — exportable to PDF/Excel.',
     roles: ['admin', 'secretary'],
     body: (
       <>
-        <p>Choose <strong>Monthly</strong> (pick a month), <strong>Last 3 Months</strong> (the past three months up to today), or <strong>Annual</strong> (pick a year) at the top, then review:</p>
+        <p>Choose <strong>Monthly</strong> (pick a month), <strong>Last 3 Months</strong> (the past three months up to today), <strong>Annual</strong> (pick a year), or <strong>Date range</strong> (your own start and end dates, up to 5 years) at the top, then review:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Collection Report</strong> — how much was collected in the selected period, broken down by plan and by payment method, plus a full payment ledger.</li>
-          <li><strong>Financial Statement</strong> — who owes what: total receivables, paid, and outstanding balances, broken down by plan and per-subscriber.</li>
         </ul>
-        <p>Each report has <strong>PDF</strong> and <strong>XLSX</strong> (Excel) download buttons if you need to print or send it somewhere.</p>
+        <p>Open <strong>Filters</strong> to narrow the report first: one <em>subscriber</em>, a <em>service plan</em>, a <em>payment method</em>, or part of an <em>OR number</em>. A yellow "Filtered by" line shows what is applied, and the downloaded files say which filters were used too.</p>
+        <p>The report has <strong>PDF</strong> and <strong>XLSX</strong> (Excel) download buttons if you need to print or send it somewhere.</p>
       </>
     ),
   },
@@ -167,12 +174,32 @@ const SECTIONS = [
         <p>This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
+          <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
           <li className="flex items-start gap-1.5">
             <KeyRound className="size-4 mt-0.5 shrink-0" />
-            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them.</span>
+            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them. Resetting a password, changing permissions, and deleting from the Archive each ask you to type your own password first, as a safety step; it then stays confirmed for 10 minutes.</span>
           </li>
         </ul>
+      </>
+    ),
+  },
+  {
+    id: 'audit',
+    tour: 'audit',
+    icon: ScrollText,
+    title: 'Audit Trail',
+    summary: 'Admin-only: see who did what, and when.',
+    roles: ['admin'],
+    body: (
+      <>
+        <p>Every important action is recorded here: sign-ins (including failed ones), adding or editing subscribers and plans, approvals, payments, archiving and deleting, password resets, and text messages sent.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Search</strong> by a person's name or the record they touched.</li>
+          <li><strong>Show</strong> narrows the list to one kind of activity, and <strong>From / To</strong> limits it to a date range.</li>
+          <li>Edits list what changed, with the old value crossed out beside the new one.</li>
+        </ul>
+        <p>Entries can't be edited or deleted from inside SWIFT, and passwords are never recorded.</p>
       </>
     ),
   },
@@ -193,7 +220,9 @@ const SECTIONS = [
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
           <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>
+          {role === 'admin' && <li><strong>Payment methods</strong> — add, rename, switch off or delete the choices staff see when recording a payment (Cash, GCash and so on). A method that has already been used can be switched off but not deleted.</li>}
           <li><strong>Replay welcome tour</strong> — walks through the menu again, the same tour shown on your first visit.</li>
+          <li><strong>Mobile number</strong> — appears if your account has a number. Click <em>Verify</em>, then enter the 6-digit code we text you. The code works for 10 minutes, and you can ask for a new one after a minute. Changing your number means verifying again. Staff see a green <em>Verified</em> tag next to verified numbers.</li>
           {role !== 'subscriber' && (
             <>
               <li><strong>Send SMS</strong> — send a one-off text message to any Philippine mobile number. Enter the number and a message (up to 300 characters), then click <em>Send SMS</em>. Messages go out through PhilSMS and may use SMS credit.</li>
@@ -390,7 +419,7 @@ export default function Guide() {
           <CardContent className="flex items-start gap-3">
             <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <p className="text-sm text-blue-900 dark:text-blue-300">
-              Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
+              Forgot your password? There's no self-reset yet. Contact the office, or ask an Admin to reset it for you from the Manage Roles page. After 5 wrong passwords, sign-in for that account pauses for 15 minutes, and the page counts down. Tick "Keep me signed in" to stay signed in for 30 days on your own device; otherwise you are signed out when you close the browser or after a working day.
             </p>
           </CardContent>
         </Card>

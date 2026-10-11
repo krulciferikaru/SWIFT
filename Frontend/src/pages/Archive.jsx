@@ -3,6 +3,7 @@ import archiveApi from '../api/archive'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { RotateCcw, Trash2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -14,6 +15,9 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
+import { TableSkeleton } from '../components/Skeletons.jsx'
+import { errorMessage } from '../utils/errors'
+import { useOnReconnect } from '../hooks/useOnline'
 import Toast from "../components/Toast.jsx";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
@@ -50,8 +54,8 @@ export default function ArchivePage() {
         setItems(res.data.data)
         setMeta(null)
       }
-    } catch {
-      setError('Failed to load archived records.')
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to load archived records.'))
     } finally {
       setLoading(false)
     }
@@ -60,6 +64,8 @@ export default function ArchivePage() {
   useEffect(() => {
     fetchItems()
   }, [fetchItems])
+
+  useOnReconnect(fetchItems)
 
   const switchTab = (next) => {
     // Clicking the tab you are already on would clear the list without reloading it.
@@ -150,7 +156,11 @@ export default function ArchivePage() {
 
       <div data-tour="archive-list" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
         {loading ? (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading…</p>
+          <TableSkeleton rows={5} columns={
+            isSubscribers
+              ? [{ label: 'Name' }, { label: 'Plan' }, { label: 'Contact Number' }, { label: 'Address' }, { label: 'Archived On' }, { label: 'Actions', kind: 'actions' }]
+              : [{ label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' }, { label: 'Archived On' }, { label: 'Actions', kind: 'actions' }]
+          } />
         ) : items.length === 0 ? (
           <>
             <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Nothing archived here.</p>
@@ -207,10 +217,12 @@ export default function ArchivePage() {
                   <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(item.deleted_at)}</TableCell>
                   <TableCell>
                     <div data-tour="archive-row-actions" className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => restore(item)} aria-label={`Restore ${item.name || item.plan_name}`}>
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => restore(item)} aria-label={`Restore ${item.name || item.plan_name}`}>
+                        <RotateCcw className="size-3.5" aria-hidden="true" />
                         Restore
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(item)} aria-label={`Delete ${item.name || item.plan_name} permanently`}>
+                      <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setDeleteTarget(item)} aria-label={`Delete ${item.name || item.plan_name} permanently`}>
+                        <Trash2 className="size-3.5" aria-hidden="true" />
                         Delete
                       </Button>
                     </div>

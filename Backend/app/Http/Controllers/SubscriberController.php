@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscriber\StoreSubscriberRequest;
 use App\Http\Requests\Subscriber\UpdateSubscriberRequest;
@@ -36,7 +37,7 @@ class SubscriberController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Subscriber::with('plan')
+        $query = Subscriber::with(['plan', 'user:id,subscriber_id,contact_number,contact_verified_at'])
             ->select([
                 'subscriber_id',
                 'plan_id',
@@ -98,6 +99,8 @@ class SubscriberController extends Controller
         // Load the plan relationship for the response
         $subscriber->load('plan');
 
+        Audit::log('subscriber.created', $subscriber);
+
         return response()->json([
             'success' => true,
             'message' => 'Subscriber created successfully.',
@@ -114,6 +117,7 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::with([
             'plan',
+            'user:id,subscriber_id,contact_number,contact_verified_at',
             'payments' => fn($q) => $q->latest('payment_date')->limit(12),
         ])->findOrFail($id);
 
@@ -133,9 +137,12 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::findOrFail($id);
         $previousStatus = $subscriber->status;
+        $before = $subscriber->getOriginal();
 
         $subscriber->update($request->validated());
         $subscriber->load('plan');
+
+        Audit::log('subscriber.updated', $subscriber, null, Audit::diff($before, $subscriber));
 
         $this->notifyStatusChange($subscriber, $previousStatus);
 
@@ -160,6 +167,8 @@ class SubscriberController extends Controller
 
         $subscriber->delete();
 
+        Audit::log('subscriber.archived', $subscriber);
+
         return response()->json([
             'success' => true,
             'message' => 'Subscriber archived.',
@@ -181,6 +190,10 @@ class SubscriberController extends Controller
         $subscriber = Subscriber::findOrFail($id);
         $previousStatus = $subscriber->status;
         $subscriber->update(['status' => $request->status]);
+
+        Audit::log('subscriber.status_changed', $subscriber, null, [
+            'status' => ['old' => $previousStatus, 'new' => $subscriber->status],
+        ]);
 
         $this->notifyStatusChange($subscriber, $previousStatus);
 
@@ -235,6 +248,8 @@ class SubscriberController extends Controller
                     $result['success'] ? $sent++ : $failed++;
                 }
             });
+
+        Audit::log('sms.reminders_sent', null, 'Unpaid subscribers', ['sent' => $sent, 'failed' => $failed]);
 
         $message = "Sent payment reminders to {$sent} subscriber(s).";
         if ($failed > 0) {

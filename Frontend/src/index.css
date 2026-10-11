@@ -188,3 +188,56 @@
     background: transparent !important;
   }
 }
+
+/* Stacked tables: one card per row on phones (see components/ui/table.jsx). */
+@media (max-width: 767px) {
+  table[data-stack] thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  table[data-stack],
+  table[data-stack] tbody,
+  table[data-stack] tr {
+    display: block;
+  }
+  table[data-stack] tbody tr {
+    margin: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--card);
+    padding: 0.25rem 0.75rem;
+  }
+  table[data-stack] tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    border-bottom: 1px solid var(--border);
+  }
+  table[data-stack] tbody td:last-child {
+    border-bottom: 0;
+  }
+  table[data-stack] tbody td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    max-width: 45%;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+  /* Cells with no column title (action buttons) and empty-state rows span the card. */
+  table[data-stack] tbody td[data-label=""],
+  table[data-stack] tbody td[colspan] {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}

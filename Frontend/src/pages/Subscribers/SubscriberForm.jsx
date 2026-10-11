@@ -12,6 +12,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import TourButton from "../../components/TourButton.jsx";
+import { errorMessage } from "../../utils/errors";
+import { capitalizeWords, BARANGAYS } from "../../utils/text";
 
 const EMPTY_FORM = {
   plan_id: "",
@@ -24,6 +26,12 @@ const EMPTY_FORM = {
   status: "Active",
 };
 
+// Keeps only hex digits and puts a colon after every pair: "aabbcc" -> "AA:BB:CC".
+function formatMac(value) {
+  const hex = value.replace(/[^0-9a-fA-F]/g, "").slice(0, 12).toUpperCase();
+  return hex.match(/.{1,2}/g)?.join(":") ?? "";
+}
+
 export default function SubscriberForm({
   initial = null,
   onSubmit,
@@ -34,6 +42,7 @@ export default function SubscriberForm({
   const [form, setForm] = useState(initial ?? EMPTY_FORM);
   const [plans, setPlans] = useState([]);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState("");
   const [duplicateMatches, setDuplicateMatches] = useState([]);
 
   useEffect(() => {
@@ -64,7 +73,10 @@ export default function SubscriberForm({
   }, [form.name, initial]);
 
   const set = (field) => (e) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: field === "name" ? capitalizeWords(e.target.value) : e.target.value,
+    }));
 
   const setValue = (field) => (value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -72,6 +84,7 @@ export default function SubscriberForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+    setFormError("");
     try {
       await onSubmit({
         ...form,
@@ -80,6 +93,9 @@ export default function SubscriberForm({
     } catch (err) {
       if (err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {});
+      } else {
+        // Offline, timed out, or a server error: say so, and keep everything typed.
+        setFormError(errorMessage(err, "Could not save the subscriber. Please try again."));
       }
     }
   };
@@ -115,6 +131,12 @@ export default function SubscriberForm({
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+      {formError && (
+        <div role="alert" className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+          {formError}
+        </div>
+      )}
+
       <div className="flex justify-end">
         <TourButton tour="subscriberForm" />
       </div>
@@ -213,13 +235,36 @@ export default function SubscriberForm({
           )}
         </div>
         {field("Email Address (optional)", "email", "email")}
-        {field(
-          "Address",
-          "address",
-          "text",
-          { placeholder: "e.g. Palayan City, Nueva Ecija" },
-          true,
-        )}
+        <div className="space-y-1.5">
+          <Label htmlFor="address">
+            Address<span className="text-red-500 ml-0.5">*</span>
+          </Label>
+          <select
+            id="address"
+            value={form.address}
+            onChange={set("address")}
+            aria-required="true"
+            aria-invalid={errors.address ? true : undefined}
+            aria-describedby={errors.address ? "address-error" : undefined}
+            className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? "border-red-400" : "border-input"}`}
+          >
+            <option value="">Select a barangay</option>
+            {/* Keep an older free-text address selectable when editing. */}
+            {form.address && !BARANGAYS.includes(form.address) && (
+              <option value={form.address}>{form.address}</option>
+            )}
+            {BARANGAYS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+          {errors.address && (
+            <p id="address-error" role="alert" className="text-red-700 dark:text-red-400 text-xs">
+              {errors.address[0]}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Section: Connection Details */}
@@ -230,6 +275,13 @@ export default function SubscriberForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field("MAC Address", "mac_address", "text", {
             placeholder: "XX:XX:XX:XX:XX:XX",
+            maxLength: 17,
+            autoComplete: "off",
+            spellCheck: false,
+            onChange: (e) => {
+              const next = formatMac(e.target.value);
+              setForm((prev) => ({ ...prev, mac_address: next }));
+            },
           })}
           {field("Connection Date", "connection_date", "date", {}, true)}
         </div>
