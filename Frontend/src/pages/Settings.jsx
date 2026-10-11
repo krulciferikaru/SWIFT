@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
 import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
+import PaymentMethodsManager from '../components/PaymentMethodsManager.jsx'
 import { useToast } from '../hooks/useToast'
 import smsApi from '../api/sms'
 import subscriberApi from '../api/subscribers'
@@ -197,6 +198,8 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {user?.role === 'admin' && <PaymentMethodsManager showToast={showToast} />}
 
       {user?.role === 'admin' && <CompanyInfoForm showToast={showToast} />}
 
