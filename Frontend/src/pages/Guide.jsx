@@ -418,7 +418,7 @@ export default function Guide() {
           <CardContent className="flex items-start gap-3">
             <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <p className="text-sm text-blue-900 dark:text-blue-300">
-              Forgot your password? There's no self-reset — ask an Admin to reset it for you from the Manage Roles page.
+              Forgot your password? There's no self-reset yet. Contact the office, or ask an Admin to reset it for you from the Manage Roles page. After 5 wrong passwords, sign-in for that account pauses for 15 minutes, and the page counts down. Tick "Keep me signed in" to stay signed in for 30 days on your own device; otherwise you are signed out when you close the browser or after a working day.
             </p>
           </CardContent>
         </Card>
