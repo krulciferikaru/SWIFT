@@ -30,53 +30,75 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Wallet,
+  Archive,
+  ScrollText,
+  Menu,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-const navItemsByRole = {
-  admin: [
-    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Subscribers", path: "/subscribers", icon: Users2 },
-    {
-      label: "Pending Approvals",
-      path: "/approvals",
-      icon: ClipboardCheck,
-      showBadge: true,
-    },
-    { label: "Service Plans", path: "/plans", icon: Wifi },
-    { label: "Payments", path: "/payments", icon: Wallet },
-    { label: "Reports", path: "/reports", icon: FileText },
-    { label: "Manage Roles", path: "/users", icon: ShieldCheck },
-    { label: "Settings", path: "/settings", icon: SettingsIcon },
-    { label: "Guide", path: "/guide", icon: HelpCircle },
-  ],
-  secretary: [
-    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Subscribers", path: "/subscribers", icon: Users2 },
-    {
-      label: "Pending Approvals",
-      path: "/approvals",
-      icon: ClipboardCheck,
-      showBadge: true,
-    },
-    { label: "Service Plans", path: "/plans", icon: Wifi },
-    { label: "Payments", path: "/payments", icon: Wallet },
-    { label: "Reports", path: "/reports", icon: FileText },
-    { label: "Settings", path: "/settings", icon: SettingsIcon },
-    { label: "Guide", path: "/guide", icon: HelpCircle },
-  ],
-  subscriber: [
-    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Settings", path: "/settings", icon: SettingsIcon },
-    { label: "Guide", path: "/guide", icon: HelpCircle },
-  ],
+// The menu is split into labelled sections. Each section only appears for people who have at
+// least one page in it. "bottom" sections sit at the foot of the menu, away from the work pages.
+const STAFF = ["admin", "secretary"];
+const EVERYONE = ["admin", "secretary", "subscriber"];
+
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [{ label: "Dashboard", path: "/dashboard", icon: LayoutDashboard, roles: EVERYONE }],
+  },
+  {
+    label: "Customers",
+    items: [
+      { label: "Subscribers", path: "/subscribers", icon: Users2, roles: STAFF },
+      { label: "Pending Approvals", path: "/approvals", icon: ClipboardCheck, roles: STAFF, showBadge: true },
+      { label: "Service Plans", path: "/plans", icon: Wifi, roles: STAFF },
+    ],
+  },
+  {
+    label: "Billing",
+    items: [
+      { label: "Payments", path: "/payments", icon: Wallet, roles: STAFF },
+      { label: "Reports", path: "/reports", icon: FileText, roles: STAFF },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { label: "Archive", path: "/archive", icon: Archive, roles: STAFF },
+      { label: "Manage Roles", path: "/users", icon: ShieldCheck, roles: ["admin"] },
+      { label: "Audit Trail", path: "/audit", icon: ScrollText, roles: ["admin"] },
+    ],
+  },
+  {
+    label: "Support",
+    bottom: true,
+    items: [
+      { label: "Settings", path: "/settings", icon: SettingsIcon, roles: EVERYONE },
+      { label: "Guide", path: "/guide", icon: HelpCircle, roles: EVERYONE },
+    ],
+  },
+];
+
+// Which permission a staff member needs to see each menu item (admin-only pages included).
+const PATH_PERMISSION = {
+  "/subscribers": "subscribers.view",
+  "/approvals": "approvals.manage",
+  "/payments": ["payments.view", "payments.record"],
+  "/reports": "reports.view",
+  "/archive": "archive.manage",
+  "/users": "users.manage",
+  "/audit": "audit.view",
 };
 
-export default function Sidebar({ open, onToggle }) {
+export default function Sidebar({ open: pinned, onToggle }) {
+  const [hovered, setHovered] = useState(false);
+  // While collapsed, hovering expands the sidebar temporarily as an overlay.
+  const open = pinned || hovered;
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { pendingCount, refreshPendingCount, claimsCount, refreshClaimsCount } =
     useApprovals();
@@ -84,9 +106,30 @@ export default function Sidebar({ open, onToggle }) {
   const [skipNextTime, setSkipNextTime] = useState(false);
   const [tooltip, setTooltip] = useState(null); // { label, top }
   const asideRef = useRef(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navItems = navItemsByRole[user?.role] || [];
-  const canSeeApprovals = user?.role === "admin" || user?.role === "secretary";
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen]);
+
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter(
+      (item) =>
+        item.roles.includes(user?.role) &&
+        (!PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path]))),
+    ),
+  })).filter((group) => group.items.length > 0);
+  const canSeeApprovals = can("approvals.manage");
   const totalApprovalsCount = pendingCount + claimsCount;
 
   useEffect(() => {
@@ -121,9 +164,16 @@ export default function Sidebar({ open, onToggle }) {
   };
 
   return (
+    <>
     <aside
       ref={asideRef}
-      className={`fixed inset-y-0 left-0 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col border-r border-gray-200 dark:border-gray-800 transition-all duration-200 ${open ? "w-60" : "w-16"}
+      aria-label="Sidebar"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => {
+        setHovered(false);
+        hideTooltip();
+      }}
+      className={`fixed inset-y-0 left-0 z-40 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 hidden md:flex flex-col border-r border-gray-200 dark:border-gray-800 transition-all duration-200 ${open ? "w-60" : "w-16"} ${hovered && !pinned ? "shadow-xl" : ""}
 `}
     >
       <div
@@ -140,12 +190,18 @@ export default function Sidebar({ open, onToggle }) {
             {/* Toggle - separate button beside the logo */}
             <button
               onClick={onToggle}
-              onMouseEnter={(e) => showTooltip(e, "Close sidebar")}
+              onMouseEnter={(e) =>
+                showTooltip(e, pinned ? "Close sidebar" : "Keep sidebar open")
+              }
               onMouseLeave={hideTooltip}
-              aria-label="Collapse sidebar"
+              aria-label={pinned ? "Collapse sidebar" : "Keep sidebar open"}
               className="flex items-center justify-center size-8 rounded-md hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
             >
-              <PanelLeftClose className="size-4" />
+              {pinned ? (
+                <PanelLeftClose className="size-4" />
+              ) : (
+                <PanelLeftOpen className="size-4" />
+              )}
             </button>
           </>
         ) : (
@@ -168,15 +224,49 @@ export default function Sidebar({ open, onToggle }) {
       </div>
 
       <nav
+        aria-label="Main"
+        data-tour="nav"
         className={`flex-1 p-2 space-y-1 flex flex-col ${!open ? "items-center" : ""}`}
       >
-        {navItems.map((item) => {
+        {groups.map((group, gi) => (
+          <div
+            key={group.label}
+            role="group"
+            aria-label={group.label}
+            className={`flex flex-col space-y-1 ${!open ? "items-center" : "w-full"} ${
+              group.bottom ? "mt-auto border-t border-gray-200 dark:border-gray-800 pt-2" : ""
+            }`}
+          >
+            {open ? (
+              !group.bottom && (
+                <p
+                  aria-hidden="true"
+                  className={`px-3 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 ${gi === 0 ? "pt-1" : "pt-3"}`}
+                >
+                  {group.label}
+                </p>
+              )
+            ) : (
+              gi > 0 && !group.bottom && (
+                <span aria-hidden="true" className="my-1 h-px w-6 bg-gray-200 dark:bg-gray-800" />
+              )
+            )}
+            {group.items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (
             <Link
               key={item.path}
               to={item.path}
+              data-tour={`nav-${item.path.slice(1)}`}
+              aria-label={
+                open
+                  ? undefined
+                  : item.showBadge && totalApprovalsCount > 0
+                    ? `${item.label}, ${totalApprovalsCount} waiting`
+                    : item.label
+              }
+              aria-current={isActive ? "page" : undefined}
               onMouseEnter={(e) => showTooltip(e, item.label)}
               onMouseLeave={hideTooltip}
               className={`relative flex items-center rounded-md text-sm transition-colors ${
@@ -205,6 +295,7 @@ export default function Sidebar({ open, onToggle }) {
                   }`}
                 >
                   {totalApprovalsCount}
+                  <span className="sr-only"> waiting</span>
                 </Badge>
               )}
               {!open && item.showBadge && pendingCount > 0 && (
@@ -213,6 +304,8 @@ export default function Sidebar({ open, onToggle }) {
             </Link>
           );
         })}
+          </div>
+        ))}
       </nav>
 
       <div
@@ -221,6 +314,8 @@ export default function Sidebar({ open, onToggle }) {
         <Button
           variant="outline"
           size="icon"
+          data-tour="theme-toggle"
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           onClick={toggleTheme}
           onMouseEnter={(e) =>
             showTooltip(
@@ -252,6 +347,7 @@ export default function Sidebar({ open, onToggle }) {
 
         <Button
           onClick={requestLogout}
+          aria-label="Logout"
           onMouseEnter={(e) => showTooltip(e, "Logout")}
           onMouseLeave={hideTooltip}
           variant="destructive"
@@ -268,6 +364,7 @@ export default function Sidebar({ open, onToggle }) {
       {tooltip &&
         createPortal(
           <div
+            aria-hidden="true"
             className="fixed z-9999 -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-900 dark:bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-white dark:text-gray-900 shadow-lg pointer-events-none"
             style={{ left: open ? 248 : 72, top: tooltip.top }}
           >
@@ -309,5 +406,137 @@ export default function Sidebar({ open, onToggle }) {
         </AlertDialogContent>
       </AlertDialog>
     </aside>
+
+    {/* Phones: top bar with a dropdown menu instead of the side panel */}
+    <header className="md:hidden fixed inset-x-0 top-0 z-40 h-14 flex items-center justify-between px-4 bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800">
+      <Link to="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
+        <img src="/SWIFT_Logo.svg" alt="" className="size-6" />
+        <span className="text-primary">SWIFT</span>
+      </Link>
+      <div className="flex items-center gap-1">
+        {canSeeApprovals && totalApprovalsCount > 0 && !mobileOpen && (
+          <Badge
+            variant="outline"
+            className="h-5 px-1.5 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700"
+          >
+            {totalApprovalsCount}
+          </Badge>
+        )}
+        <button
+          type="button"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-menu"
+          data-tour="mobile-menu"
+          className="flex items-center justify-center size-10 rounded-md hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+        >
+          {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+        </button>
+      </div>
+    </header>
+
+    {mobileOpen && (
+      <div className="md:hidden fixed inset-0 top-14 z-30">
+        <div
+          className="absolute inset-0 bg-black/40"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+        <nav
+          id="mobile-menu"
+          aria-label="Main menu"
+          className="absolute inset-x-0 top-0 max-h-full overflow-y-auto bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-800 shadow-lg p-2"
+        >
+          {groups.map((group, gi) => (
+            <div
+              key={group.label}
+              role="group"
+              aria-label={group.label}
+              className={gi > 0 ? "mt-1 border-t border-gray-200 dark:border-gray-800 pt-1" : ""}
+            >
+              {!group.bottom && (
+                <p
+                  aria-hidden="true"
+                  className="px-3 pt-2 pb-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                >
+                  {group.label}
+                </p>
+              )}
+              {group.items.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center justify-between rounded-md px-3 py-3 text-sm transition-colors ${
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <Icon className="size-4 shrink-0" />
+                  {item.label}
+                </span>
+                {item.showBadge && totalApprovalsCount > 0 && (
+                  <Badge
+                    variant="outline"
+                    className={`h-5 px-1.5 text-xs ${
+                      isActive
+                        ? "bg-white/20 text-white border-white/30"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700"
+                    }`}
+                  >
+                    {totalApprovalsCount}
+                  </Badge>
+                )}
+              </Link>
+            );
+          })}
+            </div>
+          ))}
+
+          <div className="my-2 border-t border-gray-200 dark:border-gray-800" />
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+          >
+            {theme === "dark" ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
+            {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          </button>
+
+          {user && (
+            <div className="px-3 py-2 text-xs">
+              <p className="font-medium truncate">{user.name}</p>
+              <p className="text-gray-500 dark:text-gray-400 capitalize">
+                {user.role}
+              </p>
+            </div>
+          )}
+
+          <Button
+            onClick={() => {
+              setMobileOpen(false);
+              requestLogout();
+            }}
+            variant="destructive"
+            className="w-full justify-start gap-2 mt-1"
+          >
+            <LogOut className="size-4" />
+            Logout
+          </Button>
+        </nav>
+      </div>
+    )}
+    </>
   );
 }

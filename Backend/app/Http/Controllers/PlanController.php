@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Http\Requests\Plan\StorePlanRequest;
 use App\Http\Requests\Plan\UpdatePlanRequest;
 use App\Models\Plan;
@@ -17,6 +18,8 @@ class PlanController extends Controller
     {
         $plan = Plan::create($request->validated());
 
+        Audit::log('plan.created', $plan);
+
         return response()->json([
             'message' => 'Plan created.',
             'plan' => $plan,
@@ -30,7 +33,10 @@ class PlanController extends Controller
 
     public function update(UpdatePlanRequest $request, Plan $plan)
     {
+        $before = $plan->getOriginal();
         $plan->update($request->validated());
+
+        Audit::log('plan.updated', $plan, null, Audit::diff($before, $plan));
 
         return response()->json([
             'message' => 'Plan updated.',
@@ -38,10 +44,13 @@ class PlanController extends Controller
         ]);
     }
 
+    /** Archives the plan (soft delete); permanent deletion lives in the Archive module. */
     public function destroy(Plan $plan)
     {
         $plan->delete();
 
-        return response()->json(['message' => 'Plan deleted.']);
+        Audit::log('plan.archived', $plan);
+
+        return response()->json(['message' => 'Plan archived.']);
     }
 }

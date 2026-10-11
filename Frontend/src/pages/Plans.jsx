@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
+import { TableSkeleton } from '../components/Skeletons.jsx'
+import { Archive, ChevronRight, MousePointerClick, Pencil } from 'lucide-react'
+import { errorMessage } from '../utils/errors'
+import { useOnReconnect } from '../hooks/useOnline'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +31,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../context/AuthContext'
+import TourButton from "../components/TourButton.jsx";
+import Toast from "../components/Toast.jsx";
+import PlanDetailsModal from "./PlanDetailsModal";
 
 const emptyForm = { plan_name: '', monthly_rate: '', description: '', speed_mbps: '', status: 'Active' }
 
@@ -40,11 +47,13 @@ export default function Plans() {
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [detailsPlan, setDetailsPlan] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const { toast, showToast } = useToast()
-  const { user } = useAuth()
-  const canDelete = user?.role === 'admin'
+  const { can } = useAuth()
+  const canArchive = can('plans.manage')
+  const canManage = canArchive
 
   const fetchPlans = async () => {
     setLoading(true)
@@ -53,7 +62,7 @@ export default function Plans() {
       const response = await api.get('/plans')
       setPlans(response.data)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load plans.')
+      setError(errorMessage(err, 'Failed to load plans.'))
     } finally {
       setLoading(false)
     }
@@ -62,6 +71,8 @@ export default function Plans() {
   useEffect(() => {
     fetchPlans()
   }, [])
+
+  useOnReconnect(fetchPlans)
 
   const openAddModal = () => {
     setEditingId(null)
@@ -123,9 +134,9 @@ export default function Plans() {
     try {
       await api.delete(`/plans/${deleteTarget.plan_id}`)
       setPlans((prev) => prev.filter((p) => p.plan_id !== deleteTarget.plan_id))
-      showToast(`"${deleteTarget.plan_name}" was deleted.`)
+      showToast(`"${deleteTarget.plan_name}" was archived.`)
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to delete plan.', 'error')
+      showToast(err.response?.data?.message || 'Failed to archive plan.', 'error')
     } finally {
       setDeleteLoading(false)
       setDeleteTarget(null)
@@ -138,41 +149,25 @@ export default function Plans() {
         <div className="flex items-center justify-between mb-6">
           {loading ? (
             <>
+              <h1 className="sr-only">Service Plans</h1>
               <Skeleton className="h-8 w-40" />
               <Skeleton className="h-9 w-28" />
             </>
           ) : (
             <>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
-              <Button onClick={openAddModal}>Add Plan</Button>
+              <div className="flex gap-2">
+                <TourButton tour="plans" />
+                {canManage && <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>}
+              </div>
             </>
           )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead><Skeleton className="h-4 w-12" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-10" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-14" /></TableHead>
-                <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <TableSkeleton rows={5} columns={[
+            { label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' },
+            { label: 'Status', kind: 'badge' }, { label: 'Actions', kind: 'actions' },
+          ]} />
         </div>
       </div>
     )
@@ -180,20 +175,18 @@ export default function Plans() {
 
   return (
     <div>
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-md text-sm text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-          }`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
-        <Button onClick={openAddModal}>Add Plan</Button>
+        <div className="flex gap-2">
+                <TourButton tour="plans" />
+                {canManage && <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>}
+              </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
           {error}
         </div>
       )}
@@ -201,7 +194,13 @@ export default function Plans() {
       {plans.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">No plans yet.</p>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <>
+        <p className="mb-2 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+          <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
+          Click a plan's name to see its details. Each row also has Edit and Archive buttons.
+        </p>
+
+        <div data-tour="plans-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -216,7 +215,19 @@ export default function Plans() {
             <TableBody>
               {plans.map((plan) => (
                 <TableRow key={plan.plan_id}>
-                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">{plan.plan_name}</TableCell>
+                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                    <button
+                        data-tour="plans-name"
+                        type="button"
+                        onClick={() => setDetailsPlan(plan)}
+                        aria-haspopup="dialog"
+                        title="View details"
+                        className="group inline-flex items-center gap-0.5 text-left font-semibold text-blue-700 dark:text-blue-400 underline decoration-blue-700/40 dark:decoration-blue-400/40 underline-offset-2 hover:decoration-current focus-visible:decoration-current"
+                      >
+                        {plan.plan_name}
+                        <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                      </button>
+                  </TableCell>
                   <TableCell className="text-gray-600 dark:text-gray-400">
                     ₱{Number(plan.monthly_rate).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                   </TableCell>
@@ -233,13 +244,17 @@ export default function Plans() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(plan)}>
-                        Edit
-                      </Button>
-                      {canDelete && (
-                        <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(plan)}>
-                          Delete
+                    <div data-tour="plans-row-actions" className="flex gap-2">
+                      {canManage && (
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openEditModal(plan)} aria-label={`Edit ${plan.plan_name}`}>
+                          <Pencil className="size-3.5" aria-hidden="true" />
+                          Edit
+                        </Button>
+                      )}
+                      {canArchive && (
+                        <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setDeleteTarget(plan)} aria-label={`Archive ${plan.plan_name}`}>
+                          <Archive className="size-3.5" aria-hidden="true" />
+                          Archive
                         </Button>
                       )}
                     </div>
@@ -249,7 +264,22 @@ export default function Plans() {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
+
+      <PlanDetailsModal
+        plan={detailsPlan}
+        canArchive={canArchive}
+        onClose={() => setDetailsPlan(null)}
+        onEdit={(p) => {
+          setDetailsPlan(null)
+          openEditModal(p)
+        }}
+        onArchive={(p) => {
+          setDetailsPlan(null)
+          setDeleteTarget(p)
+        }}
+      />
 
       <Modal
         isOpen={showModal}
@@ -270,6 +300,10 @@ export default function Plans() {
         )}
       >
         <form id="plan-form" onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex justify-end">
+            <TourButton tour="planForm" />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="plan_name">
               Plan Name<span className="text-red-500 ml-0.5">*</span>
@@ -318,7 +352,7 @@ export default function Plans() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="description">Description</Label>
-              <span className="text-xs text-gray-400 dark:text-gray-500">{form.description.length}/200</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{form.description.length}/200</span>
             </div>
             <Textarea
               id="description"
@@ -330,10 +364,10 @@ export default function Plans() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div data-tour="plan-status" className="space-y-1.5">
             <Label>Status</Label>
             <Select value={form.status} onValueChange={setFieldValue('status')}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Plan status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -348,10 +382,10 @@ export default function Plans() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this plan?</AlertDialogTitle>
+            <AlertDialogTitle>Archive this plan?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget && (
-                <>You're about to delete <strong>"{deleteTarget.plan_name}"</strong>. If subscribers are currently assigned to this plan, this action may fail or affect their records. This cannot be undone.</>
+                <><strong>"{deleteTarget.plan_name}"</strong> will no longer be offered for new subscribers. Subscribers already on this plan keep it and are still billed normally. You can restore it from the Archive page.</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -362,7 +396,7 @@ export default function Plans() {
               disabled={deleteLoading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleteLoading ? 'Deleting...' : 'Delete Plan'}
+              {deleteLoading ? 'Archiving...' : 'Archive Plan'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

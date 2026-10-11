@@ -23,6 +23,9 @@
 <body>
     <h1>{{ $report_title }}</h1>
     <div class="period">Period: {{ $period_label }} ({{ $period['start'] }} to {{ $period['end'] }})</div>
+    @if (!empty($filter_labels))
+    <div class="meta">Filters: {{ implode('; ', $filter_labels) }}</div>
+    @endif
     <h2>Summary</h2>
     <table class="summary"><tr>
         <td><span class="label">Payments</span><span class="value">{{ number_format($summary['payment_count']) }}</span></td>
@@ -155,13 +158,16 @@
         <div class="eyebrow">SWIFT Reports</div>
         <h1>{{ $report_title }}</h1>
         <div class="meta">Period: {{ $period_label }} ({{ $period['start'] }} to {{ $period['end'] }})</div>
+    @if (!empty($filter_labels))
+    <div class="meta">Filters: {{ implode('; ', $filter_labels) }}</div>
+    @endif
     </div>
 
     <div class="summary-grid">
         <div class="summary-card"><div class="card"><div class="card-label">Payments</div><div class="card-value">{{ number_format($summary['payment_count']) }}</div></div></div>
         <div class="summary-card"><div class="card"><div class="card-label">Paying Subscribers</div><div class="card-value">{{ number_format($summary['paying_subscribers']) }}</div></div></div>
         <div class="summary-card"><div class="card"><div class="card-label">Total Collected</div><div class="card-value">₱{{ number_format($summary['total_collected'], 2) }}</div></div></div>
-        <div class="summary-card"><div class="card"><div class="card-label">Report Month</div><div class="card-value">{{ $month }}</div></div></div>
+        <div class="summary-card"><div class="card"><div class="card-label">Report Period</div><div class="card-value">{{ $period_label }}</div></div></div>
     </div>
 
     <div class="section">

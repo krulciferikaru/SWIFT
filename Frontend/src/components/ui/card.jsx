@@ -35,11 +35,12 @@ function CardHeader({
 }
 
 function CardTitle({
+  as: Comp = "div",
   className,
   ...props
 }) {
   return (
-    <div
+    <Comp
       data-slot="card-title"
       className={cn(
         "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",

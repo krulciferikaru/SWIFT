@@ -93,19 +93,8 @@ class ReportController extends Controller
 
     public function collections(Request $request): JsonResponse
     {
-        $period = $this->resolveMonthlyPeriod($request);
-        $data = $this->buildCollectionsData($period);
-
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
-    }
-
-    public function financialStatement(Request $request): JsonResponse
-    {
-        $period = $this->resolveMonthlyPeriod($request);
-        $data = $this->buildFinancialStatementData($period);
+        $period = $this->resolvePeriod($request);
+        $data = $this->buildCollectionsData($period, $this->resolveFilters($request));
 
         return response()->json([
             'success' => true,
@@ -115,8 +104,8 @@ class ReportController extends Controller
 
     public function collectionsPdf(Request $request)
     {
-        $period = $this->resolveMonthlyPeriod($request);
-        $data = $this->buildCollectionsData($period);
+        $period = $this->resolvePeriod($request);
+        $data = $this->buildCollectionsData($period, $this->resolveFilters($request));
 
         return $this->exports->downloadPdf(
             $this->downloadFilename('collections_report', $period, 'pdf'),
@@ -127,8 +116,8 @@ class ReportController extends Controller
 
     public function collectionsXlsx(Request $request)
     {
-        $period = $this->resolveMonthlyPeriod($request);
-        $data = $this->buildCollectionsData($period);
+        $period = $this->resolvePeriod($request);
+        $data = $this->buildCollectionsData($period, $this->resolveFilters($request));
 
         return $this->exports->downloadXlsx(
             $this->downloadFilename('collections_report', $period, 'xlsx'),
@@ -136,53 +125,132 @@ class ReportController extends Controller
         );
     }
 
-    public function financialStatementPdf(Request $request)
-    {
-        $period = $this->resolveMonthlyPeriod($request);
-        $data = $this->buildFinancialStatementData($period);
-
-        return $this->exports->downloadPdf(
-            $this->downloadFilename('financial_statement', $period, 'pdf'),
-            'reports.financial-statement',
-            $data
-        );
-    }
-
-    public function financialStatementXlsx(Request $request)
-    {
-        $period = $this->resolveMonthlyPeriod($request);
-        $data = $this->buildFinancialStatementData($period);
-
-        return $this->exports->downloadXlsx(
-            $this->downloadFilename('financial_statement', $period, 'xlsx'),
-            $this->buildFinancialStatementXlsxRows($data)
-        );
-    }
-
-    private function resolveMonthlyPeriod(Request $request): array
+    /**
+     * Resolves the report window from ?range=monthly|three_months|annual|custom.
+     *   custom        -> ?from=YYYY-MM-DD&to=YYYY-MM-DD (at most 5 years; never past today)
+     *   monthly       -> ?month=YYYY-MM (defaults to the current month)
+     *   three_months  -> rolling window: the same day 3 months ago through today
+     *   annual        -> ?year=YYYY (defaults to the current year; the current
+     *                    year stops at today so future months aren't billed)
+     */
+    private function resolvePeriod(Request $request): array
     {
         $validated = $request->validate([
+            'range' => ['nullable', 'in:monthly,three_months,annual,custom'],
             'month' => ['nullable', 'date_format:Y-m'],
+            'year' => ['nullable', 'date_format:Y'],
+            'from' => ['required_if:range,custom', 'nullable', 'date_format:Y-m-d'],
+            'to' => [
+                'required_if:range,custom', 'nullable', 'date_format:Y-m-d', 'after_or_equal:from',
+                function ($attribute, $value, $fail) use ($request) {
+                    $from = $request->input('from');
+                    if ($from && $value && Carbon::parse($from)->diffInDays(Carbon::parse($value)) > 1830) {
+                        $fail('Choose a date range of 5 years or less.');
+                    }
+                },
+            ],
         ]);
 
-        $month = $validated['month'] ?? now()->format('Y-m');
-        $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
-        $end = $start->copy()->endOfMonth();
+        $range = $validated['range'] ?? 'monthly';
+        $today = now()->endOfDay();
+
+        if ($range === 'custom') {
+            $start = Carbon::createFromFormat('Y-m-d', $validated['from'])->startOfDay();
+            $end = Carbon::createFromFormat('Y-m-d', $validated['to'])->endOfDay();
+            $label = $start->format('M j, Y') . ' - ' . $end->format('M j, Y');
+            $key = $start->toDateString() . '_to_' . $end->toDateString();
+            // Nothing is billed or collected in the future.
+            if ($end->gt($today)) {
+                $end = $today;
+            }
+        } elseif ($range === 'three_months') {
+            $start = now()->subMonths(3)->startOfDay();
+            $end = $today;
+            $key = 'last-3-months';
+            $label = 'Last 3 Months (' . $start->format('M j, Y') . ' - ' . $end->format('M j, Y') . ')';
+        } elseif ($range === 'annual') {
+            $year = $validated['year'] ?? now()->format('Y');
+            $start = Carbon::createFromFormat('Y-m-d', $year . '-01-01')->startOfDay();
+            $end = $start->copy()->endOfYear();
+            if ($end->gt($today)) {
+                $end = $today;
+            }
+            $key = $year;
+            $label = 'Year ' . $year;
+        } else {
+            $month = $validated['month'] ?? now()->format('Y-m');
+            $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+            $key = $month;
+            $label = $start->format('F Y');
+        }
 
         return [
-            'month' => $month,
-            'label' => $start->format('F Y'),
+            'range' => $range,
+            'month' => $key,
+            'label' => $label,
             'start' => $start,
             'end' => $end,
         ];
     }
 
-    private function buildCollectionsData(array $period): array
+    /**
+     * Optional narrowing for the on-screen report and the PDF / Excel files:
+     * ?subscriber_id= ?plan_id= ?payment_method= ?or_number=
+     */
+    private function resolveFilters(Request $request): array
     {
-        $baseQuery = Payment::query()->whereBetween('payment_date', [
-            $period['start']->toDateString(),
-            $period['end']->toDateString(),
+        $v = $request->validate([
+            'subscriber_id' => ['nullable', 'integer', 'exists:subscriber,subscriber_id'],
+            'plan_id' => ['nullable', 'integer', 'exists:plan,plan_id'],
+            'payment_method' => ['nullable', 'string', 'max:50'],
+            'or_number' => ['nullable', 'string', 'max:50'],
         ]);
+
+        return [
+            'subscriber_id' => isset($v['subscriber_id']) ? (int) $v['subscriber_id'] : null,
+            'plan_id' => isset($v['plan_id']) ? (int) $v['plan_id'] : null,
+            'payment_method' => ($v['payment_method'] ?? '') !== '' ? $v['payment_method'] : null,
+            'or_number' => ($v['or_number'] ?? '') !== '' ? trim($v['or_number']) : null,
+        ];
+    }
+
+    /** The filters in words, for the top of a report: ["Subscriber: Juan Cruz", "Payment method: GCash"]. */
+    private function filterLabels(array $filters, array $use): array
+    {
+        $labels = [];
+
+        if (in_array('subscriber_id', $use, true) && $filters['subscriber_id']) {
+            $name = Subscriber::withTrashed()->find($filters['subscriber_id'])?->name;
+            $labels[] = 'Subscriber: ' . ($name ?? '#' . $filters['subscriber_id']);
+        }
+        if (in_array('plan_id', $use, true) && $filters['plan_id']) {
+            $name = \App\Models\Plan::withTrashed()->find($filters['plan_id'])?->plan_name;
+            $labels[] = 'Plan: ' . ($name ?? '#' . $filters['plan_id']);
+        }
+        if (in_array('payment_method', $use, true) && $filters['payment_method']) {
+            $labels[] = 'Payment method: ' . $filters['payment_method'];
+        }
+        if (in_array('or_number', $use, true) && $filters['or_number']) {
+            $labels[] = 'OR number contains: ' . $filters['or_number'];
+        }
+
+        return $labels;
+    }
+
+    private function buildCollectionsData(array $period, array $filters = []): array
+    {
+        $filters += ['subscriber_id' => null, 'plan_id' => null, 'payment_method' => null, 'or_number' => null];
+
+        $baseQuery = Payment::query()
+            ->whereBetween('payment_date', [
+                $period['start']->toDateString(),
+                $period['end']->toDateString(),
+            ])
+            ->when($filters['subscriber_id'], fn ($q, $id) => $q->where('subscriber_id', $id))
+            ->when($filters['payment_method'], fn ($q, $m) => $q->where('payment_method', $m))
+            ->when($filters['or_number'], fn ($q, $or) => $q->where('or_number', 'like', '%' . $or . '%'))
+            ->when($filters['plan_id'], fn ($q, $plan) => $q->whereHas('subscriber', fn ($s) => $s->where('plan_id', $plan)));
 
         $payments = (clone $baseQuery)
             ->with(['subscriber.plan'])
@@ -213,6 +281,10 @@ class ReportController extends Controller
                 $period['start']->toDateString(),
                 $period['end']->toDateString(),
             ])
+            ->when($filters['subscriber_id'], fn ($q, $id) => $q->where('payments.subscriber_id', $id))
+            ->when($filters['payment_method'], fn ($q, $m) => $q->where('payments.payment_method', $m))
+            ->when($filters['or_number'], fn ($q, $or) => $q->where('payments.or_number', 'like', '%' . $or . '%'))
+            ->when($filters['plan_id'], fn ($q, $plan) => $q->where('subscriber.plan_id', $plan))
             ->selectRaw('COALESCE(plan.plan_id, 0) as plan_id, COALESCE(plan.plan_name, "Unassigned") as plan_name, COUNT(*) as payment_count, COUNT(DISTINCT payments.subscriber_id) as subscriber_count, SUM(payments.amount) as total_collected')
             ->groupBy('plan.plan_id', 'plan.plan_name')
             ->orderByDesc('total_collected')
@@ -241,13 +313,16 @@ class ReportController extends Controller
 
         return [
             'report_type' => 'collections',
-            'report_title' => 'Monthly Collection Report',
+            'report_title' => 'Collection Report',
+            'range' => $period['range'],
             'month' => $period['month'],
             'period_label' => $period['label'],
             'period' => [
                 'start' => $period['start']->toDateString(),
                 'end' => $period['end']->toDateString(),
             ],
+            'filters' => $filters,
+            'filter_labels' => $this->filterLabels($filters, ['subscriber_id', 'plan_id', 'payment_method', 'or_number']),
             'summary' => [
                 'payment_count' => (clone $baseQuery)->count(),
                 'paying_subscribers' => (clone $baseQuery)->distinct()->count('subscriber_id'),
@@ -256,96 +331,6 @@ class ReportController extends Controller
             'by_plan' => $planBreakdown,
             'by_method' => $methodBreakdown,
             'payments' => $payments,
-        ];
-    }
-
-    private function buildFinancialStatementData(array $period): array
-    {
-        $subscribers = Subscriber::with('plan')->where('account_status', 'active')->orderBy('name')->get();
-
-        $rows = [];
-        $planSummary = [];
-        $summary = [
-            'subscriber_count' => 0,
-            'total_owed' => 0.0,
-            'total_paid' => 0.0,
-            'total_outstanding' => 0.0,
-            'total_advance_credit' => 0.0,
-            'total_months_behind' => 0,
-            'active_subscribers' => 0,
-            'unpaid_subscribers' => 0,
-            'disconnected_subscribers' => 0,
-        ];
-
-        foreach ($subscribers as $subscriber) {
-            /** @var Subscriber $subscriber */
-
-            $breakdown = $this->billing->getBreakdown($subscriber, $period['end']);
-            $planId = $subscriber->plan?->plan_id ?? 0;
-            $planName = $subscriber->plan?->plan_name ?? 'Unassigned';
-
-            $rows[] = [
-                'subscriber_id' => $subscriber->subscriber_id,
-                'name' => $subscriber->name,
-                'plan_name' => $planName,
-                'status' => $subscriber->status,
-                'monthly_rate' => (float) $breakdown['monthly_rate'],
-                'total_owed' => (float) $breakdown['total_owed'],
-                'total_paid' => (float) $breakdown['total_paid'],
-                'balance' => (float) $breakdown['balance'],
-                'advance_credit' => (float) $breakdown['advance_credit'],
-                'months_behind' => (int) $breakdown['months_behind'],
-            ];
-
-            $summary['subscriber_count']++;
-            $summary['total_owed'] += (float) $breakdown['total_owed'];
-            $summary['total_paid'] += (float) $breakdown['total_paid'];
-            $summary['total_outstanding'] += (float) $breakdown['balance'];
-            $summary['total_advance_credit'] += (float) $breakdown['advance_credit'];
-            $summary['total_months_behind'] += (int) $breakdown['months_behind'];
-
-            $summaryKey = match ($subscriber->status) {
-                'Active' => 'active_subscribers',
-                'Unpaid' => 'unpaid_subscribers',
-                'Disconnected' => 'disconnected_subscribers',
-                default => null,
-            };
-
-            if ($summaryKey) {
-                $summary[$summaryKey]++;
-            }
-
-            if (! isset($planSummary[$planId])) {
-                $planSummary[$planId] = [
-                    'plan_id' => $planId,
-                    'plan_name' => $planName,
-                    'subscriber_count' => 0,
-                    'total_owed' => 0.0,
-                    'total_paid' => 0.0,
-                    'total_outstanding' => 0.0,
-                    'total_advance_credit' => 0.0,
-                ];
-            }
-
-            $planSummary[$planId]['subscriber_count']++;
-            $planSummary[$planId]['total_owed'] += (float) $breakdown['total_owed'];
-            $planSummary[$planId]['total_paid'] += (float) $breakdown['total_paid'];
-            $planSummary[$planId]['total_outstanding'] += (float) $breakdown['balance'];
-            $planSummary[$planId]['total_advance_credit'] += (float) $breakdown['advance_credit'];
-        }
-
-        return [
-            'report_type' => 'financial_statement',
-            'report_title' => 'Financial Statement',
-            'month' => $period['month'],
-            'period_label' => $period['label'],
-            'period' => [
-                'start' => $period['start']->toDateString(),
-                'end' => $period['end']->toDateString(),
-            ],
-            'summary' => $summary,
-            'by_plan' => array_values($planSummary),
-            'subscribers' => $rows,
         ];
     }
 
@@ -383,6 +368,7 @@ class ReportController extends Controller
         $rows = [
             [$data['report_title']],
             ['Period: ' . $data['period_label'] . ' (' . $data['period']['start'] . ' to ' . $data['period']['end'] . ')'],
+            ['Filters: ' . ($data['filter_labels'] ? implode('; ', $data['filter_labels']) : 'none')],
             [],
             ['Summary'],
             ['Payments', $data['summary']['payment_count']],
@@ -427,61 +413,6 @@ class ReportController extends Controller
                 $payment['or_number'] ?? '—',
                 $payment['payment_method'] ?? '—',
                 $payment['amount'],
-            ];
-        }
-
-        return $rows;
-    }
-
-    private function buildFinancialStatementXlsxRows(array $data): array
-    {
-        $rows = [
-            [$data['report_title']],
-            ['Period: ' . $data['period_label'] . ' (' . $data['period']['start'] . ' to ' . $data['period']['end'] . ')'],
-            [],
-            ['Summary'],
-            ['Subscribers', $data['summary']['subscriber_count']],
-            ['Total Receivables', $data['summary']['total_owed']],
-            ['Total Paid', $data['summary']['total_paid']],
-            ['Outstanding', $data['summary']['total_outstanding']],
-            ['Credit', $data['summary']['total_advance_credit']],
-            [],
-            ['Status Snapshot'],
-            ['Active', $data['summary']['active_subscribers']],
-            ['Unpaid', $data['summary']['unpaid_subscribers']],
-            ['Disconnected', $data['summary']['disconnected_subscribers']],
-            ['Months Behind', $data['summary']['total_months_behind']],
-            [],
-            ['Financial Position by Plan'],
-            ['Plan', 'Subscribers', 'Receivables', 'Paid', 'Outstanding', 'Credit'],
-        ];
-
-        foreach ($data['by_plan'] as $plan) {
-            $rows[] = [
-                $plan['plan_name'],
-                $plan['subscriber_count'],
-                $plan['total_owed'],
-                $plan['total_paid'],
-                $plan['total_outstanding'],
-                $plan['total_advance_credit'],
-            ];
-        }
-
-        $rows[] = [];
-        $rows[] = ['Subscriber Ledger'];
-        $rows[] = ['Subscriber', 'Plan', 'Status', 'Monthly Rate', 'Receivables', 'Paid', 'Balance', 'Credit', 'Months Behind'];
-
-        foreach ($data['subscribers'] as $subscriber) {
-            $rows[] = [
-                $subscriber['name'] ?? '—',
-                $subscriber['plan_name'] ?? '—',
-                $subscriber['status'] ?? '—',
-                $subscriber['monthly_rate'],
-                $subscriber['total_owed'],
-                $subscriber['total_paid'],
-                $subscriber['balance'],
-                $subscriber['advance_credit'],
-                $subscriber['months_behind'],
             ];
         }
 

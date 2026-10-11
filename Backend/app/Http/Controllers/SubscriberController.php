@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscriber\StoreSubscriberRequest;
 use App\Http\Requests\Subscriber\UpdateSubscriberRequest;
 use App\Models\Subscriber;
+use App\Models\User;
 use App\Services\BillingService;
 use App\Services\PhilSmsService;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,7 +37,7 @@ class SubscriberController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Subscriber::with('plan')
+        $query = Subscriber::with(['plan', 'user:id,subscriber_id,contact_number,contact_verified_at'])
             ->select([
                 'subscriber_id',
                 'plan_id',
@@ -98,6 +99,8 @@ class SubscriberController extends Controller
         // Load the plan relationship for the response
         $subscriber->load('plan');
 
+        Audit::log('subscriber.created', $subscriber);
+
         return response()->json([
             'success' => true,
             'message' => 'Subscriber created successfully.',
@@ -114,6 +117,7 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::with([
             'plan',
+            'user:id,subscriber_id,contact_number,contact_verified_at',
             'payments' => fn($q) => $q->latest('payment_date')->limit(12),
         ])->findOrFail($id);
 
@@ -133,9 +137,12 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::findOrFail($id);
         $previousStatus = $subscriber->status;
+        $before = $subscriber->getOriginal();
 
         $subscriber->update($request->validated());
         $subscriber->load('plan');
+
+        Audit::log('subscriber.updated', $subscriber, null, Audit::diff($before, $subscriber));
 
         $this->notifyStatusChange($subscriber, $previousStatus);
 
@@ -149,35 +156,22 @@ class SubscriberController extends Controller
     /**
      * DELETE /api/subscribers/{subscriber}
      *
-     * Deletes a subscriber record.
-     * Only accessible by Admin role.
-     *
-     * Note: This performs a hard delete. If the subscriber has payment history,
-     * the foreign key constraint will block the deletion — handle this in
-     * the React UI by warning the user first.
+     * Archives the subscriber (soft delete) and signs out any linked login.
+     * Permanent deletion lives in the Archive module.
      */
     public function destroy(Subscriber $subscriber): JsonResponse
     {
-        // Block deletion if subscriber has payment records.
-        if ($subscriber->payments()->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete subscriber with existing payment records. Set status to Disconnected instead.',
-            ], 422);
-        }
+        User::where('subscriber_id', $subscriber->subscriber_id)->each(
+            fn (User $user) => $user->tokens()->delete()
+        );
 
-        try {
-            $subscriber->delete();
-        } catch (QueryException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to delete subscriber. It may be linked to other records.',
-            ], 500);
-        }
+        $subscriber->delete();
+
+        Audit::log('subscriber.archived', $subscriber);
 
         return response()->json([
             'success' => true,
-            'message' => 'Subscriber deleted successfully.',
+            'message' => 'Subscriber archived.',
         ]);
     }
 
@@ -196,6 +190,10 @@ class SubscriberController extends Controller
         $subscriber = Subscriber::findOrFail($id);
         $previousStatus = $subscriber->status;
         $subscriber->update(['status' => $request->status]);
+
+        Audit::log('subscriber.status_changed', $subscriber, null, [
+            'status' => ['old' => $previousStatus, 'new' => $subscriber->status],
+        ]);
 
         $this->notifyStatusChange($subscriber, $previousStatus);
 
@@ -250,6 +248,8 @@ class SubscriberController extends Controller
                     $result['success'] ? $sent++ : $failed++;
                 }
             });
+
+        Audit::log('sms.reminders_sent', null, 'Unpaid subscribers', ['sent' => $sent, 'failed' => $failed]);
 
         $message = "Sent payment reminders to {$sent} subscriber(s).";
         if ($failed > 0) {

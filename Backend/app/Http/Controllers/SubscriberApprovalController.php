@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Audit;
 use App\Models\Subscriber;
 use App\Models\User;
 use App\Services\PhilSmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class SubscriberApprovalController extends Controller
 {
@@ -36,13 +38,16 @@ class SubscriberApprovalController extends Controller
                 'name' => $subscriber->name,
                 'email' => $subscriber->email,
                 'contact_number' => $subscriber->contact_number,
-                'password' => $subscriber->password ?: Hash::make('password'),
+                // No known default password: someone without one must have it reset by an admin.
+                'password' => $subscriber->password ?: Hash::make(Str::random(40)),
                 'role' => 'subscriber',
                 'account_status' => 'active',
             ]
         );
 
         $subscriber->update(['account_status' => 'active']);
+
+        Audit::log('approval.approved', $subscriber);
 
         $this->sms->sendToSubscriber($subscriber, sprintf(
             'Hi %s, your subscriber application has been approved. You may now log in. Welcome aboard! - Jubal Brothers Cable TV Corp - Palayan Branch',
@@ -55,6 +60,8 @@ class SubscriberApprovalController extends Controller
     public function reject(Subscriber $subscriber)
     {
         $subscriber->update(['account_status' => 'rejected']);
+
+        Audit::log('approval.rejected', $subscriber);
 
         $this->sms->sendToSubscriber($subscriber, sprintf(
             'Hi %s, your subscriber application was not approved at this time. Please contact us for more information. - Jubal Brothers Cable TV Corp - Palayan Branch',
@@ -90,6 +97,8 @@ class SubscriberApprovalController extends Controller
     {
         $user->update(['account_status' => 'active']);
 
+        Audit::log('claim.approved', $user);
+
         return response()->json([
             'message' => 'Account claim approved.',
             'user' => $user->fresh(),
@@ -101,6 +110,8 @@ class SubscriberApprovalController extends Controller
         // Soft-mark as inactive instead of deleting, so rejected claims remain visible as history.
         // Uses a direct query update (not $user->update()) to be explicit this bypasses no model events.
         User::where('id', $user->id)->update(['account_status' => 'inactive']);
+
+        Audit::log('claim.rejected', $user);
 
         return response()->json(['message' => 'Account claim rejected.']);
     }

@@ -2,15 +2,26 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Services\Audit;
 use App\Http\Controllers\Controller;
 use App\Models\Subscriber;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
+    public const BARANGAYS = [
+        'Malete, Palayan City',
+        'Santolan, Palayan City',
+        'Caballero, Palayan City',
+        'Ganaderia, Palayan City',
+        'Caimito, Palayan City',
+    ];
+
     // Public self-registration for subscribers only
     public function register(Request $request)
     {
@@ -25,55 +36,68 @@ class AuthController extends Controller
             }
         }
 
-        $existingSubscriber = Subscriber::where('email', $requestData['email'] ?? null)->first();
+        $requestData['contact_number'] = trim((string) ($requestData['contact_number'] ?? ''));
+        $requestData['email'] = trim((string) ($requestData['email'] ?? '')) ?: null;
 
-        // If claiming an existing subscriber record, relax the email-uniqueness rule for that table
+        $existingSubscriber = $requestData['contact_number'] !== ''
+            ? Subscriber::where('contact_number', $requestData['contact_number'])->first()
+            : null;
+
+        // Claiming an existing subscriber record: the contact number (and any
+        // email on file) already exists in the subscriber table, so only check
+        // the users table.
+        $contactRule = $existingSubscriber
+            ? 'required|string|max:20|unique:users,contact_number'
+            : 'required|string|max:20|unique:users,contact_number|unique:subscriber,contact_number';
         $emailRule = $existingSubscriber
-            ? 'required|string|email|max:255|unique:users,email'
-            : 'required|string|email|max:255|unique:users,email|unique:subscriber,email';
+            ? 'nullable|string|email|max:255|unique:users,email'
+            : 'nullable|string|email|max:255|unique:users,email|unique:subscriber,email';
 
         $validator = Validator::make($requestData, [
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:127',
+            'last_name' => 'required|string|max:127',
+            'contact_number' => $contactRule,
             'email' => $emailRule,
             'password' => 'required|string|min:8|confirmed',
-            'contact_number' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:255',
+            'address' => ['required', 'string', Rule::in(self::BARANGAYS)],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $fullName = trim($requestData['first_name']) . ' ' . trim($requestData['last_name']);
+
         if ($existingSubscriber) {
             // Claiming an existing subscriber record — don't create a new Subscriber row.
             // Instead, create a pending User linked to the existing subscriber_id for staff to verify.
             if (User::where('subscriber_id', $existingSubscriber->subscriber_id)->exists()) {
                 return response()->json([
-                    'errors' => ['email' => ['An account for this subscriber already exists. Please contact support if you cannot log in.']],
+                    'errors' => ['contact_number' => ['An account for this subscriber already exists. Please contact support if you cannot log in.']],
                 ], 422);
             }
 
             $user = User::create([
                 'subscriber_id' => $existingSubscriber->subscriber_id,
-                'name' => $requestData['name'],
+                'name' => $fullName,
                 'email' => $requestData['email'],
-                'contact_number' => $requestData['contact_number'] ?? $existingSubscriber->contact_number,
+                'contact_number' => $requestData['contact_number'],
                 'password' => Hash::make($requestData['password']),
                 'role' => 'subscriber',
                 'account_status' => 'pending',
             ]);
 
             return response()->json([
-                'message' => 'Registration submitted. Since this email matches an existing subscriber record, our staff will verify your identity before approving your account.',
+                'message' => 'Registration submitted. Since this contact number matches an existing subscriber record, our staff will verify your identity before approving your account.',
                 'claim' => true,
                 'user' => $user,
             ], 201);
         }
 
         $subscriber = Subscriber::create([
-            'name' => $requestData['name'],
+            'name' => $fullName,
             'address' => $requestData['address'] ?? null,
-            'contact_number' => $requestData['contact_number'] ?? null,
+            'contact_number' => $requestData['contact_number'],
             'email' => $requestData['email'],
             'password' => Hash::make($requestData['password']),
             'account_status' => 'pending',
@@ -99,19 +123,42 @@ class AuthController extends Controller
             }
         }
 
-        $validator = Validator::make($requestData, [
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+        // "login" is the contact number (subscribers) or email (staff accounts).
+        // "email" is still accepted so older clients keep working.
+        $identifier = trim((string) ($requestData['login'] ?? $requestData['email'] ?? ''));
+
+        $validator = Validator::make(
+            ['login' => $identifier, 'password' => $requestData['password'] ?? null],
+            ['login' => 'required|string|max:255', 'password' => 'required|string'],
+        );
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::where('email', $requestData['email'])->first();
-        $subscriber = Subscriber::where('email', $requestData['email'])->first();
+        // Wrong-password limit per account. It counts any name typed, whether or not such an
+        // account exists, so the answer never reveals which accounts are real.
+        $lockKey = 'login-failures:'.mb_strtolower($identifier);
+        $maxFailures = config('ratelimit.login_max_failures');
+        $windowSeconds = config('ratelimit.login_lockout_minutes') * 60;
+
+        if (RateLimiter::tooManyAttempts($lockKey, $maxFailures)) {
+            return $this->lockedResponse(RateLimiter::availableIn($lockKey));
+        }
+
+        $user = User::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
+        $subscriber = Subscriber::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
 
         if (! $user || ! Hash::check($requestData['password'], $user->password)) {
+            RateLimiter::hit($lockKey, $windowSeconds);
+            $attemptsLeft = max($maxFailures - RateLimiter::attempts($lockKey), 0);
+
+            if ($attemptsLeft === 0) {
+                Audit::log('auth.locked', null, $identifier, [], $user);
+
+                return $this->lockedResponse(RateLimiter::availableIn($lockKey));
+            }
+
             if ($subscriber && $subscriber->account_status === 'pending') {
                 return response()->json(['message' => 'Your account is awaiting approval.'], 403);
             }
@@ -120,8 +167,15 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Your account has been rejected.'], 403);
             }
 
-            return response()->json(['message' => 'Invalid credentials.'], 401);
+            Audit::log('auth.login_failed', null, $identifier, [], $user);
+
+            return response()->json([
+                'message' => 'Invalid credentials.',
+                'attempts_left' => $attemptsLeft,
+            ], 401);
         }
+
+        RateLimiter::clear($lockKey);
 
         if ($user->account_status === 'pending') {
             return response()->json(['message' => 'Your account is awaiting approval.'], 403);
@@ -131,13 +185,39 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account has been rejected or deactivated. Contact a secretary or an administrator.'], 403);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // An archived subscriber's login is suspended until they are restored.
+        if ($user->subscriber_id && ! $user->subscriber) {
+            return response()->json(['message' => 'Your account is not available. Contact a secretary or an administrator.'], 403);
+        }
+
+        // "Keep me signed in" lasts longer; otherwise the sign-in ends after a working day.
+        $remember = filter_var($requestData['remember'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $expiresAt = $remember
+            ? now()->addDays(config('sanctum.remember_token_days'))
+            : now()->addHours(config('sanctum.login_token_hours'));
+
+        $token = $user->createToken('auth_token', ['*'], $expiresAt)->plainTextToken;
+
+        Audit::log('auth.login', $user, null, ['remembered' => $remember], $user);
 
         return response()->json([
             'message' => 'Login successful.',
             'user' => $user,
             'token' => $token,
+            'expires_at' => $expiresAt->toIso8601String(),
         ]);
+    }
+
+    /** 429 with how long to wait, in the body (for the countdown) and in Retry-After. */
+    private function lockedResponse(int $seconds)
+    {
+        $minutes = max((int) ceil($seconds / 60), 1);
+
+        return response()->json([
+            'message' => "Too many wrong attempts. Sign-in is paused for about {$minutes} ".($minutes === 1 ? 'minute' : 'minutes').'.',
+            'locked' => true,
+            'retry_after' => $seconds,
+        ], 429)->header('Retry-After', (string) $seconds);
     }
 
     public function logout(Request $request)

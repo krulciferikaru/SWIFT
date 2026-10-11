@@ -1,14 +1,19 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import api from '../api/axios'
+import { useOnReconnect } from '../hooks/useOnline'
+import { getToken, setToken, clearToken } from '../utils/authToken'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  // True when we could not ask the server who is signed in (offline, or the server is down).
+  // The saved login is kept, so a dropped connection does not sign anyone out.
+  const [connectionError, setConnectionError] = useState(false)
 
   const fetchCurrentUser = useCallback(async () => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) {
       setUser(null)
       setLoading(false)
@@ -17,9 +22,15 @@ export function AuthProvider({ children }) {
     try {
       const res = await api.get('/me')
       setUser(res.data) // /api/me returns the raw User object
-    } catch {
-      setUser(null)
-      localStorage.removeItem('token')
+      setConnectionError(false)
+    } catch (err) {
+      if (err.isNetworkError || err.response?.status >= 500) {
+        setConnectionError(true)
+      } else {
+        setConnectionError(false)
+        setUser(null)
+        clearToken()
+      }
     } finally {
       setLoading(false)
     }
@@ -29,8 +40,12 @@ export function AuthProvider({ children }) {
     fetchCurrentUser()
   }, [fetchCurrentUser])
 
-  const login = (token, userData) => {
-    localStorage.setItem('token', token)
+  useOnReconnect(() => {
+    if (connectionError) fetchCurrentUser()
+  })
+
+  const login = (token, userData, remember = false) => {
+    setToken(token, remember)
     setUser(userData) // login response already includes { user }
   }
 
@@ -40,13 +55,17 @@ export function AuthProvider({ children }) {
     } catch {
       // proceed with local logout regardless
     } finally {
-      localStorage.removeItem('token')
+      clearToken()
       setUser(null)
     }
   }
 
+  // True when the signed-in user holds at least one of the given permissions.
+  const can = (...permissions) =>
+    permissions.some((p) => user?.effective_permissions?.includes(p))
+
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout, refetch: fetchCurrentUser }}>
+    <AuthContext.Provider value={{ user, loading, connectionError, isAuthenticated: !!user, can, login, logout, refetch: fetchCurrentUser }}>
       {children}
     </AuthContext.Provider>
   )
