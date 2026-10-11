@@ -149,6 +149,13 @@ class AuthController extends Controller
         $user = User::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
         $subscriber = Subscriber::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
 
+        // Staff can add or change a subscriber's email/contact number after the
+        // login was created, so the users row may be out of date. Fall back to
+        // the login linked to the matching subscriber record.
+        if (! $user && $subscriber) {
+            $user = User::where('subscriber_id', $subscriber->subscriber_id)->first();
+        }
+
         if (! $user || ! Hash::check($requestData['password'], $user->password)) {
             RateLimiter::hit($lockKey, $windowSeconds);
             $attemptsLeft = max($maxFailures - RateLimiter::attempts($lockKey), 0);
