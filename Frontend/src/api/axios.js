@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { OFFLINE_MESSAGE, NETWORK_MESSAGE, TIMEOUT_MESSAGE } from '../utils/errors'
+import { getToken, clearToken } from '../utils/authToken'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
@@ -20,7 +21,7 @@ function asNetworkError(error, message) {
 
 // Attach token on every request (for when auth is ready)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
+  const token = getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -47,9 +48,12 @@ api.interceptors.response.use(
           : NETWORK_MESSAGE
       asNetworkError(error, message)
     }
-    if (error.response?.status === 401) {
-      // Token expired or invalid — clear and redirect to login
-      localStorage.removeItem('token')
+    // A wrong password is also a 401. That belongs on the sign-in page as a message; redirecting
+    // there would reload the page and wipe what the person typed.
+    const isSignInAttempt = error.config?.url === '/login'
+    if (error.response?.status === 401 && !isSignInAttempt) {
+      // Token expired or invalid: clear it and go to the sign-in page
+      clearToken()
       window.location.href = '/login'
     }
     return Promise.reject(error)

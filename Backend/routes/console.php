@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('subscribers:recalculate-status')->daily();
 Schedule::command('subscribers:send-due-reminders')->daily();
+// Sign-ins now expire; clear out the ones that have been over for a day.
+Schedule::command('sanctum:prune-expired --hours=24')->daily();

@@ -34,15 +34,18 @@ export default function CompanyContact({ variant = 'card' }) {
     ].filter(Boolean)
     if (bits.length === 0) return null
     return (
-      <p className="mt-3 text-sm text-center text-gray-600 dark:text-gray-400">
-        Need help or an account? Contact the company:{' '}
-        {bits.map((b, i) => (
-          <span key={i}>
-            {i > 0 && ' · '}
-            {b}
-          </span>
-        ))}
-      </p>
+      <div className="mt-3 space-y-1 text-sm text-center text-gray-600 dark:text-gray-400">
+        <p>
+          Need help or an account? Contact the company:{' '}
+          {bits.map((b, i) => (
+            <span key={i}>
+              {i > 0 && ' · '}
+              {b}
+            </span>
+          ))}
+        </p>
+        {info.office_hours && <p>Office hours: {info.office_hours}</p>}
+      </div>
     )
   }
 
