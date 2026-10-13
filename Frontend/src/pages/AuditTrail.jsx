@@ -28,6 +28,7 @@ const ACTION_LABELS = {
   'claim.approved': 'Approved an account claim',
   'claim.rejected': 'Rejected an account claim',
   'payment.recorded': 'Recorded a payment',
+  'payment.voided': 'Cancelled a payment',
   'plan.created': 'Added a service plan',
   'plan.updated': 'Edited a service plan',
   'plan.archived': 'Archived a service plan',

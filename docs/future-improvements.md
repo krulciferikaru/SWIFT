@@ -22,5 +22,5 @@ Ideas raised during the evaluations that are **not built yet**, or that were bui
 | **Status history** | The system stores each subscriber's status as of now only. Showing Active, Unpaid and Disconnected counts "for last quarter" on the dashboard needs a history table, and would only be accurate from the day it is added. |
 | **Per-module View / Edit / Delete levels** | Permissions are switches per task today (ten of them). Separate levels inside every module would be new development. |
 | **Financial Statement report** | A report of what each subscriber owes (receivables, paid, outstanding by plan and by subscriber) existed and was removed later at the project team's request. The calculation behind it (`BillingService`) still exists. |
-| **Editing or reversing a recorded payment** | Payments cannot be edited or deleted in the app, so a wrong entry is fixed outside it. A reversal that keeps the history would help refunds. |
+| **Refunds** | A wrongly entered payment can now be cancelled (see [Billing and payments](billing-and-payments.md)), but there is no separate refund record for money handed back to a subscriber. |
 | **A support and maintenance arrangement** | Raised by an evaluator: who maintains and updates the system after the project. A decision for the company and the team, not code. |

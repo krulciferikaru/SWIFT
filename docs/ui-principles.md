@@ -23,7 +23,7 @@ These are built once, in the shared `CardAction` component, and used for the das
 
 - **Big enough to hit.** Cards and buttons are well above the 24 by 24 pixel minimum of WCAG 2.2, and most are above the recommended 44.
 - **Say what a button does.** Buttons carry a word ("Review", "Record payment"), not only an icon.
-- **Check before it cannot be undone.** Things that cannot be edited afterwards (a payment, a plan's rate) open a review window first. See [Billing and payments](billing-and-payments.md).
+- **Check before it cannot be undone.** Things that cannot be edited afterwards (a payment, a plan's rate) open a review window first, and a payment that was still wrong can be cancelled by an administrator with a reason, never rewritten. See [Billing and payments](billing-and-payments.md).
 - **Never rely on colour alone.** Statuses use words as well as colours, and the interface was checked for contrast in light and dark mode.
 - **Keep the same thing in the same place.** Manage Roles and the Guide are under Settings; the sidebar groups follow the usual order of work.
 

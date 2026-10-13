@@ -53,7 +53,24 @@ An admin manages the list in **Settings, Payment methods**: add a method (for ex
 
 Every subscriber has a payment history (newest first, with a year filter and the total paid), shown to them on their account page and to staff on the Payments page. Each payment has a **Receipt** button that opens a printable "Payment Receipt" with the company, amount, OR number, who it is for, plan, date, method, notes and who received it. It is generated from the recorded payment and is **not** a BIR-registered official receipt.
 
-> **Payments cannot be edited or deleted in the app.** The system only lists and adds payments. If one was entered wrongly, the correction has to be handled outside the app (for example by a database change by whoever maintains the system). The audit trail records who recorded each payment and when, but it cannot undo one.
+> **Payments are never edited or deleted.** A payment is sensitive, so a recorded one is never changed. If one was entered wrongly (an extra zero, the wrong date, the wrong subscriber), an **administrator cancels it** and then the correct payment is recorded as a new one. See the next section.
+
+### Correcting a mistake: cancelling a payment
+
+On the Payments page, an administrator sees a **Cancel** button on each payment in the history. It asks for:
+
+- a **reason** (required, at least a few words, for example "Typed 5000 instead of 500"), and
+- the administrator's **own password**, like other sensitive actions.
+
+What happens:
+
+- The payment **stays in the history**, struck through and marked **Cancelled**, with who cancelled it, when, and why. Its amount and OR number are untouched. Nothing is deleted or rewritten.
+- It **stops counting at once** towards the subscriber's balance, the Collection Report, the dashboard totals and the "total paid" line. The subscriber's service status is worked out again (a subscriber who was Active because of the wrong payment becomes Unpaid, and so on). A subscriber who was already marked Disconnected stays so, as always, until staff reconnect them.
+- The cancellation is written to the **audit trail** ("Cancelled a payment").
+- The window offers to **fill in the payment form with the old details**, so the person corrects only what was wrong. The same OR number can be used again, because it is the same paper receipt.
+- A cancelled payment cannot be cancelled again, and cannot be un-cancelled: if it was cancelled by mistake, record it again.
+- The subscriber sees the cancelled payment in their own history, marked as cancelled. **No text message is sent** when a payment is cancelled, so if the wrong amount was already texted to them, tell them.
+- Only administrators can cancel payments. Secretaries cannot, and this cannot be granted.
 
 ## What the system does not do
 
