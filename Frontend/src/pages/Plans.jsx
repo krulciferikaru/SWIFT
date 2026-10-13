@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import { TableSkeleton } from '../components/Skeletons.jsx'
-import { Archive, ChevronRight, MousePointerClick, Pencil } from 'lucide-react'
+import { Archive, ChevronRight, MousePointerClick, Pencil, Wifi } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -22,6 +22,7 @@ import Modal from '../components/Modal'
 import ReviewDialog from '../components/ReviewDialog.jsx'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
 import { required, positiveAmount, firstError } from '../utils/validators'
+import EmptyState from '../components/EmptyState.jsx'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -233,7 +234,14 @@ export default function Plans() {
       )}
 
       {plans.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400">No plans yet.</p>
+        <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <EmptyState
+            icon={Wifi}
+            title="No service plans yet"
+            description="A plan is a monthly package with a rate and a speed. Add your plans first, so each subscriber can be given one."
+            action={canManage ? { label: 'Add Plan', onClick: openAddModal } : undefined}
+          />
+        </div>
       ) : (
         <>
         <p className="mb-2 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">

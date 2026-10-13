@@ -13,6 +13,12 @@ Rules the screens follow so that people can tell what they can click, without be
 
 These are built once, in the shared `CardAction` component, and used for the dashboard cards and the status cards on Subscribers.
 
+## Messages and empty lists
+
+- **Messages stay long enough to read.** A success message goes away by itself after about 5 seconds; a message about something that **failed stays until it is closed**, because it has to be read. Pointing at a message pauses it, every message has a close button, and screen readers hear it as soon as it appears. Errors start with the word "Error" so they never depend on colour alone.
+- **An empty list explains itself.** It says what the list is for, why it is empty, and what to do. Two different causes get two different wordings: *nothing has been added yet* (with a button for the first step, such as Add Subscriber) and *the filters match nothing* (with a Clear filters button). This is the shared `EmptyState` component.
+- **Loading shows the page's shape once, then stays out of the way.** The first load shows grey placeholders. Later refreshes (typing in a search box, changing a filter) dim the table instead of replacing it, so it does not flash and the search box keeps focus.
+
 ## Other habits
 
 - **Big enough to hit.** Cards and buttons are well above the 24 by 24 pixel minimum of WCAG 2.2, and most are above the recommended 44.

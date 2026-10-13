@@ -29,13 +29,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { useOnReconnect } from '../hooks/useOnline'
-import { UserPlus, KeyRound, SlidersHorizontal } from 'lucide-react'
+import { UserPlus, KeyRound, SlidersHorizontal, ShieldCheck } from 'lucide-react'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 import BackToSettings from '../components/BackToSettings.jsx'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
 import { required, emailAddress, minLength, matches, firstError } from '../utils/validators'
+import EmptyState from '../components/EmptyState.jsx'
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -302,7 +303,12 @@ export default function Users() {
             { label: 'Account Status' }, { label: 'Actions', kind: 'actions' },
           ]} />
         ) : users.length === 0 ? (
-          <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">No users found.</div>
+          <EmptyState
+            icon={ShieldCheck}
+            title="No accounts match"
+            description="Try a different name or email, or another role."
+            onClearFilters={search || roleFilter !== 'All' ? () => { setSearch(''); setRoleFilter('All') } : undefined}
+          />
         ) : (
           <Table>
             <TableHeader>

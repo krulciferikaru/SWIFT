@@ -40,6 +40,7 @@ import ReviewDialog from "../components/ReviewDialog.jsx";
 import FormField, { RequiredNote } from "../components/FormField.jsx";
 import { required, positiveAmount, firstError } from "../utils/validators";
 import { spelledDate } from "../utils/text";
+import EmptyState from "../components/EmptyState.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -331,9 +332,11 @@ export default function Payments() {
                       <Skeleton className="h-4 w-32" />
                     </div>
                   ) : results.length === 0 ? (
-                    <p className="p-3 text-sm text-gray-500 dark:text-gray-400">
-                      No subscribers found.
-                    </p>
+                    <EmptyState
+                      compact
+                      title={`No subscriber matches "${search}"`}
+                      description="Check the spelling, or search by contact number or address."
+                    />
                   ) : (
                     results.map((s) => (
                       <button

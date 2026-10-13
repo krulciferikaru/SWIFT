@@ -34,7 +34,7 @@ Route::get('/company-info', [CompanyInfoController::class, 'show'])->middleware(
  * Staff routes are guarded by permission (config/permissions.php), not by role name, so an
  * admin can switch individual abilities on or off for each secretary. Admins hold them all.
  */
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
