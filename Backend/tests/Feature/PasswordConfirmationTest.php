@@ -9,7 +9,7 @@ use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
- * Sensitive actions (changing permissions, resetting a password, deleting for good) need the
+ * Sensitive actions (changing permissions, deleting for good) need the
  * person to retype their own password, even though they are signed in.
  */
 class PasswordConfirmationTest extends TestCase
@@ -37,10 +37,9 @@ class PasswordConfirmationTest extends TestCase
         Sanctum::actingAs($this->user('admin', 'admin@sec.test'));
         $secretary = $this->user('secretary', 'sec@sec.test');
 
-        $this->patchJson("/api/users/{$secretary->id}/password", ['password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1'])
+        $this->patchJson("/api/users/{$secretary->id}/permissions", ['permissions' => []])
             ->assertStatus(423)
             ->assertJsonPath('password_confirmation_required', true);
-        $this->patchJson("/api/users/{$secretary->id}/permissions", ['permissions' => []])->assertStatus(423);
         $this->deleteJson('/api/archive/subscribers/1')->assertStatus(423);
         $this->deleteJson('/api/archive/plans/1')->assertStatus(423);
     }
@@ -49,12 +48,12 @@ class PasswordConfirmationTest extends TestCase
     {
         Sanctum::actingAs($this->user('admin', 'admin@sec.test'));
         $secretary = $this->user('secretary', 'sec@sec.test');
-        $before = $secretary->password;
+        $before = $secretary->permissions;
 
-        $this->patchJson("/api/users/{$secretary->id}/password", ['password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1'])
+        $this->patchJson("/api/users/{$secretary->id}/permissions", ['permissions' => ['subscribers.view']])
             ->assertStatus(423);
 
-        $this->assertSame($before, $secretary->fresh()->password);
+        $this->assertSame($before, $secretary->fresh()->permissions);
     }
 
     public function test_a_wrong_password_does_not_unlock_them_and_is_logged(): void
@@ -72,10 +71,10 @@ class PasswordConfirmationTest extends TestCase
         $secretary = $this->user('secretary', 'sec@sec.test');
 
         $this->postJson('/api/me/confirm-password', ['password' => 'admin-pass-123'])->assertOk();
-        $this->patchJson("/api/users/{$secretary->id}/password", ['password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1'])->assertOk();
+        $this->patchJson("/api/users/{$secretary->id}/permissions", ['permissions' => ['subscribers.view']])->assertOk();
 
         $this->travel(11)->minutes();
-        $this->patchJson("/api/users/{$secretary->id}/password", ['password' => 'third-pass-123', 'password_confirmation' => 'third-pass-123'])
+        $this->patchJson("/api/users/{$secretary->id}/permissions", ['permissions' => ['subscribers.view', 'plans.manage']])
             ->assertStatus(423);
     }
 

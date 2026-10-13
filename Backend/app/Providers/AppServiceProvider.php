@@ -44,6 +44,16 @@ class AppServiceProvider extends ServiceProvider
             : Limit::none()
         );
 
+        RateLimiter::for('password-forgot', fn (Request $request) => $enabled
+            ? Limit::perMinutes(10, config('ratelimit.password_forgot'))->by($request->ip())
+            : Limit::none()
+        );
+
+        RateLimiter::for('password-reset', fn (Request $request) => $enabled
+            ? Limit::perMinutes(10, config('ratelimit.password_reset'))->by($request->ip())
+            : Limit::none()
+        );
+
         RateLimiter::for('phone-code', fn (Request $request) => $enabled
             ? Limit::perMinutes(10, config('ratelimit.phone_code'))->by($request->user()?->id ?: $request->ip())
             : Limit::none()

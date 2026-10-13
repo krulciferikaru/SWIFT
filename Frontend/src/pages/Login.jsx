@@ -146,7 +146,12 @@ export default function Login() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <PasswordField
             id="password"
             ref={passwordRef}
@@ -196,7 +201,7 @@ export default function Login() {
             <ul className="list-disc space-y-1.5 pl-5">
               <li>Use the mobile number or email you registered with.</li>
               <li>Passwords are case-sensitive. Tap <strong>Show</strong> to check what you typed.</li>
-              <li>Forgot your password? Contact the office to have it reset. Staff can ask an administrator.</li>
+              <li>Forgot your password? Use <strong>Forgot password?</strong> to get a code by text message. Your mobile number must be verified first (in Settings). Nobody at the office can see or reset your password for you.</li>
               <li>After 5 wrong passwords, sign-in for that account pauses for 15 minutes.</li>
               <li>"Awaiting approval" means staff have not approved your registration yet.</li>
             </ul>
