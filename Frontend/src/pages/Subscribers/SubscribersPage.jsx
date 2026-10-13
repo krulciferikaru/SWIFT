@@ -11,6 +11,8 @@ import { CardContent } from "@/components/ui/card";
 import CardAction from "../../components/CardAction.jsx";
 import DateHint from "../../components/DateHint.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
+import ReviewDialog from "../../components/ReviewDialog.jsx";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -34,7 +36,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
 import { spelledDate } from "../../utils/text";
-import { Archive, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil, Users2 } from "lucide-react";
+import { Archive, BellRing, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -129,6 +131,46 @@ export default function SubscribersPage() {
   } = useSubscribers({ search, status, page, perPage, sort, direction: dir, planId, installedFrom: activeFrom, installedTo: activeTo });
 
   const { toast, showToast } = useToast();
+
+  // Picking people to send a payment reminder to (only for staff who may send texts).
+  const canRemind = can("sms.send");
+  const [picked, setPicked] = useState(() => new Set());
+  const [remindOpen, setRemindOpen] = useState(false);
+  const [reminding, setReminding] = useState(false);
+  const togglePick = (id) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const pageAllPicked = subscribers.length > 0 && subscribers.every((s) => picked.has(s.subscriber_id));
+  const togglePage = () =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (pageAllPicked) subscribers.forEach((s) => next.delete(s.subscriber_id));
+      else subscribers.forEach((s) => next.add(s.subscriber_id));
+      return next;
+    });
+  const pickWhoOwes = () =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      subscribers.filter((s) => s.balance > 0).forEach((s) => next.add(s.subscriber_id));
+      return next;
+    });
+  const sendReminders = async () => {
+    setReminding(true);
+    try {
+      const res = await subscriberApi.sendReminders([...picked]);
+      showToast(res.data?.message || "Reminders sent.");
+      setPicked(new Set());
+    } catch (err) {
+      showToast(errorMessage(err, "Could not send the reminders."), "error");
+    } finally {
+      setReminding(false);
+      setRemindOpen(false);
+    }
+  };
 
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -472,6 +514,30 @@ export default function SubscribersPage() {
           Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
         </p>
 
+        {canRemind && !initialLoading && subscribers.length > 0 && (
+          <div data-tour="subs-remind" className="-mt-1 mb-3 flex flex-wrap items-center gap-3 text-sm">
+            {picked.size === 0 ? (
+              <Button type="button" variant="outline" size="sm" onClick={pickWhoOwes} className="gap-1.5">
+                <BellRing className="size-3.5" aria-hidden="true" />
+                Select everyone who owes on this page
+              </Button>
+            ) : (
+              <>
+                <span className="font-medium text-gray-900 dark:text-gray-100" aria-live="polite">
+                  {picked.size} selected
+                </span>
+                <Button type="button" size="sm" onClick={() => setRemindOpen(true)} className="gap-1.5">
+                  <BellRing className="size-3.5" aria-hidden="true" />
+                  Send payment reminder
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPicked(new Set())}>
+                  Clear selection
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Table */}
         <div
           data-tour="subs-table"
@@ -480,7 +546,7 @@ export default function SubscribersPage() {
         >
           {initialLoading ? (
             <TableSkeleton rows={9} columns={[
-              { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Mobile" },
+              ...(canRemind ? [{ label: "" }] : []), { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Mobile" },
               { label: "MAC Address" }, { label: "Installed" }, { label: "Service status", kind: "badge" }, { label: "Balance" }, { label: "Actions", kind: "actions" },
             ]} />
           ) : error ? (
@@ -507,6 +573,11 @@ export default function SubscribersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {canRemind && (
+                    <TableHead className="w-10">
+                      <Checkbox checked={pageAllPicked} onCheckedChange={togglePage} aria-label="Select everyone on this page" />
+                    </TableHead>
+                  )}
                   <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
                   <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>
                   <TableHead>Email</TableHead>
@@ -521,6 +592,15 @@ export default function SubscribersPage() {
               <TableBody>
                 {subscribers.map((sub) => (
                   <TableRow key={sub.subscriber_id}>
+                    {canRemind && (
+                      <TableCell className="w-10">
+                        <Checkbox
+                          checked={picked.has(sub.subscriber_id)}
+                          onCheckedChange={() => togglePick(sub.subscriber_id)}
+                          aria-label={`Select ${sub.name}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       <button
                         data-tour="subs-name"
@@ -631,6 +711,22 @@ export default function SubscribersPage() {
           noun="subscribers"
         />
       </div>
+
+      <ReviewDialog
+        open={remindOpen}
+        onOpenChange={setRemindOpen}
+        title={`Send a payment reminder to ${picked.size} ${picked.size === 1 ? "person" : "people"}?`}
+        description="Each person gets a text with the amount they owe."
+        rows={[
+          { label: "People selected", value: picked.size, emphasis: true },
+          { label: "Message", value: "Reminder with their balance" },
+        ]}
+        warning="Texts cannot be recalled and each one uses SMS credit. Anyone selected who owes nothing is skipped."
+        confirmLabel="Send reminders"
+        busyLabel="Sending..."
+        busy={reminding}
+        onConfirm={sendReminders}
+      />
 
       <Modal
         isOpen={showPreview}

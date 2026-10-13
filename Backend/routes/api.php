@@ -92,6 +92,9 @@ Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
         ->middleware('permission:payments.view,payments.record,subscribers.view');
     Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store'])
         ->middleware('permission:payments.record');
+    // The OR number that probably comes next for this person (the last one they recorded, plus one).
+    Route::get('/payments/next-or-number', [PaymentController::class, 'nextOrNumber'])
+        ->middleware('permission:payments.record');
 
     Route::get('/subscribers/check-duplicate', [SubscriberController::class, 'checkDuplicate'])
         ->middleware('permission:subscribers.manage');

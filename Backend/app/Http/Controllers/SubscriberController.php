@@ -263,8 +263,16 @@ class SubscriberController extends Controller
      * Sends a balance-reminder SMS to every currently Unpaid subscriber.
      * Manual, on-demand alternative to the daily due-date reminder job.
      */
-    public function sendReminders(): JsonResponse
+    public function sendReminders(Request $request): JsonResponse
     {
+        // Optionally only to the people picked on the Subscribers page. Anyone picked who owes
+        // nothing is skipped, so a reminder never goes to someone who is paid up.
+        $request->validate([
+            'subscriber_ids' => ['nullable', 'array', 'max:200'],
+            'subscriber_ids.*' => ['integer'],
+        ]);
+        $pickedIds = $request->input('subscriber_ids');
+
         // Each SMS attempt is capped at ~10s by PhilSmsService, but sends run
         // sequentially — give the whole batch room to finish on hosts with a
         // stricter default execution limit than this box's unlimited one.
@@ -272,12 +280,18 @@ class SubscriberController extends Controller
 
         $sent = 0;
         $failed = 0;
+        $skipped = 0;
 
         Subscriber::where('account_status', 'active')
-            ->where('status', 'Unpaid')
-            ->chunk(100, function ($subscribers) use (&$sent, &$failed) {
+            ->when($pickedIds === null, fn ($q) => $q->where('status', 'Unpaid'))
+            ->when($pickedIds !== null, fn ($q) => $q->whereIn('subscriber_id', $pickedIds))
+            ->chunk(100, function ($subscribers) use (&$sent, &$failed, &$skipped) {
                 foreach ($subscribers as $subscriber) {
                     $balance = $this->billing->getBreakdown($subscriber)['balance'];
+                    if ($balance <= 0) {
+                        $skipped++;
+                        continue;
+                    }
 
                     $result = $this->sms->sendToSubscriber($subscriber, sprintf(
                         'Hi %s, this is a reminder that you have an outstanding balance of PHP %s. Please settle it as soon as possible to avoid service interruption. - Jubal Brothers Cable TV Corp - Palayan Branch',
@@ -289,17 +303,25 @@ class SubscriberController extends Controller
                 }
             });
 
-        Audit::log('sms.reminders_sent', null, 'Unpaid subscribers', ['sent' => $sent, 'failed' => $failed]);
+        Audit::log(
+            'sms.reminders_sent',
+            null,
+            $pickedIds === null ? 'Unpaid subscribers' : 'Selected subscribers',
+            ['sent' => $sent, 'failed' => $failed, 'skipped' => $skipped],
+        );
 
         $message = "Sent payment reminders to {$sent} subscriber(s).";
         if ($failed > 0) {
             $message .= " {$failed} failed to send.";
         }
+        if ($skipped > 0) {
+            $message .= " {$skipped} owe nothing, so they were skipped.";
+        }
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => ['sent' => $sent, 'failed' => $failed],
+            'data' => ['sent' => $sent, 'failed' => $failed, 'skipped' => $skipped],
         ]);
     }
 

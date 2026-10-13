@@ -208,6 +208,13 @@ export const TOURS = {
         side: 'top',
       },
       {
+        selector: t('subs-remind'),
+        title: 'Remind several people at once',
+        description: 'If you may send texts, tick the people to remind, or press Select everyone who owes on this page, then Send payment reminder. You see how many will be texted before anything is sent. Anyone who owes nothing is skipped.',
+        side: 'bottom',
+        roles: STAFF,
+      },
+      {
         selector: t('subs-export'),
         title: 'Export CSV',
         description: 'Download the current list as a spreadsheet. You get a preview first.',
@@ -342,7 +349,7 @@ export const TOURS = {
       {
         selector: t('payments-search'),
         title: 'Find the subscriber',
-        description: 'Search by name, mobile number or MAC address, then click the subscriber in the results.',
+        description: 'Search by name, mobile number or MAC address, then click the subscriber in the results. Under the search box, Recently opened lists the last few subscribers you worked with, to open again with one tap.',
         side: 'bottom',
       },
       {
