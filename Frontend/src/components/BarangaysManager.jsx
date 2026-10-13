@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import Modal from './Modal'
 import { LoadingStatus } from './Skeletons.jsx'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -21,6 +22,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+
+const RECENT = 5
 
 /** Admin: add, rename, switch on or off, and delete the barangays an address can be chosen from. */
 export default function BarangaysManager({ showToast }) {
@@ -117,30 +120,14 @@ export default function BarangaysManager({ showToast }) {
     }
   }
 
-  return (
-    <Card data-tour="settings-barangays">
-      <CardHeader>
-        <CardTitle className="text-base">Barangays</CardTitle>
-        <CardDescription>
-          The barangays people can choose as their address when they register and when staff add or edit a subscriber.
-          "Palayan City" is added for you. One that is already someone's address can't be deleted, but you can switch
-          it off so it is no longer offered.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">{error}</div>
-        )}
+  // The card shows the first few; "View all" opens the whole list (with a search) in a window.
+  const [showAll, setShowAll] = useState(false)
+  const [filter, setFilter] = useState('')
+  const matching = items.filter((m) => m.name.toLowerCase().includes(filter.trim().toLowerCase()))
 
-        {loading ? (
-          <LoadingStatus className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </LoadingStatus>
-        ) : (
-          <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-            {items.map((m) => (
+  const renderList = (rows) => (
+    <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+      {rows.map((m) => (
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                 {editing?.id === m.id ? (
                   <form onSubmit={saveName} className="flex flex-1 flex-wrap items-start gap-2">
@@ -205,8 +192,40 @@ export default function BarangaysManager({ showToast }) {
                   </>
                 )}
               </li>
+      ))}
+    </ul>
+  )
+
+  return (
+    <Card data-tour="settings-barangays">
+      <CardHeader>
+        <CardTitle className="text-base">Barangays</CardTitle>
+        <CardDescription>
+          The barangays people can choose as their address when they register and when staff add or edit a subscriber.
+          "Palayan City" is added for you. One that is already someone's address can't be deleted, but you can switch
+          it off so it is no longer offered.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">{error}</div>
+        )}
+
+        {loading ? (
+          <LoadingStatus className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
             ))}
-          </ul>
+          </LoadingStatus>
+        ) : (
+          <>
+            {renderList(items.slice(0, RECENT))}
+            {items.length > RECENT && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowAll(true)}>
+                View all ({items.length})
+              </Button>
+            )}
+          </>
         )}
 
         <form onSubmit={add} className="flex flex-wrap items-start gap-2">
@@ -243,6 +262,35 @@ export default function BarangaysManager({ showToast }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Modal
+        isOpen={showAll}
+        onClose={() => { setShowAll(false); setFilter('') }}
+        title="Barangays"
+        description="Everything on the list. Rename, switch on or off, or delete from here."
+        size="lg"
+      >
+        <div className="space-y-3">
+          {items.length > 8 && (
+            <div className="space-y-1">
+              <Label htmlFor="barangays-filter" className="sr-only">Search barangays</Label>
+              <Input
+                id="barangays-filter"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Search barangays"
+                aria-label="Search barangays"
+              />
+            </div>
+          )}
+          <div className="max-h-[55vh] overflow-y-auto">
+            {matching.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-600 dark:text-gray-400">Nothing matches "{filter}".</p>
+            ) : (
+              renderList(matching)
+            )}
+          </div>
+        </div>
+      </Modal>
     </Card>
   )
 }
