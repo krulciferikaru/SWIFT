@@ -197,13 +197,15 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account is not available. Contact a secretary or an administrator.'], 403);
         }
 
-        // "Keep me signed in" lasts longer; otherwise the sign-in ends after an hour.
+        // "Keep me signed in" lasts longer; otherwise the sign-in lasts an hour after the last activity.
         $remember = filter_var($requestData['remember'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $expiresAt = $remember
             ? now()->addDays(config('sanctum.remember_token_days'))
             : now()->addHours(config('sanctum.login_token_hours'));
 
-        $token = $user->createToken('auth_token', ['*'], $expiresAt)->plainTextToken;
+        // Only the normal sign-in slides with activity (see SlideSession); a kept one has a fixed end.
+        $tokenName = $remember ? 'auth_token_remember' : \App\Http\Middleware\SlideSession::NORMAL_TOKEN_NAME;
+        $token = $user->createToken($tokenName, ['*'], $expiresAt)->plainTextToken;
 
         Audit::log('auth.login', $user, null, ['remembered' => $remember], $user);
 

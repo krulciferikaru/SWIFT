@@ -62,7 +62,7 @@ A "Confirm your password" window opens, the action carries on by itself once the
 
 - Subscribers sign in with their mobile number or email; staff with their email.
 - **Five wrong passwords inside 15 minutes** pauses sign-in for that account (15 minutes at most), with a countdown on the page.
-- A normal sign-in ends when the browser closes or after **1 hour**. Ticking **Keep me signed in** lasts **7 days** on that device.
+- A normal sign-in lasts as long as the page stays open: the page tells the server every few minutes that it is in use, so someone working or reading is never signed out. When the tab or browser is closed, the sign-in ends (the server also lets it lapse **an hour** after the last use). Ticking **Keep me signed in** lasts a fixed **7 days** on that device, even after the browser is closed.
 - See [Offline behaviour and errors](offline-and-errors.md) for the details.
 
 ## Things to know

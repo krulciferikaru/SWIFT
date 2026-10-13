@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'password.confirmed' => \App\Http\Middleware\CheckPasswordConfirmed::class,
+            'session.slide' => \App\Http\Middleware\SlideSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

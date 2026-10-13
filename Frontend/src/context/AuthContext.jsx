@@ -5,6 +5,9 @@ import { getToken, setToken, clearToken } from '../utils/authToken'
 
 const AuthContext = createContext(null)
 
+// How often the open page tells the server it is still in use.
+const KEEP_ALIVE_MS = 8 * 60 * 1000
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -43,6 +46,27 @@ export function AuthProvider({ children }) {
   useOnReconnect(() => {
     if (connectionError) fetchCurrentUser()
   })
+
+  // A normal sign-in lasts an hour after the last activity. Pinging the server every few
+  // minutes while the page is open keeps it alive, so someone reading or typing is never
+  // signed out, while a closed tab lets the sign-in lapse. A 401 here is handled by axios.
+  const signedIn = !!user
+  useEffect(() => {
+    if (!signedIn) return undefined
+    const ping = () => {
+      if (navigator.onLine) api.get('/me').catch(() => {})
+    }
+    const timer = setInterval(ping, KEEP_ALIVE_MS)
+    // A laptop that slept comes back with a stale timer; check straight away.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') ping()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [signedIn])
 
   const login = (token, userData, remember = false) => {
     setToken(token, remember)
