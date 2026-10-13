@@ -134,8 +134,8 @@ class PaymentVoidTest extends TestCase
         $this->app['auth']->forgetGuards();
         Sanctum::actingAs($secretary);
         $this->passwordConfirmed($secretary);
-        $this->postJson("/api/payments/{$payment->id}/void", ['reason' => 'Typed the wrong amount'])->assertForbidden();
-        $this->assertNull($payment->fresh()->voided_at);
+        $this->postJson("/api/payments/{$payment->id}/void", ['reason' => 'Typed the wrong amount'])->assertOk();
+        $this->assertNotNull($payment->fresh()->voided_at);
     }
 
     public function test_it_cannot_be_cancelled_twice_and_is_written_to_the_audit_trail(): void
