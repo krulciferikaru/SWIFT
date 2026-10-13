@@ -161,7 +161,7 @@ export default function Settings() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Preferences</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">How SWIFT looks and behaves for you.</p>
         </div>
-        <div className="grid items-start gap-6 xl:grid-cols-2">
+        <div className="grid items-stretch gap-6 xl:grid-cols-2 xl:[&>*:last-child:nth-child(odd)]:col-span-2">
       <Card data-tour="settings-appearance">
         <CardHeader>
           <CardTitle className="text-base">Appearance</CardTitle>
@@ -264,7 +264,7 @@ export default function Settings() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Your account</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Your mobile number and sign-in security.</p>
         </div>
-        <div className="grid items-start gap-6 xl:grid-cols-2">
+        <div className="grid items-stretch gap-6 xl:grid-cols-2 xl:[&>*:last-child:nth-child(odd)]:col-span-2">
       {showPhoneCard && (
         <Card data-tour="settings-phone">
           <CardHeader>
@@ -295,7 +295,7 @@ export default function Settings() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Text messages</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Send a one-off text or remind everyone who owes.</p>
         </div>
-        <div className="grid items-start gap-6 xl:grid-cols-2">
+        <div className="grid items-stretch gap-6 xl:grid-cols-2 xl:[&>*:last-child:nth-child(odd)]:col-span-2">
         <Card data-tour="settings-sms">
           <CardHeader>
             <CardTitle className="text-base">Send SMS</CardTitle>
@@ -361,7 +361,7 @@ export default function Settings() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Administration</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Choices the rest of the office works from.</p>
         </div>
-        <div className="grid items-start gap-6 xl:grid-cols-2">
+        <div className="grid items-stretch gap-6 xl:grid-cols-2 xl:[&>*:last-child:nth-child(odd)]:col-span-2">
       {user?.role === 'admin' && <PaymentMethodsManager showToast={showToast} />}
 
       {user?.role === 'admin' && <BarangaysManager showToast={showToast} />}
