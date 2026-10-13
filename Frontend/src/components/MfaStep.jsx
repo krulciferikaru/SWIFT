@@ -5,6 +5,7 @@ import { errorMessage } from '../utils/errors'
 import FormField from './FormField.jsx'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import CodeInput from './CodeInput.jsx'
 
 /**
  * The second step of signing in for administrators: the 6-digit code from their authenticator
@@ -77,16 +78,19 @@ export default function MfaStep({ challenge, onDone, onBack }) {
 
       <form onSubmit={submit} noValidate className="mt-8 space-y-5">
         <FormField id="mfa-code" label={recovery ? 'Recovery code' : '6-digit code'} error={error}>
-          <Input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            inputMode={recovery ? 'text' : 'numeric'}
-            autoComplete="one-time-code"
-            autoFocus
-            maxLength={recovery ? 12 : 7}
-            placeholder={recovery ? 'XXXX-XXXX' : '123456'}
-            className="h-12 text-center font-mono text-xl tracking-[0.3em]"
-          />
+          {recovery ? (
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoComplete="one-time-code"
+              autoFocus
+              maxLength={12}
+              placeholder="XXXX-XXXX"
+              className="h-12 text-center font-mono text-xl tracking-[0.3em]"
+            />
+          ) : (
+            <CodeInput value={code} onChange={setCode} autoFocus disabled={busy || locked} />
+          )}
         </FormField>
         <Button type="submit" disabled={busy || locked || !code.trim()} className="h-11 w-full text-base">
           {busy ? 'Checking...' : locked ? `Try again in ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}` : 'Continue'}

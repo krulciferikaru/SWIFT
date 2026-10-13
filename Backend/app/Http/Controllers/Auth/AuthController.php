@@ -275,7 +275,11 @@ class AuthController extends Controller
 
         // Only the normal sign-in slides with activity (see SlideSession); a kept one has a fixed end.
         $tokenName = $remember ? 'auth_token_remember' : \App\Http\Middleware\SlideSession::NORMAL_TOKEN_NAME;
-        $token = $user->createToken($tokenName, ['*'], $expiresAt)->plainTextToken;
+        $newToken = $user->createToken($tokenName, ['*'], $expiresAt);
+        $token = $newToken->plainTextToken;
+
+        // They have just typed their password to get here: no second prompt for the usual 10 minutes.
+        \App\Http\Middleware\CheckPasswordConfirmed::confirmNewSignIn($newToken->accessToken);
 
         Audit::log('auth.login', $user, null, ['remembered' => $remember], $user);
 

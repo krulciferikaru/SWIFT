@@ -13,7 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
  * good) need the person to have typed their own password in the last 10 minutes, even though
  * they are already signed in. That way an unattended screen or a stolen session cannot do them.
  *
- * The confirmation belongs to the sign-in (the token), so it ends with it.
+ * The confirmation belongs to the sign-in (the token), so it ends with it. Signing in counts as one:
+ * the person has just typed their password (and the code), so they are not asked again straight away.
  */
 class CheckPasswordConfirmed
 {
@@ -26,6 +27,12 @@ class CheckPasswordConfirmed
 
         // A real sign-in has a token id; anything else (tests, internal calls) falls back to the person.
         return 'password-confirmed:'.($token instanceof PersonalAccessToken && $token->id ? 'token-'.$token->id : 'user-'.$user->id);
+    }
+
+    /** A fresh sign-in has just proved the password, so it starts out confirmed for the usual 10 minutes. */
+    public static function confirmNewSignIn(PersonalAccessToken $token): void
+    {
+        Cache::put('password-confirmed:token-'.$token->id, true, now()->addMinutes(self::MINUTES));
     }
 
     public function handle(Request $request, Closure $next): Response

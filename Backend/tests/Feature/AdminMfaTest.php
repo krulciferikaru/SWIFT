@@ -95,13 +95,24 @@ class AdminMfaTest extends TestCase
         $this->login('sec@mfa.test')->assertOk()->assertJsonStructure(['token'])->assertJsonPath('user.mfa_setup_required', false);
     }
 
-    public function test_setting_it_up_asks_for_the_password_then_needs_a_correct_code(): void
+    public function test_the_password_is_asked_again_once_the_sign_in_is_older_than_ten_minutes(): void
+    {
+        $this->user();
+        $token = $this->login()->json('token');
+
+        $this->travel(11)->minutes();
+
+        $this->withToken($token)->postJson('/api/me/mfa/setup')->assertStatus(423);
+        $this->withToken($token)->postJson('/api/me/confirm-password', ['password' => 'boss-pass-123'])->assertOk();
+        $this->withToken($token)->postJson('/api/me/mfa/setup')->assertOk();
+    }
+
+    public function test_just_signed_in_needs_no_second_password_to_set_it_up_and_then_a_correct_code(): void
     {
         $admin = $this->user();
         $token = $this->login()->json('token');
 
-        $this->withToken($token)->postJson('/api/me/mfa/setup')->assertStatus(423); // type the password again first
-        $this->withToken($token)->postJson('/api/me/confirm-password', ['password' => 'boss-pass-123'])->assertOk();
+        // The password was just typed to sign in, so setting up goes straight ahead.
 
         $setup = $this->withToken($token)->postJson('/api/me/mfa/setup')->assertOk()->json();
         $this->assertArrayHasKey('secret', $setup);

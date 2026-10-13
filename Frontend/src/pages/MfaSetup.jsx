@@ -7,9 +7,9 @@ import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
 import FormField from '../components/FormField.jsx'
 import RecoveryCodes from '../components/RecoveryCodes.jsx'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import CodeInput from '../components/CodeInput.jsx'
 
 /**
  * Setting up two-step sign-in. Administrators land here after signing in until it is done, because
@@ -110,16 +110,7 @@ export default function MfaSetup() {
               <p className="font-semibold text-gray-900 dark:text-gray-100">3. Type the code the app shows</p>
               <form onSubmit={confirm} noValidate className="mt-3 space-y-3">
                 <FormField id="mfa-setup-code" label="6-digit code" error={error}>
-                  <Input
-                    value={code}
-                    onChange={(e) => { setCode(e.target.value); setError('') }}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={7}
-                    placeholder="123456"
-                    className="h-11 w-40 text-center font-mono text-lg tracking-[0.3em]"
-                    disabled={!setup}
-                  />
+                  <CodeInput value={code} onChange={(v) => { setCode(v); setError('') }} disabled={!setup} className="max-w-sm" />
                 </FormField>
                 <Button type="submit" disabled={busy || !setup || code.trim().length < 6}>{busy ? 'Checking...' : 'Turn on two-step sign-in'}</Button>
               </form>

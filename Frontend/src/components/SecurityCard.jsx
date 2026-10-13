@@ -7,7 +7,7 @@ import FormField from './FormField.jsx'
 import RecoveryCodes from './RecoveryCodes.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import CodeInput from './CodeInput.jsx'
 
 /**
  * For administrators, in Settings: that two-step sign-in is on, how many recovery codes are left,
@@ -100,7 +100,7 @@ export default function SecurityCard() {
         ) : (
           <form id="renew-codes-form" onSubmit={renew} noValidate>
             <FormField id="renew-code" label="6-digit code" error={error}>
-              <Input value={code} onChange={(e) => { setCode(e.target.value); setError('') }} inputMode="numeric" autoComplete="one-time-code" maxLength={7} placeholder="123456" className="w-40 text-center font-mono text-lg tracking-[0.3em]" />
+              <CodeInput value={code} onChange={(v) => { setCode(v); setError('') }} autoFocus />
             </FormField>
           </form>
         )}

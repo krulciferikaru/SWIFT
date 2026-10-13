@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import CodeInput from '../components/CodeInput.jsx'
 
 /**
  * Forgot password, in two steps: ask for a code by text message, then type the code and a new
@@ -134,10 +135,8 @@ export default function ForgotPassword() {
           <form onSubmit={resetPassword} className="mt-6 space-y-5">
             <div className="space-y-2">
               <Label htmlFor="code">6-digit code</Label>
-              <Input
-                id="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="h-11 font-mono text-lg tracking-widest" required autoFocus
+              <CodeInput
+                id="code" value={code} onChange={setCode} autoFocus
                 aria-invalid={errors.code ? true : undefined} aria-describedby={errors.code ? 'code-error' : undefined}
               />
               {fieldError('code')}
