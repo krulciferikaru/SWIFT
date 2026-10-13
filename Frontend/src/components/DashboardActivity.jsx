@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import DateHint from './DateHint.jsx'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 
@@ -163,6 +164,7 @@ export default function DashboardActivity() {
               required
               className="w-40"
             />
+            <DateHint value={draft.from} />
           </div>
           <div className="space-y-1">
             <label htmlFor="dash-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">To</label>
@@ -175,6 +177,7 @@ export default function DashboardActivity() {
               required
               className="w-40"
             />
+            <DateHint value={draft.to} />
           </div>
           <Button type="submit" disabled={!draft.from || !draft.to || !!draftError}>Show</Button>
           {draftError && <p role="alert" className="w-full text-xs text-red-600 dark:text-red-400">{draftError}</p>}

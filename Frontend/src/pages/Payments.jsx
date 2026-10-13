@@ -37,6 +37,9 @@ import { useTourActive } from "../tour/tourState";
 import { PaymentSample } from "../components/TourSamples.jsx";
 import Toast from "../components/Toast.jsx";
 import ReviewDialog from "../components/ReviewDialog.jsx";
+import FormField, { RequiredNote } from "../components/FormField.jsx";
+import { required, positiveAmount, firstError } from "../utils/validators";
+import { spelledDate } from "../utils/text";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -178,11 +181,23 @@ export default function Payments() {
     setSelected(subscriber);
     setForm(EMPTY_FORM);
     setErrors({});
+    setTouched({});
     loadDetail(subscriber);
   };
 
+  // A field is only checked once the person has left it, or tried to save.
+  const [touched, setTouched] = useState({});
+  const localErrors = {
+    amount: firstError(form.amount, required("Amount"), positiveAmount),
+    or_number: required("OR number")(form.or_number),
+    payment_date: required("Payment date")(form.payment_date),
+  };
+  const fieldError = (name) => errors[name]?.[0] ?? (touched[name] ? localErrors[name] : "");
+  const handleBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }));
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) setErrors(({ [e.target.name]: _gone, ...rest }) => rest);
   };
 
   const coveragePreview = useMemo(
@@ -194,6 +209,12 @@ export default function Payments() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const handleSubmit = (e) => {
     e.preventDefault();
+    const firstBad = Object.keys(localErrors).find((name) => localErrors[name]);
+    if (firstBad) {
+      setTouched({ amount: true, or_number: true, payment_date: true });
+      document.getElementById(firstBad)?.focus();
+      return;
+    }
     setErrors({});
     setReviewOpen(true);
   };
@@ -215,6 +236,7 @@ export default function Payments() {
       const res = await paymentsApi.create(selected.subscriber_id, form);
       setBilling(res.data.data.billing);
       setForm(EMPTY_FORM);
+      setTouched({});
       showToast("Payment recorded.");
       const historyRes = await paymentsApi.getHistory(selected.subscriber_id);
       setHistory(historyRes.data.data);
@@ -492,48 +514,30 @@ export default function Payments() {
                   <CardTitle className="text-base">Record Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+                  <form onSubmit={handleSubmit} noValidate className="space-y-4 max-w-md">
+                    <RequiredNote />
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="amount">
-                          Amount<span className="text-red-500 ml-0.5">*</span>
-                        </Label>
+                      <FormField id="amount" label="Amount" required hint="In pesos" error={fieldError("amount")}>
                         <Input
-                          id="amount"
                           name="amount"
                           type="number"
+                          inputMode="decimal"
                           step="0.01"
+                          min="0"
                           value={form.amount}
                           onChange={handleChange}
-                          required
-                          className={errors.amount ? "border-red-400" : ""}
+                          onBlur={handleBlur}
                         />
-                        {errors.amount && (
-                          <p className="text-red-500 text-xs">
-                            {errors.amount[0]}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="or_number">
-                          OR Number
-                          <span className="text-red-500 ml-0.5">*</span>
-                        </Label>
+                      </FormField>
+                      <FormField id="or_number" label="OR Number" required hint="From the paper receipt" error={fieldError("or_number")}>
                         <Input
-                          id="or_number"
                           name="or_number"
                           value={form.or_number}
                           onChange={handleChange}
-                          required
+                          onBlur={handleBlur}
                           placeholder="e.g. 41001"
-                          className={errors.or_number ? "border-red-400" : ""}
                         />
-                        {errors.or_number && (
-                          <p className="text-red-500 text-xs">
-                            {errors.or_number[0]}
-                          </p>
-                        )}
-                      </div>
+                      </FormField>
                     </div>
 
                     {coveragePreview && (
@@ -544,20 +548,9 @@ export default function Payments() {
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="payment_date">
-                          Payment Date
-                          <span className="text-red-500 ml-0.5">*</span>
-                        </Label>
-                        <Input
-                          id="payment_date"
-                          name="payment_date"
-                          type="date"
-                          value={form.payment_date}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
+                      <FormField id="payment_date" label="Payment Date" required hint={spelledDate(form.payment_date)} error={fieldError("payment_date")}>
+                        <Input name="payment_date" type="date" value={form.payment_date} onChange={handleChange} onBlur={handleBlur} />
+                      </FormField>
                       <div className="space-y-1.5">
                         <Label>Payment Method</Label>
                         <Select

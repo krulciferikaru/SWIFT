@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import CardAction from "../../components/CardAction.jsx";
+import DateHint from "../../components/DateHint.jsx";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -440,10 +441,12 @@ export default function SubscribersPage() {
             <div className="space-y-1">
               <label htmlFor="subs-from" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed from</label>
               <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full sm:w-40" />
+              <DateHint value={installedFrom} />
             </div>
             <div className="space-y-1">
               <label htmlFor="subs-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed to</label>
               <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full sm:w-40" />
+              <DateHint value={installedTo} />
             </div>
             {(hasExtraFilters || search || status !== "All") && (
               <Button type="button" variant="outline" onClick={clearAllFilters} className="gap-1.5">

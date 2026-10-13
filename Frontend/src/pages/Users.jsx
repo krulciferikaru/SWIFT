@@ -34,6 +34,8 @@ import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 import BackToSettings from '../components/BackToSettings.jsx'
+import FormField, { RequiredNote } from '../components/FormField.jsx'
+import { required, emailAddress, minLength, matches, firstError } from '../utils/validators'
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -78,6 +80,7 @@ export default function Users() {
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF_FORM)
   const [staffErrors, setStaffErrors] = useState({})
   const [creating, setCreating] = useState(false)
+  const [touched, setTouched] = useState({})
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
   const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
@@ -140,6 +143,7 @@ export default function Users() {
   const openCreateModal = () => {
     setStaffForm(EMPTY_STAFF_FORM)
     setStaffErrors({})
+    setTouched({})
     setShowCreate(true)
   }
 
@@ -148,8 +152,27 @@ export default function Users() {
     setStaffForm({ ...staffForm, [name]: name === 'name' ? capitalizeWords(value) : value })
   }
 
+  const staffChecks = {
+    name: required('Full name')(staffForm.name),
+    email: firstError(staffForm.email, required('Email'), emailAddress),
+    password: firstError(staffForm.password, required('Password'), minLength('Password', 8)),
+    password_confirmation: firstError(
+      staffForm.password_confirmation,
+      required('Password confirmation'),
+      matches(() => staffForm.password, 'The two passwords do not match.'),
+    ),
+  }
+  const staffError = (name) => staffErrors[name]?.[0] ?? (touched[name] ? staffChecks[name] : '')
+  const staffBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }))
+
   const submitCreate = async (e) => {
     e.preventDefault()
+    const firstBad = Object.keys(staffChecks).find((name) => staffChecks[name])
+    if (firstBad) {
+      setTouched({ name: true, email: true, password: true, password_confirmation: true })
+      document.getElementById({ name: 'staff-name', email: 'staff-email', password: 'staff-password', password_confirmation: 'staff-password-confirm' }[firstBad])?.focus()
+      return
+    }
     setStaffErrors({})
 
     // Admin creation is high-privilege — require an extra confirmation step.
@@ -399,37 +422,19 @@ export default function Users() {
           </div>
         )}
       >
-        <form id="staff-create-form" onSubmit={submitCreate} className="space-y-4">
-          <div className="flex justify-end">
+        <form id="staff-create-form" onSubmit={submitCreate} noValidate className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <RequiredNote />
             <TourButton tour="staffForm" />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-name">Full Name<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-name"
-              name="name"
-              value={staffForm.name}
-              onChange={handleStaffFormChange}
-              required
-              className={staffErrors.name ? 'border-red-400' : ''}
-            />
-            {staffErrors.name && <p className="text-red-500 text-xs">{staffErrors.name[0]}</p>}
-          </div>
+          <FormField id="staff-name" label="Full Name" required error={staffError('name')}>
+            <Input name="name" value={staffForm.name} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="off" />
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-email">Email<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-email"
-              type="email"
-              name="email"
-              value={staffForm.email}
-              onChange={handleStaffFormChange}
-              required
-              className={staffErrors.email ? 'border-red-400' : ''}
-            />
-            {staffErrors.email && <p className="text-red-500 text-xs">{staffErrors.email[0]}</p>}
-          </div>
+          <FormField id="staff-email" label="Email" required error={staffError('email')}>
+            <Input type="email" name="email" value={staffForm.email} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="off" />
+          </FormField>
 
           <div data-tour="staff-role" className="space-y-1.5">
             <Label>Role<span className="text-red-500 ml-0.5">*</span></Label>
@@ -444,31 +449,13 @@ export default function Users() {
             <p className="text-xs text-gray-500 dark:text-gray-400">This cannot be changed once the account is created.</p>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-password">Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-password"
-              type="password"
-              name="password"
-              value={staffForm.password}
-              onChange={handleStaffFormChange}
-              required
-              className={staffErrors.password ? 'border-red-400' : ''}
-            />
-            {staffErrors.password && <p className="text-red-500 text-xs">{staffErrors.password[0]}</p>}
-          </div>
+          <FormField id="staff-password" label="Password" required hint="At least 8 characters." error={staffError('password')}>
+            <Input type="password" name="password" value={staffForm.password} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="new-password" />
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-password-confirm">Confirm Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-password-confirm"
-              type="password"
-              name="password_confirmation"
-              value={staffForm.password_confirmation}
-              onChange={handleStaffFormChange}
-              required
-            />
-          </div>
+          <FormField id="staff-password-confirm" label="Confirm Password" required error={staffError('password_confirmation')}>
+            <Input type="password" name="password_confirmation" value={staffForm.password_confirmation} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="new-password" />
+          </FormField>
         </form>
       </Modal>
 

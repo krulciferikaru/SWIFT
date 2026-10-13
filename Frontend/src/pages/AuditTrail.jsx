@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import TourButton from '../components/TourButton.jsx'
 import { TableSkeleton } from '../components/Skeletons.jsx'
+import DateHint from '../components/DateHint.jsx'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 
@@ -209,10 +210,12 @@ export default function AuditTrail() {
         <div className="space-y-1">
           <Label htmlFor="audit-from">From</Label>
           <Input id="audit-from" type="date" value={from} onChange={resetPage(setFrom)} max={to || undefined} />
+          <DateHint value={from} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="audit-to">To</Label>
           <Input id="audit-to" type="date" value={to} onChange={resetPage(setTo)} min={from || undefined} />
+          <DateHint value={to} />
         </div>
       </div>
 
