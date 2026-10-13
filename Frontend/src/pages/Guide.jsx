@@ -54,7 +54,7 @@ const SECTIONS = [
     icon: Users2,
     title: 'Subscribers',
     summary: 'The full list of cable TV/internet subscribers.',
-    roles: ['admin', 'secretary'],
+    roles: ['admin', 'secretary', 'collector'],
     body: (
       <>
         <p>This is the master list of everyone signed up for service. At the top you'll see totals for Total, Pending, Active, Unpaid, and Disconnected.</p>
@@ -116,7 +116,7 @@ const SECTIONS = [
     icon: Wallet,
     title: 'Payments',
     summary: 'Record a subscriber\'s payment and see their balance.',
-    roles: ['admin', 'secretary'],
+    roles: ['admin', 'secretary', 'collector'],
     body: (
       <>
         <p>This is where you'll spend the most time day-to-day.</p>
@@ -214,7 +214,7 @@ const SECTIONS = [
       role === 'subscriber'
         ? 'Appearance, tour options, and logout behavior.'
         : 'Appearance, tour options, logout behavior, and SMS tools.',
-    roles: ['admin', 'secretary', 'subscriber'],
+    roles: ['admin', 'secretary', 'collector', 'subscriber'],
     body: (role) => (
       <>
         <p>These preferences are saved on the device and browser you are using.</p>
@@ -347,7 +347,7 @@ export default function Guide() {
   const printedOn = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="hidden print:block border-b border-gray-300 pb-4">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
           Jubal Brothers Cable TV Corporation · Palayan Branch
@@ -444,7 +444,7 @@ export default function Guide() {
         ))}
       </div>
 
-      <div id="guide-results" className="space-y-4">
+      <div id="guide-results" className={`gap-4 print:columns-1 [&>*]:mb-4 [&>*]:break-inside-avoid ${sections.length > 2 ? "columns-1 xl:columns-2" : ""}`}>
         {sections.length === 0 && (
           <Card>
             <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-3">

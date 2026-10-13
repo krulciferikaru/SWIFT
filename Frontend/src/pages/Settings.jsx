@@ -114,7 +114,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-6">
       <Toast toast={toast} />
 
       <div className="flex items-start justify-between gap-3">
@@ -125,7 +125,7 @@ export default function Settings() {
         <TourButton tour="settings" />
       </div>
 
-      <div data-tour="settings-pages" className="grid gap-3 sm:grid-cols-2">
+      <div data-tour="settings-pages" className="grid gap-3 sm:grid-cols-2 lg:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": user?.role === "admin" ? 4 : 3 }}>
         {user?.role === 'admin' && (
           <SettingsLink
             to="/users"
@@ -154,6 +154,8 @@ export default function Settings() {
         />
       </div>
 
+      {/* The cards flow into two columns on wide screens, so the page is not one long narrow strip. */}
+      <div className="columns-1 gap-6 xl:columns-2 [&>*]:mb-6 [&>*]:break-inside-avoid">
       <Card data-tour="settings-appearance">
         <CardHeader>
           <CardTitle className="text-base">Appearance</CardTitle>
@@ -334,6 +336,7 @@ export default function Settings() {
       )}
 
       {user?.role === 'subscriber' && <DeleteAccountCard />}
+      </div>
 
       <ReviewDialog
         open={confirmSms}
