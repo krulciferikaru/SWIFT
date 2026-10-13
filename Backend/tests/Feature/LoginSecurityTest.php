@@ -106,7 +106,7 @@ class LoginSecurityTest extends TestCase
         $this->attempt('ghost@lock.test', 'nope')->assertStatus(429);
     }
 
-    public function test_a_normal_sign_in_expires_after_an_hour(): void
+    public function test_a_normal_sign_in_expires_an_hour_after_the_last_activity(): void
     {
         $this->makeUser();
         $token = $this->attempt('who@lock.test', 'correct-horse-battery')->assertOk()->json('token');
@@ -117,7 +117,36 @@ class LoginSecurityTest extends TestCase
         $this->app['auth']->forgetGuards();
         $this->withToken($token)->getJson('/api/me')->assertOk();
 
-        $this->travel(15)->minutes();
+        $this->travel(61)->minutes();
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->getJson('/api/me')->assertUnauthorized();
+    }
+
+    public function test_an_open_page_keeps_a_normal_sign_in_alive(): void
+    {
+        $this->makeUser();
+        $token = $this->attempt('who@lock.test', 'correct-horse-battery')->assertOk()->json('token');
+
+        // The website pings every few minutes; three hours later the person is still signed in.
+        for ($i = 0; $i < 18; $i++) {
+            $this->travel(10)->minutes();
+            $this->app['auth']->forgetGuards();
+            $this->withToken($token)->getJson('/api/me')->assertOk();
+        }
+    }
+
+    public function test_keep_me_signed_in_has_a_fixed_end_and_does_not_slide(): void
+    {
+        $this->makeUser();
+        $token = $this->attempt('who@lock.test', 'correct-horse-battery', true)->assertOk()->json('token');
+
+        // Using it every day does not push the end date out.
+        for ($i = 0; $i < 6; $i++) {
+            $this->travel(1)->days();
+            $this->app['auth']->forgetGuards();
+            $this->withToken($token)->getJson('/api/me')->assertOk();
+        }
+        $this->travel(2)->days();
         $this->app['auth']->forgetGuards();
         $this->withToken($token)->getJson('/api/me')->assertUnauthorized();
     }

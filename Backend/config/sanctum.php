@@ -50,8 +50,8 @@ return [
     'expiration' => null,
 
     /*
-    | How long a sign-in lasts. A normal sign-in ends after an hour; "keep me signed in"
-    | lasts 7 days. Each token carries its own expires_at, so changing these does not affect
+    | How long a sign-in lasts. A normal sign-in ends an hour after the last activity (the open
+    | page keeps it alive); "keep me signed in" lasts a fixed 7 days. Each token carries its own expires_at, so changing these does not affect
     | tokens that were already issued.
     */
     'login_token_hours' => (int) env('LOGIN_TOKEN_HOURS', 1),

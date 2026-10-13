@@ -71,7 +71,7 @@ Settings are not stored in the repository. They are set in each service's dashbo
 | `PHILSMS_API_TOKEN`, `PHILSMS_SENDER_ID` | SMS provider. Leave the token empty on evaluation so no SMS is sent |
 | `RATE_LIMIT_ENABLED` and `RATE_LIMIT_*_PER_MIN` / `_PER_HOUR` / `_PER_10MIN` | Request limits (login 5 a minute, registration 5 an hour, SMS 10 a minute, verification codes 3 every 10 minutes, confirming a password 5 a minute, report views 60 a minute, report downloads 15 a minute). Can be raised or switched off on evaluation |
 | `LOGIN_MAX_FAILURES`, `LOGIN_LOCKOUT_MINUTES` | Wrong passwords for one account before sign-in pauses, and for how long (default 5 inside 15 minutes) |
-| `LOGIN_TOKEN_HOURS`, `REMEMBER_TOKEN_DAYS` | How long a sign-in lasts: 1 hour normally, 7 days with "Keep me signed in" |
+| `LOGIN_TOKEN_HOURS`, `REMEMBER_TOKEN_DAYS` | How long a sign-in lasts: an hour after the last use normally (an open page keeps it alive), a fixed 7 days with "Keep me signed in" |
 | `ALLOW_DEMO_SEED`, `SEED_DEMO_PASSWORD` | Only for the demo seeder, see below |
 
 **Frontend (Vercel)**
