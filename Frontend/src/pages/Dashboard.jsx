@@ -20,6 +20,7 @@ import {
   Users2,
   ClipboardCheck,
   Wifi,
+  WifiOff,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -44,6 +45,12 @@ import {
   CartesianGrid,
 } from "recharts";
 import TourButton from "../components/TourButton.jsx";
+
+// A count card that opens the Subscribers list, already filtered, for people who may view it.
+function SubscribersLink({ to, enabled, children }) {
+  return enabled ? <Link to={to}>{children}</Link> : <div>{children}</div>;
+}
+const cardHover = (enabled) => (enabled ? "hover:border-primary/50 transition-colors cursor-pointer" : "");
 
 const STATUS_COLORS = {
   Active: "#305CDE",
@@ -143,6 +150,7 @@ export default function Dashboard() {
     : 0;
 
   const needsAttention = summary?.pending > 0 || claimsList.length > 0;
+  const canViewSubscribers = can("subscribers.view");
 
   // Revenue trend delta: compare the last two months in the trend array
   const trendDelta = (() => {
@@ -326,7 +334,7 @@ export default function Dashboard() {
             <Skeleton className="h-5 w-24" />
             <Skeleton className="h-3 w-72 max-w-full" />
           </div>
-          <StatCardsSkeleton count={5} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-5" />
+          <StatCardsSkeleton count={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -495,9 +503,9 @@ export default function Dashboard() {
           Current numbers, as of today. They cannot be filtered by period.
         </p>
       </div>
-      <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Link to="/subscribers">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+      <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <SubscribersLink to="/subscribers" enabled={canViewSubscribers}>
+          <Card className={cardHover(canViewSubscribers)}>
             <CardContent>
               <div className="flex items-center justify-between mb-2">
                 <Users2 className="size-5 text-primary" />
@@ -506,7 +514,7 @@ export default function Dashboard() {
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.total}</p>
             </CardContent>
           </Card>
-        </Link>
+        </SubscribersLink>
 
         <Link to="/approvals">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
@@ -532,27 +540,41 @@ export default function Dashboard() {
           </Card>
         </Link>
 
-        <Card>
-          <CardContent>
-            <div className="flex items-center justify-between mb-2">
-              <TrendingUp className="size-5 text-green-700 dark:text-green-400" />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.active}</p>
-          </CardContent>
-        </Card>
-
-        <Link to="/subscribers">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+        <SubscribersLink to="/subscribers?status=Active" enabled={canViewSubscribers}>
+          <Card className={cardHover(canViewSubscribers)}>
             <CardContent>
               <div className="flex items-center justify-between mb-2">
-                <Wifi className="size-5 text-gray-400" />
+                <TrendingUp className="size-5 text-green-700 dark:text-green-400" />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.active}</p>
+            </CardContent>
+          </Card>
+        </SubscribersLink>
+
+        <SubscribersLink to="/subscribers?status=Unpaid" enabled={canViewSubscribers}>
+          <Card className={cardHover(canViewSubscribers)}>
+            <CardContent>
+              <div className="flex items-center justify-between mb-2">
+                <Wifi className="size-5 text-amber-500" />
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unpaid</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.unpaid}</p>
             </CardContent>
           </Card>
-        </Link>
+        </SubscribersLink>
+
+        <SubscribersLink to="/subscribers?status=Disconnected" enabled={canViewSubscribers}>
+          <Card className={cardHover(canViewSubscribers)}>
+            <CardContent>
+              <div className="flex items-center justify-between mb-2">
+                <WifiOff className="size-5 text-gray-400" />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Disconnected</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.disconnected}</p>
+            </CardContent>
+          </Card>
+        </SubscribersLink>
       </div>
 
       {/* 4. Deeper analysis */}

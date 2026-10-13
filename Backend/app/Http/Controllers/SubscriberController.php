@@ -73,6 +73,13 @@ class SubscriberController extends Controller
             $query->where('plan_id', $request->plan_id);
         }
 
+        // Installation date range
+        $request->validate([
+            'installed_from' => ['nullable', 'date_format:Y-m-d'],
+            'installed_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:installed_from'],
+        ]);
+        $query->installedBetween($request->input('installed_from'), $request->input('installed_to'));
+
         $perPage = $request->integer('per_page', 15);
         $subscribers = $query->orderBy('name')->paginate($perPage);
 

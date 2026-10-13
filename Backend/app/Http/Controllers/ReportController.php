@@ -46,6 +46,8 @@ class ReportController extends Controller
             $query->where('plan_id', $request->plan_id);
         }
 
+        $query->installedBetween($request->input('installed_from'), $request->input('installed_to'));
+
         $subscribers = $query->orderBy('name')->get();
 
         return $this->exports->downloadCsv(
@@ -82,6 +84,8 @@ class ReportController extends Controller
         if ($request->filled('plan_id')) {
             $query->where('plan_id', $request->plan_id);
         }
+
+        $query->installedBetween($request->input('installed_from'), $request->input('installed_to'));
 
         $subscribers = $query->orderBy('name')->get();
 

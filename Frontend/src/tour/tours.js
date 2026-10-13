@@ -75,7 +75,7 @@ export const TOURS = {
         selector: t('dash-activity'),
         title: 'Activity by period',
         description:
-          'Pick Today, This month, This quarter, This year or All time to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. Your choice is remembered.',
+          'Pick Today, This month, This quarter, This year or All time, or choose Custom range and enter your own From and To dates, to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. The ready-made periods are remembered; a custom range is not.',
         side: 'bottom',
       },
       {
@@ -96,7 +96,7 @@ export const TOURS = {
         selector: t('dash-counts'),
         title: 'Subscriber counts',
         description:
-          'Total subscribers, pending applications, account claims, and how many are Active or Unpaid, as of right now. These are current numbers, so they do not follow the period filter above. Each card opens the matching page.',
+          'Total subscribers, pending applications, account claims, and how many are Active, Unpaid or Disconnected, as of right now. These are current numbers, so they do not follow the period filter above. Click a card to open the matching page. The Active, Unpaid and Disconnected cards open the Subscribers list already filtered to that status.',
         side: 'bottom',
       },
       {
@@ -180,7 +180,7 @@ export const TOURS = {
       {
         selector: t('subs-summary'),
         title: 'At a glance',
-        description: 'Totals for every status: Pending, Active, Unpaid and Disconnected.',
+        description: 'Totals for every status: Pending, Active, Unpaid and Disconnected. Click Total, Active, Unpaid or Disconnected to filter the table to it; click again on Total to show everyone.',
         side: 'bottom',
       },
       {
@@ -192,7 +192,13 @@ export const TOURS = {
       {
         selector: t('subs-status'),
         title: 'Filter by status',
-        description: 'Show only Active, Unpaid or Disconnected subscribers.',
+        description: 'Show only Active, Unpaid or Disconnected subscribers. The same filter is reached by clicking a status card above.',
+        side: 'bottom',
+      },
+      {
+        selector: t('subs-filters'),
+        title: 'More filters',
+        description: 'Narrow the list by service plan or by installation date, then use Clear filters to start over. The CSV export follows the same filters.',
         side: 'bottom',
       },
       {

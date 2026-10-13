@@ -119,6 +119,38 @@ class DashboardPeriodTest extends TestCase
         $this->assertSame(1, $data['new_subscribers']);
     }
 
+    public function test_a_custom_range_counts_only_its_dates_and_compares_with_the_days_before(): void
+    {
+        $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 14)->setTime(12, 0));
+        $sub = $this->sub('Juan', '2026-01-02 00:00:00');
+        $this->pay($sub, '2026-10-10', 300);   // inside 10-12 Oct
+        $this->pay($sub, '2026-10-12', 200);   // inside, last day
+        $this->pay($sub, '2026-10-13', 999);   // after
+        $this->pay($sub, '2026-10-08', 100);   // the 3 days before (7-9 Oct)
+        $this->pay($sub, '2026-10-06', 777);   // before that
+        Sanctum::actingAs($this->staff());
+
+        $data = $this->getJson('/api/dashboard/period?period=custom&from=2026-10-10&to=2026-10-12')
+            ->assertOk()->json('data');
+
+        $this->assertEquals(500.0, $data['collected']);
+        $this->assertSame(2, $data['payments_count']);
+        $this->assertEquals(100.0, $data['previous_collected']);
+        $this->assertSame('Oct 10 – Oct 12, 2026', $data['label']);
+        $this->assertSame('2026-10-10', $data['from']);
+        $this->assertSame('2026-10-12', $data['to']);
+    }
+
+    public function test_a_custom_range_is_validated(): void
+    {
+        Sanctum::actingAs($this->staff());
+
+        $this->getJson('/api/dashboard/period?period=custom')->assertStatus(422);
+        $this->getJson('/api/dashboard/period?period=custom&from=2026-10-12&to=2026-10-10')->assertStatus(422);
+        $this->getJson('/api/dashboard/period?period=custom&from=2019-01-01&to=2026-10-10')->assertStatus(422);
+        $this->getJson('/api/dashboard/period?period=custom&from=2026-10-10&to=2026-10-10')->assertOk();
+    }
+
     public function test_it_rejects_unknown_periods_and_non_staff(): void
     {
         Sanctum::actingAs($this->staff());
