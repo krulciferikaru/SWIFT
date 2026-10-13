@@ -32,6 +32,8 @@ export default function Modal({
   children,
   footer,
   size = 'md',
+  // Pass true only when the form has unsaved changes: closing then asks "Discard unsaved changes?".
+  // With nothing changed, closing just closes.
   confirmClose = false,
 }) {
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
