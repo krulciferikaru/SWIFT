@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios";
 import { TableSkeleton } from "../components/Skeletons.jsx";
-import { Check, RotateCcw, X } from "lucide-react";
+import { Check, ClipboardCheck, RotateCcw, X } from "lucide-react";
+import EmptyState from "../components/EmptyState.jsx";
 import { useOnReconnect } from "../hooks/useOnline";
 import subscriberApi from "../api/subscribers";
 import {
@@ -269,14 +270,14 @@ export default function Approvals() {
       })
     : baseList;
 
-  const emptyMessage =
+  const emptyState =
     tab === "pending"
-      ? "No pending subscribers."
+      ? { title: "No applications waiting", description: "New sign-ups from the registration page wait here until you approve or reject them." }
       : tab === "rejected"
-        ? "No rejected subscribers."
+        ? { title: "No rejected applications", description: "Applications you reject are kept here for reference." }
         : claimsSubTab === "pending"
-          ? "No pending account claims."
-          : "No rejected account claims.";
+          ? { title: "No account claims waiting", description: "When someone signs up with a number that already belongs to a subscriber, you verify the claim here." }
+          : { title: "No rejected claims", description: "Claims you reject are kept here for reference." };
 
   return (
     <div>
@@ -424,7 +425,14 @@ export default function Approvals() {
         </div>
       ) : list.length === 0 ? (
         <>
-          <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <EmptyState
+              icon={ClipboardCheck}
+              title={search ? "No one matches your search" : emptyState.title}
+              description={search ? "Check the spelling, or clear the search." : emptyState.description}
+              onClearFilters={search ? () => setSearch("") : undefined}
+            />
+          </div>
           {tourActive && <ApprovalSample tab={tab} claimsSubTab={claimsSubTab} />}
         </>
       ) : tab === "claims" ? (

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import TourButton from '../components/TourButton.jsx'
 import { TableSkeleton } from '../components/Skeletons.jsx'
+import EmptyState from '../components/EmptyState.jsx'
+import { ScrollText } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 
@@ -130,6 +132,8 @@ export default function AuditTrail() {
   const [logs, setLogs] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Skeletons only for the first load; later refreshes dim the table so it does not flash.
+  const [initialLoad, setInitialLoad] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -158,6 +162,7 @@ export default function AuditTrail() {
       setError(err.response?.status === 429 ? 'Too many requests. Please wait a moment and try again.' : errorMessage(err, 'Failed to load the audit trail.'))
     } finally {
       setLoading(false)
+      setInitialLoad(false)
     }
   }, [page, debouncedSearch, category, from, to])
 
@@ -220,13 +225,22 @@ export default function AuditTrail() {
         <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div data-tour="audit-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
-        {loading ? (
+      <div
+        data-tour="audit-table"
+        aria-busy={loading}
+        className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4 transition-opacity ${loading && !initialLoad ? 'opacity-60' : ''}`}
+      >
+        {initialLoad ? (
           <TableSkeleton rows={8} columns={[
             { label: 'When' }, { label: 'Who' }, { label: 'Action' }, { label: 'Record' }, { label: 'Details' },
           ]} />
         ) : logs.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">No activity matches these filters.</p>
+          <EmptyState
+            icon={ScrollText}
+            title={search || category || from || to ? 'No activity matches these filters' : 'No activity recorded yet'}
+            description={search || category || from || to ? 'Try a wider date range or a different search.' : 'Sign-ins, edits, payments and other actions will be listed here as they happen.'}
+            onClearFilters={search || category || from || to ? () => { setSearch(''); setDebouncedSearch(''); setCategory(''); setFrom(''); setTo(''); setPage(1) } : undefined}
+          />
         ) : (
           <Table>
             <TableHeader>

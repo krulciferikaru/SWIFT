@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import CardAction from "../../components/CardAction.jsx";
+import EmptyState from "../../components/EmptyState.jsx";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -31,7 +32,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
-import { Archive, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil } from "lucide-react";
+import { Archive, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -461,8 +462,12 @@ export default function SubscribersPage() {
         </p>
 
         {/* Table */}
-        <div data-tour="subs-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {loading ? (
+        <div
+          data-tour="subs-table"
+          aria-busy={loading}
+          className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-opacity ${loading && !initialLoading ? "opacity-60" : ""}`}
+        >
+          {initialLoading ? (
             <TableSkeleton rows={9} columns={[
               { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Contact" },
               { label: "MAC Address" }, { label: "Status", kind: "badge" }, { label: "Actions", kind: "actions" },
@@ -472,10 +477,21 @@ export default function SubscribersPage() {
               {error}
             </div>
           ) : subscribers.length === 0 ? (
-            <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">
-              No subscribers found.
-              {search || status !== "All" || hasExtraFilters ? " Try adjusting your filters." : ""}
-            </div>
+            search || status !== "All" || hasExtraFilters ? (
+              <EmptyState
+                icon={Users2}
+                title="No subscribers match these filters"
+                description="Try a different search, or clear the filters to see everyone."
+                onClearFilters={clearAllFilters}
+              />
+            ) : (
+              <EmptyState
+                icon={Users2}
+                title="No subscribers yet"
+                description="Subscribers show up here once staff add them, or after a new sign-up is approved."
+                action={can("subscribers.manage") ? { label: "Add Subscriber", onClick: () => setShowAdd(true) } : undefined}
+              />
+            )
           ) : (
             <Table>
               <TableHeader>
