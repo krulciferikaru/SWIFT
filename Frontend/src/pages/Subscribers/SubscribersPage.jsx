@@ -351,7 +351,7 @@ export default function SubscribersPage() {
         </div>
 
         {summary ? (
-          <div data-tour="subs-summary" className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div data-tour="subs-summary" className={`grid grid-cols-2 gap-4 ${can("approvals.manage") ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
             {[
               {
                 label: "Total",
@@ -378,7 +378,10 @@ export default function SubscribersPage() {
                 value: summary.disconnected,
                 color: "text-red-600 dark:text-red-400",
               },
-            ].map((card) => {
+            ]
+              // The Pending card leads to the Approvals page, so only people who can approve see it.
+              .filter((card) => card.label !== "Pending" || can("approvals.manage"))
+              .map((card) => {
               const body = (
                 <CardContent>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">

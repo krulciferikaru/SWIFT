@@ -145,7 +145,8 @@ export default function Dashboard() {
     ? Math.max(...claimsList.map((c) => daysAgo(c.created_at)))
     : 0;
 
-  const needsAttention = summary?.pending > 0 || claimsList.length > 0;
+  // Applications and claims are for whoever can approve them; a field collector never sees them.
+  const needsAttention = can("approvals.manage") && (summary?.pending > 0 || claimsList.length > 0);
   const canViewSubscribers = can("subscribers.view");
   const canViewPayments = can("payments.view", "payments.record");
   const canApprove = can("approvals.manage");
@@ -523,7 +524,8 @@ export default function Dashboard() {
           </CardContent>
         </CardAction>
 
-        <CardAction to={canApprove ? "/approvals" : undefined} hint="Review applications">
+        {canApprove && (
+        <CardAction to="/approvals" hint="Review applications">
           <CardContent>
             <div className="flex items-center justify-between mb-2">
               <ClipboardCheck className="size-5 text-amber-500" />
@@ -532,8 +534,10 @@ export default function Dashboard() {
             <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.pending}</p>
           </CardContent>
         </CardAction>
+        )}
 
-        <CardAction to={canApprove ? "/approvals" : undefined} state={{ tab: "claims" }} hint="Review claims">
+        {canApprove && (
+        <CardAction to="/approvals" state={{ tab: "claims" }} hint="Review claims">
           <CardContent>
             <div className="flex items-center justify-between mb-2">
               <ShieldCheck className="size-5 text-blue-500" />
@@ -542,6 +546,7 @@ export default function Dashboard() {
             <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{claimsList.length}</p>
           </CardContent>
         </CardAction>
+        )}
 
         <CardAction to={canViewSubscribers ? "/subscribers?status=Active" : undefined} hint="View active subscribers">
           <CardContent>
@@ -651,12 +656,14 @@ export default function Dashboard() {
               </div>
             </Link>
           )}
+          {can("plans.manage") && (
           <Link to="/plans" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Service Plans</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Manage available plans and pricing</p>
               </div>
             </Link>
+          )}
           {user?.role === "admin" && (
             <Link to="/users" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
                 <div className="text-left">
