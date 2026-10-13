@@ -11,6 +11,7 @@ There are three roles. A person's role is fixed when their account is created an
 | Subscribers: list, search, add, edit, archive, change status | yes | yes | |
 | Approve or reject new applications and account claims | yes | yes | |
 | Payments: view a subscriber's billing, record a payment, reconnect | yes | yes | |
+| **Cancel a wrongly recorded payment** (reason and password required; it stays in the history marked Cancelled) | **yes** | | |
 | Service plans: add, edit, archive | yes | yes | |
 | Archive: restore or permanently delete subscribers and plans | yes | yes | |
 | Reports: view the Collection Report with filters, and download PDF / Excel / CSV | yes | yes | |

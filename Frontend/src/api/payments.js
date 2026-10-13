@@ -6,6 +6,7 @@ const paymentsApi = {
     api.get(`/subscribers/${subscriberId}/payments`),
   create: (subscriberId, data) =>
     api.post(`/subscribers/${subscriberId}/payments`, data),
+  void: (paymentId, reason) => api.post(`/payments/${paymentId}/void`, { reason }),
   nextOrNumber: () => api.get("/payments/next-or-number"),
   getMyBilling: () => api.get("/me/billing"),
   getMyPayments: () => api.get("/me/payments"),

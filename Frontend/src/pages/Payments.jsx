@@ -42,6 +42,7 @@ import { required, positiveAmount, firstError } from "../utils/validators";
 import { spelledDate } from "../utils/text";
 import { Clock } from "lucide-react";
 import EmptyState from "../components/EmptyState.jsx";
+import VoidPaymentDialog from "../components/VoidPaymentDialog.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -138,7 +139,10 @@ function describeCoverage(months, amount) {
 }
 
 export default function Payments() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  // The payment being cancelled (administrators only).
+  const [voiding, setVoiding] = useState(null);
   const { methods: paymentMethods } = usePaymentMethods();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
@@ -317,6 +321,33 @@ export default function Payments() {
     } finally {
       setSaving(false);
       setReviewOpen(false);
+    }
+  };
+
+  // The payment was cancelled: show the new balance, and optionally put its details back in the form.
+  const handleVoided = async ({ billing }, { prefill, original }) => {
+    setVoiding(null);
+    if (billing) setBilling(billing);
+    showToast("Payment cancelled. It stays in the history, marked as cancelled.");
+    try {
+      const historyRes = await paymentsApi.getHistory(selected.subscriber_id);
+      setHistory(historyRes.data.data);
+      const fresh = await subscriberApi.getOne(selected.subscriber_id);
+      if (fresh.data.data) setSelected(fresh.data.data);
+    } catch {
+      // The numbers will refresh the next time the page loads.
+    }
+    if (prefill && original) {
+      setForm({
+        ...freshForm(),
+        amount: String(Number(original.amount)),
+        payment_date: String(original.payment_date).slice(0, 10),
+        or_number: original.or_number,
+        payment_method: original.payment_method,
+        notes: original.notes ?? "",
+      });
+      setTouched({});
+      setTimeout(() => document.getElementById("amount")?.focus(), 150);
     }
   };
 
@@ -579,6 +610,7 @@ export default function Payments() {
                     <PaymentHistory
                       maxHeightClass="max-h-80"
                       payments={history}
+                      onCancelPayment={isAdmin ? setVoiding : undefined}
                       subscriber={{
                         name: selected.name,
                         address: selected.address,
@@ -703,6 +735,8 @@ export default function Payments() {
           )}
         </>
       )}
+
+      <VoidPaymentDialog payment={voiding} onClose={() => setVoiding(null)} onDone={handleVoided} />
 
       <ReviewDialog
         open={reviewOpen}
