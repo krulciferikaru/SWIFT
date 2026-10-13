@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
+import SecurityCard from '../components/SecurityCard.jsx'
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx'
 import StaffMobileNumber from '../components/StaffMobileNumber.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
@@ -253,6 +254,8 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {user?.role === 'admin' && <SecurityCard />}
 
       {user?.role === 'admin' && <PaymentMethodsManager showToast={showToast} />}
 

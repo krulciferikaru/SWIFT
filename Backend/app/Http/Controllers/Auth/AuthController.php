@@ -8,6 +8,7 @@ use App\Models\Subscriber;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -204,8 +205,76 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account is not available. Contact a secretary or an administrator.'], 403);
         }
 
-        // "Keep me signed in" lasts longer; otherwise the sign-in lasts an hour after the last activity.
         $remember = filter_var($requestData['remember'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        // Administrators with an authenticator app are not signed in yet: the password was the
+        // first step. They get a short-lived challenge and must send the code from their app.
+        if ($user->role === 'admin' && $user->mfa_enabled_at) {
+            $challenge = \Illuminate\Support\Str::random(48);
+            Cache::put('mfa-challenge:'.hash('sha256', $challenge), ['user_id' => $user->id, 'remember' => $remember], now()->addMinutes(config('mfa.challenge_minutes')));
+
+            return response()->json([
+                'mfa_required' => true,
+                'mfa_token' => $challenge,
+                'message' => 'Enter the 6-digit code from your authenticator app.',
+            ]);
+        }
+
+        return $this->issueToken($user, $remember);
+    }
+
+    /**
+     * POST /api/login/mfa  { mfa_token, code }
+     *
+     * The second step: a code from the authenticator app, or one of the single-use recovery codes.
+     * Wrong codes are counted per account, so they cannot be guessed from many places.
+     */
+    public function loginMfa(Request $request)
+    {
+        $validated = $request->validate([
+            'mfa_token' => ['required', 'string', 'max:100'],
+            'code' => ['required', 'string', 'max:30'],
+        ]);
+
+        $key = 'mfa-challenge:'.hash('sha256', $validated['mfa_token']);
+        $challenge = Cache::get($key);
+        $user = $challenge ? User::find($challenge['user_id']) : null;
+
+        if (! $user || $user->role !== 'admin' || ! $user->mfa_enabled_at) {
+            return response()->json(['message' => 'That sign-in expired. Please enter your password again.', 'expired' => true], 422);
+        }
+
+        $lockKey = 'mfa-failures:'.$user->id;
+        if (RateLimiter::tooManyAttempts($lockKey, config('mfa.max_failures'))) {
+            return $this->lockedResponse(RateLimiter::availableIn($lockKey));
+        }
+
+        $kind = app(\App\Services\MfaService::class)->check($user, $validated['code']);
+        if ($kind === null) {
+            RateLimiter::hit($lockKey, config('mfa.lockout_minutes') * 60);
+            $left = max(config('mfa.max_failures') - RateLimiter::attempts($lockKey), 0);
+            Audit::log('auth.mfa_failed', $user, null, [], $user);
+
+            if ($left === 0) {
+                return $this->lockedResponse(RateLimiter::availableIn($lockKey));
+            }
+
+            return response()->json(['message' => 'That code is not right.', 'attempts_left' => $left], 422);
+        }
+
+        Cache::forget($key);
+        RateLimiter::clear($lockKey);
+        if ($kind === 'recovery') {
+            Audit::log('auth.mfa_recovery_used', $user, null, ['codes_left' => count($user->fresh()->mfa_recovery_codes ?? [])], $user);
+        }
+
+        return $this->issueToken($user, (bool) $challenge['remember']);
+    }
+
+    /** Creates the sign-in token and the reply for a person who has passed every step. */
+    private function issueToken(User $user, bool $remember)
+    {
+        // "Keep me signed in" lasts longer; otherwise the sign-in lasts an hour after the last activity.
         $expiresAt = $remember
             ? now()->addDays(config('sanctum.remember_token_days'))
             : now()->addHours(config('sanctum.login_token_hours'));

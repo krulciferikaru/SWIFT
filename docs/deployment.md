@@ -72,6 +72,7 @@ Settings are not stored in the repository. They are set in each service's dashbo
 | `RATE_LIMIT_ENABLED` and `RATE_LIMIT_*_PER_MIN` / `_PER_HOUR` / `_PER_10MIN` | Request limits (login 5 a minute, registration 5 an hour, SMS 10 a minute, verification codes 3 every 10 minutes, confirming a password 5 a minute, report views 60 a minute, report downloads 15 a minute). Can be raised or switched off on evaluation |
 | `RATE_LIMIT_PASSWORD_FORGOT_PER_10MIN`, `RATE_LIMIT_PASSWORD_RESET_PER_10MIN` | Forgot password: code requests (default 5) and reset attempts (default 10) per network address in 10 minutes. Each number is also capped separately (three codes in 10 minutes) |
 | `LOGIN_MAX_FAILURES`, `LOGIN_LOCKOUT_MINUTES` | Wrong passwords for one account before sign-in pauses, and for how long (default 5 inside 15 minutes) |
+| `MFA_ENFORCE` | Administrators must use an authenticator app (default `true`). Leave it on; switching it off is only for a development machine. `MFA_ISSUER` is the name shown in the app (default `SWIFT`); `MFA_MAX_FAILURES` and `MFA_LOCKOUT_MINUTES` set the wrong-code pause (default 5 and 15) |
 | `LOGIN_TOKEN_HOURS`, `REMEMBER_TOKEN_DAYS` | How long a sign-in lasts: an hour after the last use normally (an open page keeps it alive), a fixed 7 days with "Keep me signed in" |
 | `ALLOW_DEMO_SEED`, `SEED_DEMO_PASSWORD` | Only for the demo seeder, see below |
 

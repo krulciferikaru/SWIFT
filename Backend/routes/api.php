@@ -9,6 +9,7 @@ use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\MfaController;
 use App\Http\Controllers\Auth\AccountDeletionController;
 use App\Http\Controllers\Auth\PasswordConfirmationController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -28,6 +29,8 @@ Route::get('/health', fn() => response()->json([
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+// The second step for administrators: the code from their authenticator app.
+Route::post('/login/mfa', [AuthController::class, 'loginMfa'])->middleware('throttle:login');
 
 // Forgot password: a code by text message to a verified mobile number.
 // Nobody else can reset a password for someone: people do it themselves.
@@ -41,7 +44,7 @@ Route::get('/company-info', [CompanyInfoController::class, 'show'])->middleware(
  * Staff routes are guarded by permission (config/permissions.php), not by role name, so an
  * admin can switch individual abilities on or off for each secretary. Admins hold them all.
  */
-Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
+Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
@@ -49,6 +52,12 @@ Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
     Route::post('/me/confirm-password', [PasswordConfirmationController::class, 'store'])
         ->middleware('throttle:confirm-password');
 
+    // An administrator's authenticator app (required for administrators).
+    Route::get('/me/mfa', [MfaController::class, 'status']);
+    Route::post('/me/mfa/setup', [MfaController::class, 'setup'])->middleware('password.confirmed');
+    Route::post('/me/mfa/enable', [MfaController::class, 'enable'])->middleware('throttle:confirm-password');
+    Route::post('/me/mfa/recovery-codes', [MfaController::class, 'recoveryCodes'])
+        ->middleware(['password.confirmed', 'throttle:confirm-password']);
     // A staff member adds or changes their own mobile number (they are verified afterwards,
     // in the same way as a subscriber's). It is what lets them use Forgot password.
     Route::patch('/me/mobile-number', [PhoneVerificationController::class, 'update'])

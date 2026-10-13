@@ -5,6 +5,7 @@ import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
 import AuthLayout from '../components/AuthLayout.jsx'
+import MfaStep from '../components/MfaStep.jsx'
 import PasswordField from '../components/PasswordField.jsx'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,6 +32,8 @@ export default function Login() {
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [loading, setLoading] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  // Set when the password was right but the account needs a code from an authenticator app too.
+  const [challenge, setChallenge] = useState(null)
   const passwordRef = useRef(null)
   const navigate = useNavigate()
   // A message left for this page by whatever signed the person out (for example deleting their
@@ -91,6 +94,11 @@ export default function Login() {
       const response = await api.post('/login', payload, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
+      if (response.data.mfa_required) {
+        setChallenge(response.data.mfa_token)
+        setPassword('')
+        return
+      }
       login(response.data.token, response.data.user, remember)
       navigate('/dashboard', { replace: true })
     } catch (err) {
@@ -118,6 +126,24 @@ export default function Login() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (challenge) {
+    return (
+      <AuthLayout>
+        <MfaStep
+          challenge={challenge}
+          onDone={(data) => {
+            login(data.token, data.user, remember)
+            navigate('/dashboard', { replace: true })
+          }}
+          onBack={(message) => {
+            setChallenge(null)
+            if (message) setError(message)
+          }}
+        />
+      </AuthLayout>
+    )
   }
 
   return (
