@@ -62,6 +62,7 @@ export default function Settings() {
   const [confirmReminders, setConfirmReminders] = useState(false)
 
   const canSendSms = can('sms.send')
+  const showPhoneCard = Boolean(user?.contact_number) || user?.role !== 'subscriber'
 
   useEffect(() => {
     const skip = localStorage.getItem('skipLogoutConfirm') === 'true'
@@ -114,7 +115,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Toast toast={toast} />
 
       <div className="flex items-start justify-between gap-3">
@@ -154,8 +155,13 @@ export default function Settings() {
         />
       </div>
 
-      {/* The cards flow into two columns on wide screens, so the page is not one long narrow strip. */}
-      <div className="columns-1 gap-6 xl:columns-2 [&>*]:mb-6 [&>*]:break-inside-avoid">
+      {/* Settings are grouped under headings, two cards across on wide screens. */}
+      <section className="space-y-4">
+        <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Preferences</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">How SWIFT looks and behaves for you.</p>
+        </div>
+        <div className="grid items-start gap-6 xl:grid-cols-2">
       <Card data-tour="settings-appearance">
         <CardHeader>
           <CardTitle className="text-base">Appearance</CardTitle>
@@ -189,28 +195,6 @@ export default function Settings() {
               <p className="text-xs text-gray-500 dark:text-gray-400">Make everything in SWIFT bigger and easier to read.</p>
             </div>
             <TextSizeControl />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card data-tour="settings-account">
-        <CardHeader>
-          <CardTitle className="text-base">Account</CardTitle>
-          <CardDescription>Control confirmation prompts and account behavior.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="logout-confirm-toggle" className="cursor-pointer">Confirm before logging out</Label>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Show a confirmation dialog every time you log out.
-              </p>
-            </div>
-            <Switch
-              id="logout-confirm-toggle"
-              checked={confirmLogout}
-              onCheckedChange={handleConfirmLogoutChange}
-            />
           </div>
         </CardContent>
       </Card>
@@ -250,7 +234,38 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {(user?.contact_number || user?.role !== 'subscriber') && (
+      <Card data-tour="settings-account">
+        <CardHeader>
+          <CardTitle className="text-base">Account</CardTitle>
+          <CardDescription>Control confirmation prompts and account behavior.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="logout-confirm-toggle" className="cursor-pointer">Confirm before logging out</Label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Show a confirmation dialog every time you log out.
+              </p>
+            </div>
+            <Switch
+              id="logout-confirm-toggle"
+              checked={confirmLogout}
+              onCheckedChange={handleConfirmLogoutChange}
+            />
+          </div>
+        </CardContent>
+      </Card>
+        </div>
+      </section>
+
+      {(showPhoneCard || user?.role === 'admin' || user?.role === 'subscriber') && (
+      <section className="space-y-4">
+        <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Your account</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Your mobile number and sign-in security.</p>
+        </div>
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+      {showPhoneCard && (
         <Card data-tour="settings-phone">
           <CardHeader>
             <CardTitle className="text-base">Mobile number</CardTitle>
@@ -269,13 +284,18 @@ export default function Settings() {
 
       {user?.role === 'admin' && <SecurityCard />}
 
-      {user?.role === 'admin' && <PaymentMethodsManager showToast={showToast} />}
-
-      {user?.role === 'admin' && <BarangaysManager showToast={showToast} />}
-
-      {user?.role === 'admin' && <CompanyInfoForm showToast={showToast} />}
+      {user?.role === 'subscriber' && <DeleteAccountCard />}
+        </div>
+      </section>
+      )}
 
       {canSendSms && (
+      <section className="space-y-4">
+        <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Text messages</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Send a one-off text or remind everyone who owes.</p>
+        </div>
+        <div className="grid items-start gap-6 xl:grid-cols-2">
         <Card data-tour="settings-sms">
           <CardHeader>
             <CardTitle className="text-base">Send SMS</CardTitle>
@@ -315,9 +335,7 @@ export default function Settings() {
             </form>
           </CardContent>
         </Card>
-      )}
 
-      {canSendSms && (
         <Card data-tour="settings-reminders">
           <CardHeader>
             <CardTitle className="text-base">Payment Reminders</CardTitle>
@@ -333,10 +351,25 @@ export default function Settings() {
             </Button>
           </CardContent>
         </Card>
+        </div>
+      </section>
       )}
 
-      {user?.role === 'subscriber' && <DeleteAccountCard />}
-      </div>
+      {user?.role === 'admin' && (
+      <section className="space-y-4">
+        <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Administration</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Choices the rest of the office works from.</p>
+        </div>
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+      {user?.role === 'admin' && <PaymentMethodsManager showToast={showToast} />}
+
+      {user?.role === 'admin' && <BarangaysManager showToast={showToast} />}
+
+      {user?.role === 'admin' && <CompanyInfoForm showToast={showToast} />}
+        </div>
+      </section>
+      )}
 
       <ReviewDialog
         open={confirmSms}
