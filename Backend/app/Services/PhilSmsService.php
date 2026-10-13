@@ -54,6 +54,11 @@ class PhilSmsService
             return ['success' => false, 'message' => 'Subscriber has no mobile number on file.'];
         }
 
+        // Someone who deleted their own account asked to be left alone: no more texts.
+        if ($subscriber->deletion()->exists()) {
+            return ['success' => false, 'message' => 'This subscriber deleted their account, so no texts are sent to them.'];
+        }
+
         return $this->send(self::normalizeNumber($subscriber->contact_number), $message);
     }
 

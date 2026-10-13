@@ -21,6 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import ReviewDialog from '../components/ReviewDialog.jsx'
+import ConfirmAction from '../components/ConfirmAction.jsx'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
 import { required, positiveAmount, firstError } from '../utils/validators'
 import EmptyState from '../components/EmptyState.jsx'
@@ -47,6 +48,9 @@ export default function Plans() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
+  // The plan about to be archived: staff confirm first.
+  const [archiveTarget, setArchiveTarget] = useState(null)
+  const [archiving, setArchiving] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [formErrors, setFormErrors] = useState({})
@@ -308,7 +312,7 @@ export default function Plans() {
                         </Button>
                       )}
                       {canArchive && (
-                        <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => archivePlan(plan)} aria-label={`Archive ${plan.plan_name}`}>
+                        <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setArchiveTarget(plan)} aria-label={`Archive ${plan.plan_name}`}>
                           <Archive className="size-3.5" aria-hidden="true" />
                           Archive
                         </Button>
@@ -333,7 +337,7 @@ export default function Plans() {
         }}
         onArchive={(p) => {
           setDetailsPlan(null)
-          archivePlan(p)
+          setArchiveTarget(p)
         }}
       />
 
@@ -404,6 +408,30 @@ export default function Plans() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmAction
+        open={!!archiveTarget}
+        onOpenChange={(open) => { if (!open) setArchiveTarget(null) }}
+        title="Archive this plan?"
+        description={
+          archiveTarget && (
+            <>
+              <strong>"{archiveTarget.plan_name}"</strong> will no longer be offered to new subscribers. Subscribers already on it keep it and are still billed
+              normally. You can restore it from the Archive page (or press Undo straight after).
+            </>
+          )
+        }
+        confirmLabel="Archive plan"
+        busyLabel="Archiving..."
+        destructive
+        busy={archiving}
+        onConfirm={async () => {
+          setArchiving(true)
+          await archivePlan(archiveTarget)
+          setArchiving(false)
+          setArchiveTarget(null)
+        }}
+      />
 
       <ReviewDialog
         open={reviewOpen}

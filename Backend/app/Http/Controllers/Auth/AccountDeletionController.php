@@ -55,7 +55,7 @@ class AccountDeletionController extends Controller
         $this->deletion->delete($user, $validated['reason'] ?? null, $validated['detail'] ?? null);
 
         return response()->json([
-            'message' => 'Your account was deleted. Your login and contact details have been removed.',
+            'message' => 'Your account was deleted. Your login has been removed.',
         ]);
     }
 }

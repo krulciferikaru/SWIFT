@@ -28,6 +28,6 @@ The register page has a required box: *I have read and agree to the Terms of Ser
 ## What the policy promises (so the system has to keep doing it)
 
 - Nobody, including administrators, can see or reset another person's password (see [Roles and permissions](roles-and-permissions.md)).
-- A person can delete their own account in Settings; their login and contact details go, and billing records are kept for the retention period. (Delete my account is added in a following change.)
+- A person can delete their own account in Settings: their login is deleted, the company's record of them stays with a note that they deleted their account, and no more texts are sent to them.
 - Verification and reset codes last ten minutes and are stored scrambled.
 - No advertising or tracking cookies.

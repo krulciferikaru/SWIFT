@@ -12,6 +12,7 @@ import CardAction from "../../components/CardAction.jsx";
 import DateHint from "../../components/DateHint.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
 import ReviewDialog from "../../components/ReviewDialog.jsx";
+import ConfirmAction from "../../components/ConfirmAction.jsx";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -175,6 +176,9 @@ export default function SubscribersPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [detailsTarget, setDetailsTarget] = useState(null);
+  // The subscriber about to be archived: staff confirm first.
+  const [archiveTarget, setArchiveTarget] = useState(null);
+  const [archiving, setArchiving] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
   const [showPreview, setShowPreview] = useState(false);
@@ -613,6 +617,11 @@ export default function SubscribersPage() {
                         {sub.name}
                         <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                       </button>
+                      {sub.deletion && (
+                        <span className="mt-0.5 block text-xs font-normal text-amber-700 dark:text-amber-300">
+                          Deleted their account on {new Date(sub.deletion.created_at).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.plan?.plan_name ?? "—"}
@@ -669,7 +678,7 @@ export default function SubscribersPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => archiveSubscriber(sub)}
+                          onClick={() => setArchiveTarget(sub)}
                           aria-label={`Archive ${sub.name}`}
                           className="gap-1.5"
                         >
@@ -711,6 +720,30 @@ export default function SubscribersPage() {
           noun="subscribers"
         />
       </div>
+
+      <ConfirmAction
+        open={!!archiveTarget}
+        onOpenChange={(open) => { if (!open) setArchiveTarget(null); }}
+        title="Archive this subscriber?"
+        description={
+          archiveTarget && (
+            <>
+              <strong>{archiveTarget.name}</strong> will be removed from the subscriber list and can no longer sign in. Nothing is deleted: their
+              payments and history are kept, and you can restore them from the Archive page (or press Undo straight after).
+            </>
+          )
+        }
+        confirmLabel="Archive subscriber"
+        busyLabel="Archiving..."
+        destructive
+        busy={archiving}
+        onConfirm={async () => {
+          setArchiving(true);
+          await archiveSubscriber(archiveTarget);
+          setArchiving(false);
+          setArchiveTarget(null);
+        }}
+      />
 
       <ReviewDialog
         open={remindOpen}
@@ -809,7 +842,7 @@ export default function SubscribersPage() {
         }}
         onArchive={(s) => {
           setDetailsTarget(null);
-          archiveSubscriber(s);
+          setArchiveTarget(s);
         }}
         onPayments={(s) => navigate("/payments", { state: { subscriber: s } })}
       />

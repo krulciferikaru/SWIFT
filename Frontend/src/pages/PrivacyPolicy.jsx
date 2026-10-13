@@ -85,8 +85,8 @@ export default function PrivacyPolicy() {
 
       <Section id="keep" title="6. How long we keep it">
         <ul>
-          <li><strong>Your account and contact details</strong> (login, email, mobile number, MAC address): while you are a subscriber. When you delete your account, or after your account has been <strong>inactive for <Todo>one year, to be confirmed by the company</Todo></strong>, we delete them.</li>
-          <li><strong>Billing and payment records</strong> (your name and address as shown on them, plan, installation date, service status and payments): <Todo>number of years, to be confirmed by the company with its accountant</Todo>. We keep these even after your account is deleted, because they are the company&apos;s financial records and the integrity of its books depends on them. After that period they are anonymised or destroyed.</li>
+          <li><strong>Your SWIFT account</strong> (your login): while you want it. When you delete your account, or after it has been <strong>inactive for <Todo>one year, to be confirmed by the company</Todo></strong>, the login is deleted.</li>
+          <li><strong>The company&apos;s record of you as a subscriber</strong> (your name, address, mobile number, plan, installation date, service status and payments): <Todo>number of years, to be confirmed by the company with its accountant</Todo>. We keep this even after you delete your account, because it is the company&apos;s own record and the integrity of its books depends on it. It is marked with a note that you deleted your account, and we send you no more text messages. After that period it is anonymised or destroyed.</li>
           <li><strong>The audit trail:</strong> <Todo>period, to be confirmed by the company</Todo>.</li>
           <li><strong>Verification and reset codes:</strong> ten minutes, and they are stored scrambled.</li>
         </ul>
@@ -114,10 +114,10 @@ export default function PrivacyPolicy() {
         </p>
         <p><strong>What happens:</strong></p>
         <ul>
-          <li>Your login stops working straight away, and your email, mobile number and equipment (MAC) details are deleted.</li>
-          <li>Your billing and payment records are <strong>kept</strong>, as explained in section 6, so the company&apos;s financial records stay complete and correct.</li>
+          <li>Your login (your SWIFT account) is deleted and stops working straight away.</li>
+          <li>The company&apos;s <strong>record of you is kept</strong>, as explained in section 6, with a note that you deleted your account, so its financial records stay complete and correct. We send you no more text messages.</li>
           <li>Anything you still owe stays owed. Deleting an account does not cancel a balance.</li>
-          <li>If you want service again later, you would need to register again.</li>
+          <li>If you want a SWIFT account again later, you can register again with the same mobile number; our staff will link it to your existing record.</li>
         </ul>
       </Section>
 

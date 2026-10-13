@@ -42,7 +42,7 @@ class AccountDeletionTest extends TestCase
         return [$user, $subscriber];
     }
 
-    public function test_deleting_an_account_removes_the_login_and_contact_details_but_keeps_the_billing_record(): void
+    public function test_deleting_an_account_removes_only_the_login_and_leaves_the_subscribers_record_alone(): void
     {
         [$user, $subscriber] = $this->subscriberWithLogin();
         Sanctum::actingAs($user);
@@ -50,18 +50,18 @@ class AccountDeletionTest extends TestCase
         $this->postJson('/api/me/delete-account', ['password' => 'my-password-1', 'reason' => 'moved', 'detail' => 'Moving to Cebu'])
             ->assertOk();
 
-        // The login is gone and so is everything that identifies how to reach them.
+        // Only the login is gone.
         $this->assertNull(User::find($user->id));
-        $row = Subscriber::withTrashed()->findOrFail($subscriber->subscriber_id);
-        $this->assertNull($row->contact_number);
-        $this->assertNull($row->email);
-        $this->assertNull($row->mac_address);
-        $this->assertNull($row->password);
 
-        // The billing record stays, archived: name, address, plan, installation date and payments.
-        $this->assertTrue($row->trashed());
+        // The subscriber's record is exactly as it was: still in the lists, nothing cleared, nothing archived.
+        $row = Subscriber::findOrFail($subscriber->subscriber_id);
+        $this->assertFalse($row->trashed());
         $this->assertSame('Ana Cruz', $row->name);
         $this->assertSame('Malete, Palayan City', $row->address);
+        $this->assertSame('09171112222', $row->contact_number);
+        $this->assertSame('ana@x.test', $row->email);
+        $this->assertSame('AA:BB:CC:DD:EE:FF', $row->mac_address);
+        $this->assertSame('active', $row->account_status);
         $this->assertNotNull($row->plan_id);
         $this->assertSame(1, Payment::where('subscriber_id', $subscriber->subscriber_id)->count());
 
@@ -117,7 +117,7 @@ class AccountDeletionTest extends TestCase
         $this->assertNotNull(User::find($id));
     }
 
-    public function test_the_old_sign_in_stops_working_and_the_number_can_register_again(): void
+    public function test_the_old_sign_in_stops_working_and_coming_back_means_claiming_the_record(): void
     {
         [$user] = $this->subscriberWithLogin();
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -128,17 +128,71 @@ class AccountDeletionTest extends TestCase
         $this->withToken($token)->getJson('/api/me')->assertUnauthorized();
         $this->postJson('/api/login', ['login' => '09171112222', 'password' => 'my-password-1'])->assertStatus(401);
 
+        // The record still has this number, so registering again is a claim that staff verify.
+        $this->postJson('/api/register', [
+            'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
+            'password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1', 'accept_terms' => true,
+        ])->assertStatus(201)->assertJsonPath('claim', true);
+    }
+
+    public function test_staff_see_the_note_in_the_subscriber_list_and_details(): void
+    {
+        [$user, $subscriber] = $this->subscriberWithLogin();
+        Sanctum::actingAs($user);
+        $this->postJson('/api/me/delete-account', ['password' => 'my-password-1', 'reason' => 'moved'])->assertOk();
+        $adminId = DB::table('users')->insertGetId([
+            'name' => 'Admin', 'email' => 'admin3@del.test', 'password' => bcrypt('x'), 'role' => 'admin',
+            'account_status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->app['auth']->forgetGuards();
+        Sanctum::actingAs(User::findOrFail($adminId));
+
+        $row = collect($this->getJson('/api/subscribers')->assertOk()->json('data.data'))->firstWhere('subscriber_id', $subscriber->subscriber_id);
+        $this->assertSame('moved', $row['deletion']['reason']);
+        $this->getJson("/api/subscribers/{$subscriber->subscriber_id}")->assertOk()->assertJsonPath('data.deletion.reason', 'moved');
+    }
+
+    public function test_no_more_texts_go_to_someone_who_deleted_their_account(): void
+    {
+        [$user, $subscriber] = $this->subscriberWithLogin();
+        Sanctum::actingAs($user);
+        $this->postJson('/api/me/delete-account', ['password' => 'my-password-1'])->assertOk();
+        Http::fake(['*' => Http::response(['status' => 'success'])]);
+        config(['services.philsms.token' => 'test-token']);
+
+        $result = app(\App\Services\PhilSmsService::class)->sendToSubscriber($subscriber->fresh(), 'Reminder');
+
+        $this->assertFalse($result['success']);
+        Http::assertNothingSent();
+    }
+
+    public function test_coming_back_by_claiming_the_record_ends_the_note_and_texts_resume(): void
+    {
+        [$user, $subscriber] = $this->subscriberWithLogin();
+        Sanctum::actingAs($user);
+        $this->postJson('/api/me/delete-account', ['password' => 'my-password-1'])->assertOk();
+        $this->app['auth']->forgetGuards();
+
         $this->postJson('/api/register', [
             'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
             'password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1', 'accept_terms' => true,
         ])->assertStatus(201);
+        $claim = User::where('contact_number', '09171112222')->firstOrFail();
+        $staff = User::create(['name' => 'S', 'email' => 's@del.test', 'password' => 'abcd1234', 'role' => 'secretary', 'account_status' => 'active']);
+        Sanctum::actingAs($staff);
+        $this->patchJson("/api/subscribers/claims/{$claim->id}/approve")->assertOk();
+
+        $this->assertSame(0, AccountDeletion::where('subscriber_id', $subscriber->subscriber_id)->count());
+        config(['services.philsms.token' => 'test-token']);
+        $this->assertTrue(app(\App\Services\PhilSmsService::class)->sendToSubscriber($subscriber->fresh(), 'Reminder')['success']);
     }
 
-    public function test_the_archive_says_which_subscribers_deleted_their_own_account(): void
+    public function test_if_staff_archive_such_a_record_the_archive_still_shows_the_note(): void
     {
         [$user, $subscriber] = $this->subscriberWithLogin();
         Sanctum::actingAs($user);
         $this->postJson('/api/me/delete-account', ['password' => 'my-password-1', 'reason' => 'price'])->assertOk();
+        $subscriber->delete(); // staff archive it later
 
         $adminId = DB::table('users')->insertGetId([
             'name' => 'Admin', 'email' => 'admin2@del.test', 'password' => bcrypt('x'), 'role' => 'admin',
