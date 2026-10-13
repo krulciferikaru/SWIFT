@@ -19,6 +19,8 @@ import Settings from "./pages/Settings.jsx";
 import Guide from "./pages/Guide.jsx";
 import ArchivePage from "./pages/Archive.jsx";
 import AuditTrail from "./pages/AuditTrail.jsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import Terms from "./pages/Terms.jsx";
 
 export default function App() {
   return (
@@ -29,6 +31,8 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />

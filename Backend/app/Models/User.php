@@ -21,6 +21,8 @@ class User extends Authenticatable
         'account_status',
         'permissions',
         'subscriber_id',
+        'terms_accepted_at',
+        'terms_version',
     ];
 
     protected $hidden = [
