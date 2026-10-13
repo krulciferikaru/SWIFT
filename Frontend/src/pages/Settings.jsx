@@ -9,6 +9,7 @@ import StaffMobileNumber from '../components/StaffMobileNumber.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
 import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
 import PaymentMethodsManager from '../components/PaymentMethodsManager.jsx'
+import BarangaysManager from '../components/BarangaysManager.jsx'
 import { useToast } from '../hooks/useToast'
 import smsApi from '../api/sms'
 import subscriberApi from '../api/subscribers'
@@ -267,6 +268,8 @@ export default function Settings() {
       {user?.role === 'admin' && <SecurityCard />}
 
       {user?.role === 'admin' && <PaymentMethodsManager showToast={showToast} />}
+
+      {user?.role === 'admin' && <BarangaysManager showToast={showToast} />}
 
       {user?.role === 'admin' && <CompanyInfoForm showToast={showToast} />}
 

@@ -7,7 +7,8 @@ import { CheckCircle2, CircleAlert } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import PasswordField from '../components/PasswordField.jsx'
 import api from '../api/axios'
-import { capitalizeWords, BARANGAYS } from '../utils/text'
+import { capitalizeWords } from '../utils/text'
+import { useBarangays } from '../hooks/useBarangays'
 import { Input } from '@/components/ui/input'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
 import { required, mobileNumber, emailAddress, minLength, matches, firstError } from '../utils/validators'
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import AuthLayout from '../components/AuthLayout.jsx'
 
 export default function Register() {
+  const { barangays: BARANGAYS } = useBarangays()
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',

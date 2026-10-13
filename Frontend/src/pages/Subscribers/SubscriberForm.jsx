@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/select";
 import TourButton from "../../components/TourButton.jsx";
 import { errorMessage } from "../../utils/errors";
-import { capitalizeWords, BARANGAYS, spelledDate } from "../../utils/text";
+import { capitalizeWords, spelledDate } from "../../utils/text";
+import { useBarangays } from "../../hooks/useBarangays";
 import FormField, { RequiredNote } from "../../components/FormField.jsx";
 
 const monthLabel = (d) => d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -46,6 +47,7 @@ export default function SubscriberForm({
   // Called with true when something has been typed or changed, false when it matches how the form opened.
   onDirtyChange,
 }) {
+  const { barangays: BARANGAYS } = useBarangays();
   const [form, setForm] = useState(initial ?? EMPTY_FORM);
   const openedAs = useRef(initial ?? EMPTY_FORM);
   const dirty = JSON.stringify(form) !== JSON.stringify(openedAs.current);

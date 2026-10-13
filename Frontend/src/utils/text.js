@@ -3,14 +3,6 @@
 export const capitalizeWords = (value = '') =>
   value.replace(/(^|[\s\-'’.])(\p{L})/gu, (_, sep, ch) => sep + ch.toUpperCase())
 
-export const BARANGAYS = [
-  'Malete, Palayan City',
-  'Santolan, Palayan City',
-  'Caballero, Palayan City',
-  'Ganaderia, Palayan City',
-  'Caimito, Palayan City',
-]
-
 /**
  * "2026-10-14" -> "October 14, 2026". Shown under date boxes, because the browser's own date
  * box follows its language settings and month/day order can be misread.
