@@ -377,7 +377,7 @@ export const TOURS = {
         selector: t('payments-history'),
         title: 'Payment history and receipts',
         description:
-          'Every payment for this subscriber, newest first, with the total paid and a year filter. Click Receipt beside a payment to see a receipt you can print and hand to the subscriber.',
+          'Every payment for this subscriber, newest first, with the total paid and a year filter. Click Receipt beside a payment to see a receipt you can print and hand to the subscriber. If a payment was entered wrongly, an administrator sees a Cancel button: it asks for a reason and their password, keeps the payment in the history marked Cancelled, and stops it counting.',
         side: 'top',
       },
     ],

@@ -121,6 +121,9 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         ->middleware('permission:payments.view,payments.record,subscribers.view');
     Route::post('/subscribers/{subscriber}/payments', [PaymentController::class, 'store'])
         ->middleware('permission:payments.record');
+    // Cancel a wrongly recorded payment: administrators only, and it asks for their password.
+    Route::post('/payments/{id}/void', [PaymentController::class, 'void'])
+        ->middleware(['role:admin', 'password.confirmed']);
     // The OR number that probably comes next for this person (the last one they recorded, plus one).
     Route::get('/payments/next-or-number', [PaymentController::class, 'nextOrNumber'])
         ->middleware('permission:payments.record');

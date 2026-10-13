@@ -6,6 +6,7 @@ const paymentsApi = {
     api.get(`/subscribers/${subscriberId}/payments`),
   create: (subscriberId, data) =>
     api.post(`/subscribers/${subscriberId}/payments`, data),
+  void: (paymentId, reason) => api.post(`/payments/${paymentId}/void`, { reason }),
   nextOrNumber: () => api.get("/payments/next-or-number"),
   getStatusHistory: (subscriberId) => api.get(`/subscribers/${subscriberId}/status-history`),
   getMyStatusHistory: () => api.get("/me/status-history"),
