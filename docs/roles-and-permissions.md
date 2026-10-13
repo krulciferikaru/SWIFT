@@ -69,6 +69,7 @@ A "Confirm your password" window opens, the action carries on by itself once the
 - **Finer than on/off per task is not available.** Permissions are switches per task, not separate View / Edit / Delete levels inside every module.
 - **Permanent deletion is allowed for secretaries too** (unless switched off), and asks them for their password. Deleting from the Archive page removes a subscriber together with their payment history and login, and cannot be undone.
 - **Archived subscribers cannot log in** until they are restored.
+- **A subscriber can delete their own account** (Settings, bottom of the page). Their login and contact details are removed at once; their billing record stays, archived, and the Archive says it was deleted by the subscriber.
 - **Inactive accounts cannot log in.** Staff accounts are set Pending, Active or Inactive by an admin. A new self-registered subscriber stays Pending until approved.
 - **Passwords:** nobody can see or reset another person's password, not even an admin. Everyone recovers their own with **Forgot password?** on the sign-in page: a 6-digit code is texted to their **verified** mobile number (see below). Staff add and verify their number in Settings, or the admin enters it when creating the account.
 - **Staff accounts** are created by an admin (as secretaries). The first admin is created with `php artisan swift:create-admin`, see [Deployment and releases](deployment.md).

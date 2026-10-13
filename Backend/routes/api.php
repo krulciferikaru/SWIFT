@@ -9,6 +9,7 @@ use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\AccountDeletionController;
 use App\Http\Controllers\Auth\PasswordConfirmationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\SubscriberApprovalController;
@@ -51,6 +52,11 @@ Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
     // A staff member adds or changes their own mobile number (they are verified afterwards,
     // in the same way as a subscriber's). It is what lets them use Forgot password.
     Route::patch('/me/mobile-number', [PhoneVerificationController::class, 'update'])
+        ->middleware('throttle:confirm-password');
+
+    // A subscriber deletes their own account (their right under the Data Privacy Act).
+    Route::get('/me/delete-account/reasons', [AccountDeletionController::class, 'reasons']);
+    Route::post('/me/delete-account', [AccountDeletionController::class, 'destroy'])
         ->middleware('throttle:confirm-password');
 
     Route::post('/me/phone/send-code', [PhoneVerificationController::class, 'send'])

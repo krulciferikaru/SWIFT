@@ -79,6 +79,12 @@ class Subscriber extends Model
             && $user->contact_number === $this->contact_number;
     }
 
+    /** Set when the subscriber deleted their own account; says why it was archived. */
+    public function deletion(): HasOne
+    {
+        return $this->hasOne(AccountDeletion::class, 'subscriber_id', 'subscriber_id')->latestOfMany();
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'subscriber_id', 'subscriber_id');
