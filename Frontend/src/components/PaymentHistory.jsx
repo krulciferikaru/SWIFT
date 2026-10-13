@@ -16,7 +16,7 @@ const shortDate = (value) =>
  * cancelled it and why, but it is not counted in the total. `onCancelPayment(payment)`, when given,
  * adds a Cancel button to each payment that is still valid (administrators only).
  */
-export default function PaymentHistory({ payments, subscriber, maxHeightClass = '', onCancelPayment }) {
+export default function PaymentHistory({ payments, subscriber, maxHeightClass = '', onCancelPayment, limit }) {
   const [year, setYear] = useState('all')
   const [receipt, setReceipt] = useState(null)
 
@@ -27,6 +27,8 @@ export default function PaymentHistory({ payments, subscriber, maxHeightClass = 
   // A year that no longer has payments (after a refresh) falls back to showing everything.
   const activeYear = years.includes(Number(year)) ? Number(year) : 'all'
   const shown = activeYear === 'all' ? payments : payments.filter((p) => new Date(p.payment_date).getFullYear() === activeYear)
+  // `limit` shows only the newest few (the totals above still count them all).
+  const listed = limit ? shown.slice(0, limit) : shown
   const counted = shown.filter((p) => !p.voided_at)
   const total = counted.reduce((sum, p) => sum + Number(p.amount), 0)
   const cancelledCount = shown.length - counted.length
@@ -66,7 +68,7 @@ export default function PaymentHistory({ payments, subscriber, maxHeightClass = 
       </div>
 
       <ul className={`divide-y divide-gray-100 dark:divide-gray-800 overflow-y-auto ${maxHeightClass}`}>
-        {shown.map((p) => {
+        {listed.map((p) => {
           const cancelled = Boolean(p.voided_at)
           return (
             <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">

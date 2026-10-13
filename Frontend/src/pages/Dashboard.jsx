@@ -13,7 +13,8 @@ import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import Modal from "../components/Modal.jsx";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,32 @@ function collectionRateColor(rate) {
   return "text-red-600 dark:text-red-400";
 }
 
+const RECENT = 6;
+
+/** One row per month with its paid / partial / unpaid badge. */
+function MonthRows({ months }) {
+  return months.map((m) => (
+    <div
+      key={m.label}
+      className={`flex items-center justify-between px-3 py-2 rounded-md ${m.status !== "paid" ? "bg-red-50 dark:bg-red-950/30" : ""}`}
+    >
+      <span className="text-sm text-gray-900 dark:text-gray-100">{m.label}</span>
+      <Badge
+        variant="outline"
+        className={
+          m.status === "paid"
+            ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900 capitalize"
+            : m.status === "partial"
+              ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900 capitalize"
+              : "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900 capitalize"
+        }
+      >
+        {m.status}
+      </Badge>
+    </div>
+  ));
+}
+
 export default function Dashboard() {
   const { user, can } = useAuth();
   const [summary, setSummary] = useState(null);
@@ -85,6 +112,9 @@ export default function Dashboard() {
   const [myLoading, setMyLoading] = useState(true);
 
   const isStaff = ["admin", "secretary", "collector"].includes(user?.role);
+  // The subscriber view shows the latest few months and payments, with "View all" for the rest.
+  const [showAllMonths, setShowAllMonths] = useState(false);
+  const [showAllPayments, setShowAllPayments] = useState(false);
 
   // ---------------------------------------------------------------------
   // Data fetching
@@ -261,42 +291,58 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <Card data-tour="me-breakdown">
-          <CardHeader>
-            <CardTitle className="text-base">Monthly Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 max-h-72 overflow-y-auto">
-            {myBilling.months.map((m) => (
-              <div
-                key={m.label}
-                className={`flex items-center justify-between px-3 py-2 rounded-md ${m.status !== "paid" ? "bg-red-50 dark:bg-red-950/30" : ""}`}
-              >
-                <span className="text-sm text-gray-900 dark:text-gray-100">{m.label}</span>
-                <Badge
-                  variant="outline"
-                  className={
-                    m.status === "paid"
-                      ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900 capitalize"
-                      : m.status === "partial"
-                        ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900 capitalize"
-                        : "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900 capitalize"
-                  }
-                >
-                  {m.status}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Latest months and latest payments side by side; "View all" opens the full list. */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card data-tour="me-breakdown">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Monthly Breakdown</CardTitle>
+              {myBilling.months.length > RECENT && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowAllMonths(true)}>
+                  View all ({myBilling.months.length})
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <MonthRows months={[...myBilling.months].reverse().slice(0, RECENT)} />
+            </CardContent>
+          </Card>
 
-        <Card data-tour="me-payments">
-          <CardHeader>
-            <CardTitle className="text-base">Payment History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PaymentHistory payments={myPayments} subscriber={mySubscriber} />
-          </CardContent>
-        </Card>
+          <Card data-tour="me-payments">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Payment History</CardTitle>
+              {myPayments.length > RECENT && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowAllPayments(true)}>
+                  View all ({myPayments.length})
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              <PaymentHistory payments={myPayments} subscriber={mySubscriber} limit={RECENT} />
+            </CardContent>
+          </Card>
+        </div>
+
+        <Modal
+          isOpen={showAllMonths}
+          onClose={() => setShowAllMonths(false)}
+          title="Monthly Breakdown"
+          description="Every month billed, newest first."
+          size="md"
+        >
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+            <MonthRows months={[...myBilling.months].reverse()} />
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={showAllPayments}
+          onClose={() => setShowAllPayments(false)}
+          title="Payment History"
+          description="Every payment, newest first."
+          size="lg"
+        >
+          <PaymentHistory payments={myPayments} subscriber={mySubscriber} maxHeightClass="max-h-[60vh]" />
+        </Modal>
 
         <Card data-tour="me-history">
           <CardHeader>
