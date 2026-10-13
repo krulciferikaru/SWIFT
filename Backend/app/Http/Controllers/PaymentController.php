@@ -130,6 +130,17 @@ class PaymentController extends Controller
     /**
      * GET /api/me/billing — the logged-in subscriber's own billing breakdown.
      */
+    /** GET /api/me/status-history: the subscriber's own service history (they have a right to it). */
+    public function myStatusHistory(Request $request): JsonResponse
+    {
+        $subscriber = $request->user()->subscriber_id ? Subscriber::find($request->user()->subscriber_id) : null;
+        if (! $subscriber) {
+            return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => app(\App\Services\StatusHistoryService::class)->timeline($subscriber, forStaff: false)]);
+    }
+
     public function myBilling(Request $request): JsonResponse
     {
         $subscriberId = $request->user()->subscriber_id;

@@ -8,6 +8,7 @@ The same word always means the same thing on every screen. Where two words could
 | **Service status** | A subscriber's billing state: **Active** (paid up), **Unpaid** (behind on payments) or **Disconnected** (three or more months behind). It follows payments automatically; staff can also set it by hand. Shown on Subscribers and the subscriber's own page. |
 | **Account status** | Whether a *login* is allowed: **Pending** (waiting for approval), **Active**, **Inactive** (switched off) or **Rejected**. Shown on Manage Roles and the Approvals page. A subscriber can have an Active account and an Unpaid service. |
 | **Availability** (of a plan) | **Offered**: the plan can be given to subscribers. **Not offered**: it is still billed for subscribers already on it, but cannot be given to new ones. This is different from archiving a plan. |
+| **Service history** | The list of every time a subscriber's service status changed, with the date and whether staff or the system made the change. Subscribers can see their own. |
 | **Installation date** | The day service was installed. The first bill is for the month *after* it. |
 | **Balance** | What the subscriber owes now, in pesos. |
 | **Months behind** | How many months are not fully paid. |

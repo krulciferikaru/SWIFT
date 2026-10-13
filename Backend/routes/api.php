@@ -74,6 +74,7 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         ->middleware('throttle:phone-verify');
 
     Route::get('/me/billing', [PaymentController::class, 'myBilling']);
+    Route::get('/me/status-history', [PaymentController::class, 'myStatusHistory']);
     Route::get('/me/payments', [PaymentController::class, 'myPayments']);
 
     // Plans are reference data that every signed-in role reads.
@@ -112,6 +113,8 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         Route::get('/subscribers/rejected-claims', [SubscriberApprovalController::class, 'rejectedClaims']);
     });
 
+    Route::get('/subscribers/{id}/status-history', [SubscriberController::class, 'statusHistory'])
+        ->middleware('permission:subscribers.view');
     Route::get('/subscribers/{subscriber}/billing', [PaymentController::class, 'billing'])
         ->middleware('permission:payments.view,payments.record,subscribers.view');
     Route::get('/subscribers/{subscriber}/payments', [PaymentController::class, 'index'])
