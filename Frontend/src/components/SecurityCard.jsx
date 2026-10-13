@@ -199,11 +199,23 @@ export default function SecurityCard() {
         size="md"
         footer={() => (
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={close}>{finished ? 'Done' : 'Cancel'}</Button>
-            {!finished && (
-              <Button type="submit" form="security-form" disabled={busy || code.trim().length < 6}>
-                {busy ? 'Checking...' : submitLabel}
-              </Button>
+            {dialog === 'off' && !finished ? (
+              // Switching protection off: the risky button is the plain one, the safe way out the filled one.
+              <>
+                <Button type="submit" form="security-form" variant="outline" disabled={busy || code.trim().length < 6} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
+                  {busy ? 'Checking...' : submitLabel}
+                </Button>
+                <Button type="button" onClick={close}>Cancel</Button>
+              </>
+            ) : (
+              <>
+                <Button type="button" variant="outline" onClick={close}>{finished ? 'Done' : 'Cancel'}</Button>
+                {!finished && (
+                  <Button type="submit" form="security-form" disabled={busy || code.trim().length < 6}>
+                    {busy ? 'Checking...' : submitLabel}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}

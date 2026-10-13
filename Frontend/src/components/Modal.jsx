@@ -85,10 +85,10 @@ export default function Modal({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDiscardConfirmed} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction variant="outline" onClick={handleDiscardConfirmed} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
               Discard
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Keep Editing</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -539,10 +539,10 @@ export default function Users() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => createStaffAccount(pendingCreate)} disabled={creating}>
+            <AlertDialogAction variant="outline" onClick={() => createStaffAccount(pendingCreate)} disabled={creating} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
               {creating ? 'Creating...' : 'Confirm Create Account'}
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

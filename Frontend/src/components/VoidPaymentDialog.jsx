@@ -63,10 +63,10 @@ export default function VoidPaymentDialog({ payment, onClose, onDone }) {
       size="md"
       footer={() => (
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>Keep it</Button>
-          <Button type="submit" form="void-payment-form" variant="destructive" disabled={busy}>
+          <Button type="submit" form="void-payment-form" variant="outline" disabled={busy} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
             {busy ? 'Cancelling...' : 'Cancel this payment'}
           </Button>
+          <Button type="button" onClick={onClose} disabled={busy}>Keep it</Button>
         </div>
       )}
     >
