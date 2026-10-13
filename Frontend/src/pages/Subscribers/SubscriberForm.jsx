@@ -13,7 +13,9 @@ import {
 } from "@/components/ui/select";
 import TourButton from "../../components/TourButton.jsx";
 import { errorMessage } from "../../utils/errors";
-import { capitalizeWords, BARANGAYS } from "../../utils/text";
+import { capitalizeWords, BARANGAYS, spelledDate } from "../../utils/text";
+import FormField, { RequiredNote } from "../../components/FormField.jsx";
+import { required, emailAddress } from "../../utils/validators";
 
 const EMPTY_FORM = {
   plan_id: "",
@@ -81,8 +83,29 @@ export default function SubscriberForm({
   const setValue = (field) => (value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  // A field is only checked once the person has left it, or tried to save.
+  const [touched, setTouched] = useState({});
+  const localErrors = {
+    name: required("Name")(form.name),
+    contact_number: required("Contact number")(form.contact_number),
+    email: emailAddress(form.email),
+    mac_address:
+      form.mac_address && form.mac_address.length !== 17
+        ? "A MAC address has six pairs of letters or digits, like AA:BB:CC:DD:EE:FF."
+        : "",
+    connection_date: required("Installation date")(form.connection_date),
+  };
+  const fieldError = (key) => errors[key]?.[0] ?? (touched[key] ? localErrors[key] : "");
+  const handleBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const firstBad = Object.keys(localErrors).find((key) => localErrors[key]);
+    if (firstBad) {
+      setTouched(Object.fromEntries(Object.keys(localErrors).map((key) => [key, true])));
+      document.getElementById(firstBad)?.focus();
+      return;
+    }
     setErrors({});
     setFormError("");
     try {
@@ -104,40 +127,31 @@ export default function SubscriberForm({
     (p) => String(p.plan_id) === String(form.plan_id),
   );
 
-  const field = (label, key, type = "text", extra = {}, required = false) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={key}>
-        {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
-      </Label>
-      <Input
+  const field = (label, key, type = "text", extra = {}, isRequired = false) => {
+    const { hint, ...inputProps } = extra;
+    return (
+      <FormField
         id={key}
-        type={type}
-        value={form[key]}
-        onChange={set(key)}
-        aria-required={required || undefined}
-        aria-invalid={errors[key] ? true : undefined}
-        aria-describedby={errors[key] ? `${key}-error` : undefined}
-        className={errors[key] ? "border-red-400" : ""}
-        {...extra}
-      />
-      {errors[key] && (
-        <p id={`${key}-error`} role="alert" className="text-red-700 dark:text-red-400 text-xs">
-          {errors[key][0]}
-        </p>
-      )}
-    </div>
-  );
+        label={label}
+        required={isRequired}
+        hint={type === "date" ? spelledDate(form[key]) : hint}
+        error={fieldError(key)}
+      >
+        <Input name={key} type={type} value={form[key]} onChange={set(key)} onBlur={handleBlur} {...inputProps} />
+      </FormField>
+    );
+  };
 
   return (
-    <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-6">
       {formError && (
         <div role="alert" className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
           {formError}
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <RequiredNote />
         <TourButton tour="subscriberForm" />
       </div>
 

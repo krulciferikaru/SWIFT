@@ -20,6 +20,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import ReviewDialog from '../components/ReviewDialog.jsx'
+import FormField, { RequiredNote } from '../components/FormField.jsx'
+import { required, positiveAmount, firstError } from '../utils/validators'
 import EmptyState from '../components/EmptyState.jsx'
 import {
   AlertDialog,
@@ -79,6 +81,7 @@ export default function Plans() {
   const openAddModal = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setTouched({})
     setFormErrors({})
     setShowModal(true)
   }
@@ -93,6 +96,7 @@ export default function Plans() {
       status: plan.status,
     })
     setFormErrors({})
+    setTouched({})
     setShowModal(true)
   }
 
@@ -112,8 +116,27 @@ export default function Plans() {
   const peso = (value) =>
     `₱${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
 
+  // A field is only checked once the person has left it, or tried to save.
+  const [touched, setTouched] = useState({})
+  const localErrors = {
+    plan_name: required('Plan name')(form.plan_name),
+    monthly_rate: firstError(form.monthly_rate, required('Monthly rate'), positiveAmount),
+    speed_mbps:
+      String(form.speed_mbps ?? '') !== '' && !(Number(form.speed_mbps) > 0)
+        ? 'Speed must be a number above zero, or left empty.'
+        : '',
+  }
+  const fieldError = (name) => formErrors[name]?.[0] ?? (touched[name] ? localErrors[name] : '')
+  const handleBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }))
+
   const handleSubmit = (e) => {
     e.preventDefault()
+    const firstBad = Object.keys(localErrors).find((name) => localErrors[name])
+    if (firstBad) {
+      setTouched({ plan_name: true, monthly_rate: true, speed_mbps: true })
+      document.getElementById(firstBad)?.focus()
+      return
+    }
     if (rateChanged) {
       setReviewOpen(true)
       return
@@ -325,54 +348,24 @@ export default function Plans() {
           </div>
         )}
       >
-        <form id="plan-form" onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex justify-end">
+        <form id="plan-form" onSubmit={handleSubmit} noValidate className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <RequiredNote />
             <TourButton tour="planForm" />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="plan_name">
-              Plan Name<span className="text-red-500 ml-0.5">*</span>
-            </Label>
-            <Input
-              id="plan_name"
-              name="plan_name"
-              value={form.plan_name}
-              onChange={handleChange}
-              required
-              className={formErrors.plan_name ? 'border-red-400' : ''}
-            />
-            {formErrors.plan_name && <p className="text-red-500 text-xs">{formErrors.plan_name[0]}</p>}
-          </div>
+          <FormField id="plan_name" label="Plan Name" required error={fieldError('plan_name')}>
+            <Input name="plan_name" value={form.plan_name} onChange={handleChange} onBlur={handleBlur} />
+          </FormField>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="monthly_rate">
-                Monthly Rate<span className="text-red-500 ml-0.5">*</span>
-              </Label>
-              <Input
-                id="monthly_rate"
-                type="number"
-                step="0.01"
-                name="monthly_rate"
-                value={form.monthly_rate}
-                onChange={handleChange}
-                required
-                className={formErrors.monthly_rate ? 'border-red-400' : ''}
-              />
-              {formErrors.monthly_rate && <p className="text-red-500 text-xs">{formErrors.monthly_rate[0]}</p>}
-            </div>
+            <FormField id="monthly_rate" label="Monthly Rate" required hint="In pesos" error={fieldError('monthly_rate')}>
+              <Input type="number" inputMode="decimal" step="0.01" min="0" name="monthly_rate" value={form.monthly_rate} onChange={handleChange} onBlur={handleBlur} />
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="speed_mbps">Speed (Mbps)</Label>
-              <Input
-                id="speed_mbps"
-                type="number"
-                name="speed_mbps"
-                value={form.speed_mbps}
-                onChange={handleChange}
-              />
-            </div>
+            <FormField id="speed_mbps" label="Speed (Mbps)" optional error={fieldError('speed_mbps')}>
+              <Input type="number" min="0" name="speed_mbps" value={form.speed_mbps} onChange={handleChange} onBlur={handleBlur} />
+            </FormField>
           </div>
 
           <div className="space-y-1.5">

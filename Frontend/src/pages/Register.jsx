@@ -8,7 +8,8 @@ import PasswordField from '../components/PasswordField.jsx'
 import api from '../api/axios'
 import { capitalizeWords, BARANGAYS } from '../utils/text'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import FormField, { RequiredNote } from '../components/FormField.jsx'
+import { required, mobileNumber, emailAddress, minLength, matches, firstError } from '../utils/validators'
 import { Button } from '@/components/ui/button'
 import AuthLayout from '../components/AuthLayout.jsx'
 
@@ -35,14 +36,42 @@ export default function Register() {
     }
   }, [authLoading, isAuthenticated, navigate])
 
+  // Fields the person has already been in. A field is only checked once they leave it, so nobody
+  // is told off for a box they have not reached yet.
+  const [touched, setTouched] = useState({})
+
+  const localErrors = {
+    first_name: required('First name')(form.first_name),
+    last_name: required('Last name')(form.last_name),
+    contact_number: firstError(form.contact_number, required('Contact number'), mobileNumber),
+    email: emailAddress(form.email),
+    address: required('Barangay')(form.address),
+    password: firstError(form.password, required('Password'), minLength('Password', 8)),
+    password_confirmation: firstError(
+      form.password_confirmation,
+      required('Password confirmation'),
+      matches(() => form.password, 'The two passwords do not match.'),
+    ),
+  }
+  // A message from the server wins until the field is edited; otherwise show our own check.
+  const fieldError = (name) => errors[name]?.[0] ?? (touched[name] ? localErrors[name] : '')
+  const handleBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }))
+
   const handleChange = (e) => {
     const { name, value } = e.target
     const nameFields = ['first_name', 'last_name']
     setForm({ ...form, [name]: nameFields.includes(name) ? capitalizeWords(value) : value })
+    if (errors[name]) setErrors(({ [name]: _gone, ...rest }) => rest)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const firstBad = Object.keys(localErrors).find((name) => localErrors[name])
+    if (firstBad) {
+      setTouched(Object.fromEntries(Object.keys(localErrors).map((name) => [name, true])))
+      document.getElementById(firstBad)?.focus()
+      return
+    }
     setErrors({})
     setMessage('')
     setLoading(true)
@@ -97,71 +126,47 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <RequiredNote />
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                  id="first_name"
-                  name="first_name"
-                  value={form.first_name}
-                  onChange={handleChange}
-                  required
-                  className={errors.first_name ? 'border-red-400' : ''}
-                />
-                {errors.first_name && <p className="text-red-500 text-xs">{errors.first_name[0]}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                  id="last_name"
-                  name="last_name"
-                  value={form.last_name}
-                  onChange={handleChange}
-                  required
-                  className={errors.last_name ? 'border-red-400' : ''}
-                />
-                {errors.last_name && <p className="text-red-500 text-xs">{errors.last_name[0]}</p>}
-              </div>
+              <FormField id="first_name" label="First Name" required error={fieldError('first_name')}>
+                <Input name="first_name" value={form.first_name} onChange={handleChange} onBlur={handleBlur} autoComplete="given-name" />
+              </FormField>
+              <FormField id="last_name" label="Last Name" required error={fieldError('last_name')}>
+                <Input name="last_name" value={form.last_name} onChange={handleChange} onBlur={handleBlur} autoComplete="family-name" />
+              </FormField>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="contact_number">Contact Number</Label>
+            <FormField
+              id="contact_number"
+              label="Contact Number"
+              required
+              hint="You will use this number to log in."
+              error={fieldError('contact_number')}
+            >
               <Input
-                id="contact_number"
                 name="contact_number"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 value={form.contact_number}
                 onChange={handleChange}
-                placeholder="09XX-XXX-XXXX"
-                required
-                className={errors.contact_number ? 'border-red-400' : ''}
+                onBlur={handleBlur}
+                placeholder="0917 123 4567"
               />
-              {errors.contact_number && <p className="text-red-500 text-xs">{errors.contact_number[0]}</p>}
-              <p className="text-xs text-gray-500 dark:text-gray-400">You will use this number to log in.</p>
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span></Label>
-              <Input
-                id="email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className={errors.email ? 'border-red-400' : ''}
-              />
-              {errors.email && <p className="text-red-500 text-xs">{errors.email[0]}</p>}
-            </div>
+            <FormField id="email" label="Email" optional error={fieldError('email')}>
+              <Input type="email" name="email" value={form.email} onChange={handleChange} onBlur={handleBlur} autoComplete="email" />
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="address">Address</Label>
+            <FormField id="address" label="Address" required error={fieldError('address')}>
               <select
-                id="address"
                 name="address"
                 value={form.address}
                 onChange={handleChange}
-                required
-                className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? 'border-red-400' : 'border-input'}`}
+                onBlur={handleBlur}
+                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm dark:bg-gray-950"
               >
                 <option value="">Select your barangay</option>
                 {BARANGAYS.map((b) => (
@@ -170,34 +175,21 @@ export default function Register() {
                   </option>
                 ))}
               </select>
-              {errors.address && <p className="text-red-500 text-xs">{errors.address[0]}</p>}
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <PasswordField
-                id="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                autoComplete="new-password"
-                className={errors.password ? 'border-red-400' : ''}
-              />
-              {errors.password && <p className="text-red-500 text-xs">{errors.password[0]}</p>}
-            </div>
+            <FormField id="password" label="Password" required hint="At least 8 characters." error={fieldError('password')}>
+              <PasswordField name="password" value={form.password} onChange={handleChange} onBlur={handleBlur} autoComplete="new-password" />
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password_confirmation">Confirm Password</Label>
+            <FormField id="password_confirmation" label="Confirm Password" required error={fieldError('password_confirmation')}>
               <PasswordField
-                id="password_confirmation"
                 name="password_confirmation"
                 value={form.password_confirmation}
                 onChange={handleChange}
-                required
+                onBlur={handleBlur}
                 autoComplete="new-password"
               />
-            </div>
+            </FormField>
 
             <Button type="submit" disabled={loading} className="h-11 w-full text-base">
               {loading ? 'Registering...' : 'Create account'}

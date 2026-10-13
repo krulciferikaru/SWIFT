@@ -10,3 +10,15 @@ export const BARANGAYS = [
   'Ganaderia, Palayan City',
   'Caimito, Palayan City',
 ]
+
+/**
+ * "2026-10-14" -> "October 14, 2026". Shown under date boxes, because the browser's own date
+ * box follows its language settings and month/day order can be misread.
+ */
+export function spelledDate(value) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}/.test(value)) return ''
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`)
+  return Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+}

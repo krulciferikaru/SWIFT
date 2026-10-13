@@ -26,3 +26,13 @@ These are built once, in the shared `CardAction` component, and used for the das
 - **Check before it cannot be undone.** Things that cannot be edited afterwards (a payment, a plan's rate) open a review window first. See [Billing and payments](billing-and-payments.md).
 - **Never rely on colour alone.** Statuses use words as well as colours, and the interface was checked for contrast in light and dark mode.
 - **Keep the same thing in the same place.** Manage Roles and the Guide are under Settings; the sidebar groups follow the usual order of work.
+
+
+## Forms
+
+- **Every field is built the same way** (the shared `FormField`): a label, an asterisk when the field is required (with the word "required" for a screen reader), the box, a short hint, and the error underneath. A "* Required" note sits at the top of each form.
+- **Check when someone leaves a field, not while they type and not only after sending.** A person is told that a mobile number or email looks wrong as soon as they move on, and the message disappears when they fix it. Nothing is flagged before they have reached the box. Pressing Save with a mistake moves the cursor to the first wrong field.
+- **Say what is wrong and how to fix it.** "Enter a mobile number such as 0917 123 4567", not "Invalid input". Messages start with the word "Error", so colour is never the only signal, and each one is tied to its field for screen readers. Nothing the person typed is cleared when there is an error.
+- **Dates are spelled out.** Under every date box, the chosen date appears in words ("October 14, 2026"), because browsers show month/day/year or day/month/year depending on their language settings.
+- The server still checks everything again; the checks in the browser only save a round trip.
+
