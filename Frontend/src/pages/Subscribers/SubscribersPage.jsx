@@ -6,7 +6,17 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import CardAction from "../../components/CardAction.jsx";
 import DateHint from "../../components/DateHint.jsx";
@@ -37,7 +47,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
 import { spelledDate } from "../../utils/text";
-import { Archive, BellRing, ChevronRight, CreditCard, Download, FileDown, FilterX, MousePointerClick, Pencil, Save, UserPlus, Users2 } from "lucide-react";
+import { Archive, BellRing, ChevronRight, CreditCard, Download, FileDown, FilterX, MousePointerClick, Pencil, Save, SlidersHorizontal, UserPlus, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -63,10 +73,44 @@ const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 const VIEW_DEFAULTS = { q: "", status: "All", plan: "All", from: "", to: "", page: 1, per: 15, sort: "name", dir: "asc" };
 const peso = (value) => `₱${Number(value ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
+// The columns a person can switch off. Name and Actions always stay. "private" ones are never offered
+// to people who are not allowed to see them (a field collector gets no Email or MAC address).
+const COLUMN_CHOICES = [
+  { key: "plan", label: "Plan" },
+  { key: "email", label: "Email", private: true },
+  { key: "mobile", label: "Mobile" },
+  { key: "mac", label: "MAC address", private: true },
+  { key: "installed", label: "Installed" },
+  { key: "status", label: "Service status" },
+  { key: "balance", label: "Balance" },
+];
+
 export default function SubscribersPage() {
   const { can, user } = useAuth();
   // A field collector is not shown email or MAC addresses (the server does not send them either).
   const showPrivate = user?.role !== "collector";
+
+  // Which columns the table shows. Remembered in this browser, separately for each signed-in person.
+  const columnsKey = `swift.subscribers.columns.${user?.id ?? "anon"}`;
+  const [hiddenColumns, setHiddenColumns] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(columnsKey));
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
+  const columnChoices = COLUMN_CHOICES.filter((c) => !c.private || showPrivate);
+  const shows = (key) => columnChoices.some((c) => c.key === key) && !hiddenColumns.includes(key);
+  const saveColumns = (next) => {
+    setHiddenColumns(next);
+    try {
+      localStorage.setItem(columnsKey, JSON.stringify(next));
+    } catch {
+      /* private window or blocked storage: the choice just lasts until the page is reloaded */
+    }
+  };
+  const toggleColumn = (key, on) => saveColumns(on ? hiddenColumns.filter((k) => k !== key) : [...hiddenColumns, key]);
   // The search, filters, sort and page live in the address (for example ?status=Unpaid&sort=plan),
   // so the dashboard cards can link to a filtered list, and refresh / Back keep the view.
   const [view, setView] = useQueryState(VIEW_DEFAULTS);
@@ -430,6 +474,7 @@ export default function SubscribersPage() {
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Skeleton className="h-8 flex-1" />
             <Skeleton className="h-8 w-full sm:w-40" />
+            <Skeleton className="h-8 w-full sm:w-32" />
             {can("reports.view") && <Skeleton className="h-8 w-full sm:w-32" />}
             {can("subscribers.manage") && <Skeleton className="h-8 w-full sm:w-36" />}
           </div>
@@ -457,6 +502,37 @@ export default function SubscribersPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                data-tour="subs-columns"
+                className={cn(buttonVariants({ variant: "outline" }), "gap-2 whitespace-nowrap")}
+              >
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
+                Columns
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Show these columns</DropdownMenuLabel>
+                  {columnChoices.map((c) => (
+                    <DropdownMenuCheckboxItem
+                      key={c.key}
+                      checked={!hiddenColumns.includes(c.key)}
+                      onCheckedChange={(on) => toggleColumn(c.key, on)}
+                    >
+                      {c.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={hiddenColumns.length === 0}
+                  onCheckedChange={() => saveColumns([])}
+                >
+                  Show all
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {can("reports.view") && (
               <Button
@@ -578,8 +654,11 @@ export default function SubscribersPage() {
         >
           {initialLoading ? (
             <TableSkeleton rows={9} columns={[
-              ...(canRemind ? [{ label: "" }] : []), { label: "Name" }, { label: "Plan" }, ...(showPrivate ? [{ label: "Email" }] : []), { label: "Mobile" },
-              ...(showPrivate ? [{ label: "MAC Address" }] : []), { label: "Installed" }, { label: "Service status", kind: "badge" }, { label: "Balance" }, { label: "Actions", kind: "actions" },
+              ...(canRemind ? [{ label: "" }] : []), { label: "Name" },
+              ...(shows("plan") ? [{ label: "Plan" }] : []), ...(shows("email") ? [{ label: "Email" }] : []), ...(shows("mobile") ? [{ label: "Mobile" }] : []),
+              ...(shows("mac") ? [{ label: "MAC Address" }] : []), ...(shows("installed") ? [{ label: "Installed" }] : []),
+              ...(shows("status") ? [{ label: "Service status", kind: "badge" }] : []), ...(shows("balance") ? [{ label: "Balance" }] : []),
+              { label: "Actions", kind: "actions" },
             ]} />
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
@@ -611,13 +690,13 @@ export default function SubscribersPage() {
                     </TableHead>
                   )}
                   <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
-                  <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>
-                  {showPrivate && <TableHead>Email</TableHead>}
-                  <TableHead>Mobile</TableHead>
-                  {showPrivate && <TableHead>MAC Address</TableHead>}
-                  <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>
-                  <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Service status</SortableHead>
-                  <TableHead>Balance</TableHead>
+                  {shows("plan") && <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>}
+                  {shows("email") && <TableHead>Email</TableHead>}
+                  {shows("mobile") && <TableHead>Mobile</TableHead>}
+                  {shows("mac") && <TableHead>MAC Address</TableHead>}
+                  {shows("installed") && <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>}
+                  {shows("status") && <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Service status</SortableHead>}
+                  {shows("balance") && <TableHead>Balance</TableHead>}
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -651,31 +730,40 @@ export default function SubscribersPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.plan?.plan_name ?? "—"}
-                    </TableCell>
-                    {showPrivate && (
+                    {shows("plan") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {sub.plan?.plan_name ?? "—"}
+                      </TableCell>
+                    )}
+                    {shows("email") && (
                       <TableCell className="text-gray-600 dark:text-gray-400">
                         {sub.email || "—"}
                       </TableCell>
                     )}
+                    {shows("mobile") && (
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       <div>
                                               {sub.contact || sub.contact_number || "—"}
                                               <div><VerifiedBadge verified={sub.contact_verified} /></div>
                                             </div>
                     </TableCell>
-                    {showPrivate && (
+                    )}
+                    {shows("mac") && (
                       <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                         {sub.mac_address || "—"}
                       </TableCell>
                     )}
-                    <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                      {sub.connection_date ? spelledDate(String(sub.connection_date).slice(0, 10)) : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={sub.status} />
-                    </TableCell>
+                    {shows("installed") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                        {sub.connection_date ? spelledDate(String(sub.connection_date).slice(0, 10)) : "—"}
+                      </TableCell>
+                    )}
+                    {shows("status") && (
+                      <TableCell>
+                        <StatusBadge status={sub.status} />
+                      </TableCell>
+                    )}
+                    {shows("balance") && (
                     <TableCell className="whitespace-nowrap">
                       {sub.balance > 0 ? (
                         <span className="font-semibold text-red-700 dark:text-red-400">
@@ -694,6 +782,7 @@ export default function SubscribersPage() {
                         <span className="text-gray-600 dark:text-gray-400">Paid up</span>
                       )}
                     </TableCell>
+                    )}
                     <TableCell>
                       <div data-tour="subs-actions" className="flex flex-wrap gap-2">
                         {can("subscribers.manage") && (
