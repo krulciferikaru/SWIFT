@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
+import DeleteAccountCard from '../components/DeleteAccountCard.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
 import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
 import PaymentMethodsManager from '../components/PaymentMethodsManager.jsx'
@@ -298,6 +299,8 @@ export default function Settings() {
           </CardContent>
         </Card>
       )}
+
+      {user?.role === 'subscriber' && <DeleteAccountCard />}
     </div>
   )
 }

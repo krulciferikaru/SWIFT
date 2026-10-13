@@ -34,6 +34,7 @@ const ACTION_LABELS = {
   'plan.restored': 'Restored a service plan',
   'plan.deleted_permanently': 'Permanently deleted a service plan',
   'user.created': 'Created a staff account',
+  'account.deleted_by_owner': 'Deleted their own account',
   'user.status_changed': 'Changed an account’s status',
   'user.password_reset': 'Reset a password',
   'company.updated': 'Updated the company contact information',
@@ -51,6 +52,7 @@ const CATEGORIES = [
   ['payment', 'Payments'],
   ['plan', 'Service plans'],
   ['user', 'Staff accounts'],
+  ['account', 'Account deletions'],
   ['sms', 'Text messages'],
 ]
 

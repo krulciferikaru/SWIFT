@@ -12,7 +12,7 @@ class ArchiveController extends Controller
 {
     public function subscribers(Request $request): JsonResponse
     {
-        $query = Subscriber::onlyTrashed()->with('plan');
+        $query = Subscriber::onlyTrashed()->with(['plan', 'deletion']);
 
         if ($request->filled('search')) {
             $query->search($request->string('search')->toString());

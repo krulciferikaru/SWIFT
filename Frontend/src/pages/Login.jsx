@@ -33,6 +33,22 @@ export default function Login() {
   const [helpOpen, setHelpOpen] = useState(false)
   const passwordRef = useRef(null)
   const navigate = useNavigate()
+  // A message left for this page by whatever signed the person out (for example deleting their
+  // account). It is shown once. Router state would be lost in the redirect that signing out causes.
+  const [notice] = useState(() => {
+    try {
+      return sessionStorage.getItem('swift.notice')
+    } catch {
+      return null
+    }
+  })
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('swift.notice')
+    } catch {
+      // nothing to clear
+    }
+  }, [])
   const { login, isAuthenticated, loading: authLoading } = useAuth()
 
   useEffect(() => {
@@ -128,6 +144,12 @@ export default function Login() {
           </div>
         )}
       </div>
+
+      {notice && (
+        <p role="status" className="mt-6 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+          {notice}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div className="space-y-2">

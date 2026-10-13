@@ -9,6 +9,7 @@ use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\AccountDeletionController;
 use App\Http\Controllers\Auth\PasswordConfirmationController;
 use App\Http\Controllers\SubscriberApprovalController;
 use App\Http\Controllers\UserController;
@@ -40,6 +41,11 @@ Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
 
     // Type your password again before a sensitive action (valid for 10 minutes).
     Route::post('/me/confirm-password', [PasswordConfirmationController::class, 'store'])
+        ->middleware('throttle:confirm-password');
+
+    // A subscriber deletes their own account (their right under the Data Privacy Act).
+    Route::get('/me/delete-account/reasons', [AccountDeletionController::class, 'reasons']);
+    Route::post('/me/delete-account', [AccountDeletionController::class, 'destroy'])
         ->middleware('throttle:confirm-password');
 
     Route::post('/me/phone/send-code', [PhoneVerificationController::class, 'send'])
