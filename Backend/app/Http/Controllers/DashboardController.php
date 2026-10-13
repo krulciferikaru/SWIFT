@@ -14,6 +14,7 @@ class DashboardController extends Controller
 
     /**
      * GET /api/dashboard/period?period=day|month|quarter|year|all
+     * GET /api/dashboard/period?period=custom&from=YYYY-MM-DD&to=YYYY-MM-DD  (up to 5 years)
      *
      * Activity within a period: money collected, payments recorded, and subscribers added,
      * compared with the period before it. Boundaries follow Philippine time, so "today"
@@ -25,12 +26,27 @@ class DashboardController extends Controller
     public function period(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'period' => ['required', 'in:day,month,quarter,year,all'],
+            'period' => ['required', 'in:day,month,quarter,year,all,custom'],
+            'from' => ['required_if:period,custom', 'nullable', 'date_format:Y-m-d'],
+            'to' => ['required_if:period,custom', 'nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
         $period = $validated['period'];
 
-        [$start, $end, $label] = $this->range($period);
-        $previous = $this->previousRange($period, $start);
+        if ($period === 'custom') {
+            $from = Carbon::createFromFormat('Y-m-d', $validated['from'], self::TIMEZONE)->startOfDay();
+            $to = Carbon::createFromFormat('Y-m-d', $validated['to'], self::TIMEZONE)->endOfDay();
+            if ($from->diffInYears($to) >= 5) {
+                return response()->json([
+                    'message' => 'Pick a range of 5 years or less.',
+                    'errors' => ['to' => ['Pick a range of 5 years or less.']],
+                ], 422);
+            }
+            [$start, $end, $label] = [$from, $to, $this->customLabel($from, $to)];
+            $previous = $this->previousCustomRange($from, $to);
+        } else {
+            [$start, $end, $label] = $this->range($period);
+            $previous = $this->previousRange($period, $start);
+        }
 
         $canSeeMoney = $request->user()->hasPermission('reports.view');
 
@@ -71,6 +87,33 @@ class DashboardController extends Controller
                 'previous_new_subscribers' => $previousNew,
             ],
         ]);
+    }
+
+    private function customLabel(Carbon $from, Carbon $to): string
+    {
+        if ($from->isSameDay($to)) {
+            return $from->format('F j, Y');
+        }
+        if ($from->year === $to->year) {
+            return $from->format('M j').' – '.$to->format('M j, Y');
+        }
+
+        return $from->format('M j, Y').' – '.$to->format('M j, Y');
+    }
+
+    /**
+     * The stretch of the same length that ends the day before a custom range starts,
+     * so a 10-day range is compared with the 10 days before it.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function previousCustomRange(Carbon $from, Carbon $to): array
+    {
+        $days = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
+        $prevEnd = $from->copy()->subDay()->endOfDay();
+        $prevStart = $prevEnd->copy()->subDays($days - 1)->startOfDay();
+
+        return [$prevStart, $prevEnd];
     }
 
     /** @return array{0: ?Carbon, 1: ?Carbon, 2: string} */

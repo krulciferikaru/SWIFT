@@ -29,7 +29,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
-import { Archive, ChevronRight, CreditCard, MousePointerClick, Pencil } from "lucide-react";
+import { Archive, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -41,7 +41,8 @@ import { useSubscribers } from "../../hooks/useSubscribers";
 import { useToast } from "../../hooks/useToast";
 import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import planApi from "../../api/plans";
 import TourButton from "../../components/TourButton.jsx";
 import Toast from "../../components/Toast.jsx";
 import SubscriberDetailsModal from "./SubscriberDetailsModal";
@@ -51,9 +52,53 @@ export default function SubscribersPage() {
   const { can } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("All");
+  // The status lives in the address (?status=Unpaid) so the dashboard cards can link straight
+  // to a filtered list, and Back / refresh keep the filter.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlStatus = searchParams.get("status");
+  const status = STATUSES.includes(urlStatus) ? urlStatus : "All";
+  const setStatus = (value) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value === "All") next.delete("status");
+        else next.set("status", value);
+        return next;
+      },
+      { replace: true },
+    );
+  const [planId, setPlanId] = useState("All");
+  const [installedFrom, setInstalledFrom] = useState("");
+  const [installedTo, setInstalledTo] = useState("");
+  const [plans, setPlans] = useState([]);
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    planApi
+      .getAll()
+      .then((res) => {
+        const body = res.data;
+        setPlans(Array.isArray(body) ? body : (body?.data?.data ?? body?.data ?? []));
+      })
+      .catch(() => {});
+  }, []);
+
+  const rangeError =
+    installedFrom && installedTo && installedTo < installedFrom
+      ? "The end date is before the start date."
+      : "";
+  // Only send dates that make sense together.
+  const activeFrom = rangeError ? "" : installedFrom;
+  const activeTo = rangeError ? "" : installedTo;
+  const hasExtraFilters = planId !== "All" || installedFrom || installedTo;
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setStatus("All");
+    setPlanId("All");
+    setInstalledFrom("");
+    setInstalledTo("");
+  };
 
   // Debounce the search box so we don't refetch on every keystroke.
   useEffect(() => {
@@ -69,7 +114,7 @@ export default function SubscribersPage() {
     error,
     refetch,
     refetchSummary,
-  } = useSubscribers({ search, status, page });
+  } = useSubscribers({ search, status, page, planId, installedFrom: activeFrom, installedTo: activeTo });
 
   const { toast, showToast } = useToast();
 
@@ -97,7 +142,7 @@ export default function SubscribersPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, status]);
+  }, [search, status, planId, activeFrom, activeTo]);
 
   // -----------------------------------------------------------------------
   // CRUD handlers
@@ -156,6 +201,9 @@ export default function SubscribersPage() {
       const params = {};
       if (search) params.search = search;
       if (status !== "All") params.status = status;
+      if (planId !== "All") params.plan_id = planId;
+      if (activeFrom) params.installed_from = activeFrom;
+      if (activeTo) params.installed_to = activeTo;
 
       const res = await reportApi.downloadSubscribersXlsx(params);
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -182,6 +230,9 @@ export default function SubscribersPage() {
       const params = {};
       if (search) params.search = search;
       if (status !== "All") params.status = status;
+      if (planId !== "All") params.plan_id = planId;
+      if (activeFrom) params.installed_from = activeFrom;
+      if (activeTo) params.installed_to = activeTo;
 
       const res = await reportApi.previewSubscribers(params);
       const csvText = await res.data.text();
@@ -203,7 +254,7 @@ export default function SubscribersPage() {
       fetchPreviewCsv();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPreview, search, status]);
+  }, [showPreview, search, status, planId, activeFrom, activeTo]);
 
   // -----------------------------------------------------------------------
   // Render
@@ -264,19 +315,46 @@ export default function SubscribersPage() {
                 value: summary.disconnected,
                 color: "text-red-600 dark:text-red-400",
               },
-            ].map((card) => (
-              <div
-                key={card.label}
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3"
-              >
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  {card.label}
-                </p>
-                <p className={`text-2xl font-bold mt-1 ${card.color}`}>
-                  {card.value}
-                </p>
-              </div>
-            ))}
+            ].map((card) => {
+              const cardClass =
+                "bg-white dark:bg-gray-800 rounded-lg border px-4 py-3 text-left";
+              const body = (
+                <>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {card.label}
+                  </p>
+                  <p className={`text-2xl font-bold mt-1 ${card.color}`}>
+                    {card.value}
+                  </p>
+                </>
+              );
+              // Pending is not a subscriber status (those people are on the Approvals page).
+              if (card.label === "Pending") {
+                return (
+                  <div key={card.label} className={`${cardClass} border-gray-200 dark:border-gray-700`}>
+                    {body}
+                  </div>
+                );
+              }
+              const target = card.label === "Total" ? "All" : card.label;
+              const selected = status === target;
+              return (
+                <button
+                  key={card.label}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-label={`Show ${card.label === "Total" ? "all" : card.label} subscribers (${card.value})`}
+                  onClick={() => setStatus(target)}
+                  className={`${cardClass} transition-colors cursor-pointer hover:border-primary/50 ${
+                    selected
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-gray-200 dark:border-gray-700"
+                  }`}
+                >
+                  {body}
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
@@ -345,6 +423,46 @@ export default function SubscribersPage() {
           </div>
         )}
 
+        {!initialLoading && (
+          <div data-tour="subs-filters" className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="space-y-1">
+              <label htmlFor="subs-plan" className="text-xs font-medium text-gray-600 dark:text-gray-400">Plan</label>
+              <Select value={planId} onValueChange={setPlanId}>
+                <SelectTrigger id="subs-plan" aria-label="Filter by plan" className="w-full sm:w-52">
+                  <SelectValue>
+                    {planId === "All"
+                      ? "All plans"
+                      : (plans.find((p) => String(p.plan_id) === planId)?.plan_name ?? "Plan")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All plans</SelectItem>
+                  {plans.map((p) => (
+                    <SelectItem key={p.plan_id} value={String(p.plan_id)}>
+                      {p.plan_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="subs-from" className="text-xs font-medium text-gray-600 dark:text-gray-400">Installed from</label>
+              <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full sm:w-40" />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="subs-to" className="text-xs font-medium text-gray-600 dark:text-gray-400">Installed to</label>
+              <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full sm:w-40" />
+            </div>
+            {(hasExtraFilters || search || status !== "All") && (
+              <Button type="button" variant="outline" onClick={clearAllFilters} className="gap-1.5">
+                <FilterX className="size-4" aria-hidden="true" />
+                Clear filters
+              </Button>
+            )}
+            {rangeError && <p role="alert" className="w-full text-xs text-red-600 dark:text-red-400">{rangeError}</p>}
+          </div>
+        )}
+
         <p className="mb-2 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
           <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
           Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
@@ -364,7 +482,7 @@ export default function SubscribersPage() {
           ) : subscribers.length === 0 ? (
             <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">
               No subscribers found.
-              {search || status !== "All" ? " Try adjusting your filters." : ""}
+              {search || status !== "All" || hasExtraFilters ? " Try adjusting your filters." : ""}
             </div>
           ) : (
             <Table>

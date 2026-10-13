@@ -101,6 +101,14 @@ class Subscriber extends Model
         return $query->where('status', 'Disconnected');
     }
 
+    /** Subscribers installed between two dates (either end may be left open). */
+    public function scopeInstalledBetween($query, ?string $from, ?string $to)
+    {
+        return $query
+            ->when($from, fn ($q) => $q->whereDate('connection_date', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('connection_date', '<=', $to));
+    }
+
     public function scopeSearch($query, string $term)
     {
         return $query->where(function ($q) use ($term) {
