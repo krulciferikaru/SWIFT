@@ -22,5 +22,9 @@ return [
         'sms.send' => ['label' => 'Send text messages', 'help' => 'Send payment reminders and other text messages.'],
     ],
 
+    // A field collector goes out to collect payments. Fixed: an admin can't widen it, so the role
+    // stays what it says. They see subscribers (without email or MAC address) and record payments.
+    'collector' => ['subscribers.view', 'payments.view', 'payments.record'],
+
     'admin_only' => ['users.manage', 'audit.view'],
 ];

@@ -45,7 +45,7 @@ import EmptyState from '../components/EmptyState.jsx'
 const VIEW_DEFAULTS = { q: '', role: 'All', page: 1, per: 15, sort: '', dir: 'asc' }
 const USER_SORT_DEFAULT = { sort: '', dir: 'asc' }
 
-const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
+const ROLE_FILTERS = ['All', 'admin', 'secretary', 'collector', 'subscriber']
 const STATUS_STYLES = {
   active: 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900',
   pending: 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900',
@@ -54,6 +54,7 @@ const STATUS_STYLES = {
 const ROLE_STYLES = {
   admin: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900',
   secretary: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900',
+  collector: 'bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-900',
   subscriber: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700',
 }
 
@@ -211,7 +212,7 @@ export default function Users() {
     setCreating(true)
     try {
       await usersApi.create(data)
-      showToast(`${data.name}'s ${data.role} account was created.`)
+      showToast(`${data.name}'s ${data.role === 'collector' ? 'field collector' : data.role} account was created.`)
       setShowCreate(false)
       setPendingCreate(null)
       fetchUsers()
@@ -440,15 +441,21 @@ export default function Users() {
 
           <div data-tour="staff-role" className="space-y-1.5">
             <Label>Role<span className="text-red-500 ml-0.5">*</span></Label>
-            <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })} disabled>
+            <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })}>
               <SelectTrigger className="w-full" aria-label="Role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="secretary">Secretary</SelectItem>
+                <SelectItem value="collector">Field Collector</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500 dark:text-gray-400">This cannot be changed once the account is created.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {staffForm.role === 'collector'
+                ? 'A field collector can look up subscribers (without their email or MAC address) and record payments, nothing else.'
+                : 'A secretary can do everything except manage accounts; an admin can switch individual tasks off.'}
+              {' '}This cannot be changed once the account is created.
+            </p>
           </div>
 
           <FormField id="staff-password" label="Password" required hint="At least 8 characters." error={staffError('password')}>
@@ -487,7 +494,7 @@ export default function Users() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => createStaffAccount(pendingCreate)} disabled={creating}>
-              {creating ? 'Creating...' : 'Confirm Create Secretary'}
+              {creating ? 'Creating...' : 'Confirm Create Account'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

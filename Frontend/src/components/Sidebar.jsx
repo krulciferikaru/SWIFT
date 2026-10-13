@@ -38,8 +38,10 @@ import { Button } from "@/components/ui/button";
 
 // The menu is split into labelled sections. Each section only appears for people who have at
 // least one page in it. "bottom" sections sit at the foot of the menu, away from the work pages.
-const STAFF = ["admin", "secretary"];
-const EVERYONE = ["admin", "secretary", "subscriber"];
+const STAFF = ["admin", "secretary", "collector"];
+// Pages a field collector never needs (they have no permission for them either).
+const OFFICE = ["admin", "secretary"];
+const EVERYONE = ["admin", "secretary", "collector", "subscriber"];
 
 // Pages that are opened from the Settings page; Settings stays highlighted while on them.
 const SETTINGS_PAGES = ["/settings", "/users", "/guide"];
@@ -53,21 +55,21 @@ const NAV_GROUPS = [
     label: "Customers",
     items: [
       { label: "Subscribers", path: "/subscribers", icon: Users2, roles: STAFF },
-      { label: "Pending Approvals", path: "/approvals", icon: ClipboardCheck, roles: STAFF, showBadge: true },
-      { label: "Service Plans", path: "/plans", icon: Wifi, roles: STAFF },
+      { label: "Pending Approvals", path: "/approvals", icon: ClipboardCheck, roles: OFFICE, showBadge: true },
+      { label: "Service Plans", path: "/plans", icon: Wifi, roles: OFFICE },
     ],
   },
   {
     label: "Billing",
     items: [
       { label: "Payments", path: "/payments", icon: Wallet, roles: STAFF },
-      { label: "Reports", path: "/reports", icon: FileText, roles: STAFF },
+      { label: "Reports", path: "/reports", icon: FileText, roles: OFFICE },
     ],
   },
   {
     label: "Administration",
     items: [
-      { label: "Archive", path: "/archive", icon: Archive, roles: STAFF },
+      { label: "Archive", path: "/archive", icon: Archive, roles: OFFICE },
       { label: "Audit Trail", path: "/audit", icon: ScrollText, roles: ["admin"] },
     ],
   },

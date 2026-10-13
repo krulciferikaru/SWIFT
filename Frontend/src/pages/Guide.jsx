@@ -263,7 +263,7 @@ const sectionsForRole = (role) =>
 
 const HIGHLIGHT_NAME = 'guide-search'
 
-const ROLE_LABELS = { admin: 'Administrator', secretary: 'Secretary', subscriber: 'Subscriber' }
+const ROLE_LABELS = { admin: 'Administrator', secretary: 'Secretary', collector: 'Field Collector', subscriber: 'Subscriber' }
 
 // Marks matches on the page with the CSS Custom Highlight API (no DOM changes).
 // Browsers without it still filter; they just do not highlight.

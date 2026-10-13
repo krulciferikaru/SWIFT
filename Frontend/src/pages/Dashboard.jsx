@@ -84,7 +84,7 @@ export default function Dashboard() {
   const [mySubscriber, setMySubscriber] = useState(null);
   const [myLoading, setMyLoading] = useState(true);
 
-  const isStaff = user?.role === "admin" || user?.role === "secretary";
+  const isStaff = ["admin", "secretary", "collector"].includes(user?.role);
 
   // ---------------------------------------------------------------------
   // Data fetching
@@ -462,7 +462,7 @@ export default function Dashboard() {
       )}
 
       {/* Activity in a chosen period (today / month / quarter / year / all time) */}
-      <DashboardActivity />
+      {user?.role !== "collector" && <DashboardActivity />}
 
       {/* 2. Financial Snapshot */}
       {financials && (

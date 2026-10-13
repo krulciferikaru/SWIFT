@@ -79,13 +79,13 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
 
     // Plans are reference data that every signed-in role reads.
     Route::get('/plans', [PlanController::class, 'index'])
-        ->middleware('role:admin,secretary,subscriber');
+        ->middleware('role:admin,secretary,collector,subscriber');
     Route::get('/plans/{plan}', [PlanController::class, 'show'])
-        ->middleware('role:admin,secretary,subscriber');
+        ->middleware('role:admin,secretary,collector,subscriber');
 
     // Dashboard counts: any staff member.
     Route::get('/subscribers/summary', [SubscriberController::class, 'summary'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary,collector');
     Route::get('/dashboard/period', [DashboardController::class, 'period'])
         ->middleware('role:admin,secretary', 'throttle:reports');
 
@@ -185,7 +185,7 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
 
     // The payment form and the report filters need the list (active methods only, unless an admin asks for all).
     Route::get('/payment-methods', [PaymentMethodController::class, 'index'])
-        ->middleware('role:admin,secretary');
+        ->middleware('role:admin,secretary,collector');
 
     Route::put('/company-info', [CompanyInfoController::class, 'update'])
         ->middleware('permission:users.manage');

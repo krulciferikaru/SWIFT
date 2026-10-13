@@ -168,14 +168,17 @@ class Subscriber extends Model
             ->when($to, fn ($q) => $q->whereDate('connection_date', '<=', $to));
     }
 
-    public function scopeSearch($query, string $term)
+    /** @param bool $includePrivate Also match email and MAC address (not for people who can't see them). */
+    public function scopeSearch($query, string $term, bool $includePrivate = true)
     {
-        return $query->where(function ($q) use ($term) {
+        return $query->where(function ($q) use ($term, $includePrivate) {
             $q->where('name', 'like', "%{$term}%")
-              ->orWhere('email', 'like', "%{$term}%")
               ->orWhere('address', 'like', "%{$term}%")
-              ->orWhere('mac_address', 'like', "%{$term}%")
               ->orWhere('contact_number', 'like', "%{$term}%");
+            if ($includePrivate) {
+                $q->orWhere('email', 'like', "%{$term}%")
+                  ->orWhere('mac_address', 'like', "%{$term}%");
+            }
         });
     }
 }

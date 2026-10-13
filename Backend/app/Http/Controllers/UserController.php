@@ -57,7 +57,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:subscriber,email'],
             'contact_number' => ['nullable', 'string', 'max:20', 'regex:/^(\+?63|0)9[\d\s-]{9,13}$/', 'unique:users,contact_number'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', Rule::in(['admin', 'secretary'])],
+            'role' => ['required', Rule::in(['admin', 'secretary', 'collector'])],
         ], [
             'contact_number.regex' => 'Enter a mobile number such as 0917 123 4567.',
         ]);
