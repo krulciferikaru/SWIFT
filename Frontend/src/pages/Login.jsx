@@ -183,7 +183,7 @@ export default function Login() {
         </div>
         {remember && (
           <p id="remember-hint" className="-mt-2 text-xs text-gray-600 dark:text-gray-400">
-            Stays signed in for 30 days on this device. Don't use this on a shared computer.
+            Stays signed in for 7 days on this device. Don't use this on a shared computer.
           </p>
         )}
 

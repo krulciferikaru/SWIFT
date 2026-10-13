@@ -116,8 +116,8 @@ flowchart TD
   D -- "Yes" --> F{"Account active and not archived?"}
   F -- "No" --> G["Message: awaiting approval, rejected,<br/>deactivated or not available"]
   F -- "Yes" --> H{"Keep me signed in ticked?"}
-  H -- "Yes" --> I["Signed in for 30 days on this device"]
-  H -- "No" --> J["Signed in until the browser closes<br/>or for 12 hours"]
+  H -- "Yes" --> I["Signed in for 7 days on this device"]
+  H -- "No" --> J["Signed in until the browser closes<br/>or for 1 hour"]
 ```
 
 ## 8. A sensitive action asks for the password again

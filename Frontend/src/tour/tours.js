@@ -561,7 +561,7 @@ TOURS.subscriberForm = {
     },
     {
       selector: dlg('#connection_date'),
-      title: 'Connection Date',
+      title: 'Installation Date',
       description:
         'Required. The date service started. Billing is counted from this date, so a date in the past means the earlier months count as due.',
       side: 'top',

@@ -283,7 +283,7 @@ export default function SubscriberForm({
               setForm((prev) => ({ ...prev, mac_address: next }));
             },
           })}
-          {field("Connection Date", "connection_date", "date", {}, true)}
+          {field("Installation Date", "connection_date", "date", {}, true)}
         </div>
       </div>
     </form>
