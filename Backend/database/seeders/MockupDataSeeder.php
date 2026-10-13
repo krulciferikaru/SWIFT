@@ -195,10 +195,20 @@ class MockupDataSeeder extends Seeder
         ]);
         $this->adminId = $admin->id;
 
+        // Two secretaries and two collectors. The first of each has a verified mobile number and two-step
+        // sign-in turned on (fixed secrets and recovery codes, below, so a test phone can be set up); the
+        // second has neither, to try turning it on from Settings.
         $secretary = User::updateOrCreate(['email' => 'secretary@swift.test'], [
             'name' => 'Maricel Dizon', 'password' => Hash::make($password), 'role' => 'secretary', 'account_status' => 'active',
             'contact_number' => '09175550101',
         ]);
+        $this->protect($secretary, self::DEMO_TWO_STEP['secretary@swift.test']);
+        User::updateOrCreate(['email' => 'secretary2@swift.test'], [
+            'name' => 'Elena Reyes', 'password' => Hash::make($password), 'role' => 'secretary', 'account_status' => 'active',
+            'contact_number' => '09175550104', 'contact_verified_at' => null,
+            'mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'mfa_last_step' => null,
+        ]);
+
         $collectors = [];
         foreach ([1 => ['Rodel Macaraeg', '09175550102'], 2 => ['Nilo Agustin', '09175550103']] as $i => [$name, $number]) {
             $collectors[] = User::updateOrCreate(['email' => "collector{$i}@swift.test"], [
@@ -206,9 +216,38 @@ class MockupDataSeeder extends Seeder
                 'contact_number' => $number,
             ]);
         }
+        $this->protect($collectors[0], self::DEMO_TWO_STEP['collector1@swift.test']);
+        $collectors[1]->forceFill(['contact_verified_at' => null, 'mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'mfa_last_step' => null])->save();
 
         // The secretary encodes most payments; the two collectors some; the admin a few.
         $this->recorders = [$secretary->id, $secretary->id, $secretary->id, $collectors[0]->id, $collectors[1]->id, $admin->id];
+    }
+
+    /**
+     * Fixed demo two-step details, so the same test phone works after every re-seed: the secret to type
+     * into an authenticator app ("enter a key") and eight single-use recovery codes. Local demo data only.
+     */
+    private const DEMO_TWO_STEP = [
+        'secretary@swift.test' => [
+            'secret' => 'KRSXG5CTMVRXEZLUKRSXG5CTMVRXEZLU',
+            'codes' => ['1A2B-3C4D', '5E6F-7A8B', '9C0D-1E2F', '3A4B-5C6D', '7E8F-9A0B', '1C2D-3E4F', '5A6B-7C8D', '9E0F-1A2B'],
+        ],
+        'collector1@swift.test' => [
+            'secret' => 'MFRGGZDFMZTWQ2LKMFRGGZDFMZTWQ2LK',
+            'codes' => ['2B3C-4D5E', '6F7A-8B9C', '0D1E-2F3A', '4B5C-6D7E', '8F9A-0B1C', '2D3E-4F5A', '6B7C-8D9E', '0F1A-2B3C'],
+        ],
+    ];
+
+    /** A verified mobile number and two-step sign-in turned on, with the fixed secret and recovery codes. */
+    private function protect(User $user, array $details): void
+    {
+        $user->forceFill([
+            'contact_verified_at' => now()->subDays(30),
+            'mfa_secret' => $details['secret'],
+            'mfa_enabled_at' => now()->subDays(20),
+            'mfa_last_step' => null,
+            'mfa_recovery_codes' => array_map(fn ($code) => Hash::make(strtoupper(preg_replace('/[^0-9A-Za-z]/', '', $code))), $details['codes']),
+        ])->save();
     }
 
     // ---------------------------------------------------------------- people
