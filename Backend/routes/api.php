@@ -141,7 +141,7 @@ Route::middleware(['auth:sanctum', 'account.active', 'session.slide', 'mfa.enrol
         ->middleware('permission:payments.record');
     // Cancel a wrongly recorded payment: administrators and the secretary, and it asks for their password.
     Route::post('/payments/{id}/void', [PaymentController::class, 'void'])
-        ->middleware(['role:admin,secretary', 'password.confirmed']);
+        ->middleware(['role:admin,secretary', 'password.confirmed:fresh']);
     // The OR number that probably comes next for this person (the last one they recorded, plus one).
     Route::get('/payments/next-or-number', [PaymentController::class, 'nextOrNumber'])
         ->middleware('permission:payments.record');
@@ -166,11 +166,11 @@ Route::middleware(['auth:sanctum', 'account.active', 'session.slide', 'mfa.enrol
         Route::get('/archive/subscribers', [ArchiveController::class, 'subscribers']);
         Route::patch('/archive/subscribers/{id}/restore', [ArchiveController::class, 'restoreSubscriber']);
         Route::delete('/archive/subscribers/{id}', [ArchiveController::class, 'deleteSubscriber'])
-            ->middleware('password.confirmed');
+            ->middleware('password.confirmed:fresh');
         Route::get('/archive/plans', [ArchiveController::class, 'plans']);
         Route::patch('/archive/plans/{id}/restore', [ArchiveController::class, 'restorePlan']);
         Route::delete('/archive/plans/{id}', [ArchiveController::class, 'deletePlan'])
-            ->middleware('password.confirmed');
+            ->middleware('password.confirmed:fresh');
     });
 
     // The Payments page and the subscriber details window both need to look subscribers up.

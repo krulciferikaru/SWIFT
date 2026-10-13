@@ -212,4 +212,22 @@ class PaymentVoidTest extends TestCase
         // Their balance leaves the cancelled one out.
         $this->assertSame(1000.0, (float) $this->getJson('/api/me/billing')->assertOk()->json('data.balance'));
     }
+
+    public function test_cancelling_a_payment_asks_for_the_password_even_right_after_signing_in(): void
+    {
+        $sub = $this->subscriber();
+        $payment = $this->pay($sub, 500);
+        DB::table('users')->insert([
+            'name' => 'Boss', 'email' => 'boss@void.test', 'password' => bcrypt('void-pass-123'), 'role' => 'admin',
+            'account_status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $token = $this->postJson('/api/login', ['login' => 'boss@void.test', 'password' => 'void-pass-123'])->assertOk()->json('token');
+
+        // The sign-in itself does not count: the password has to be typed again for a cancel.
+        $this->withToken($token)->postJson("/api/payments/{$payment->id}/void", ['reason' => 'Typed the wrong amount'])->assertStatus(423);
+        $this->assertNull(Payment::find($payment->id)->voided_at);
+
+        $this->withToken($token)->postJson('/api/me/confirm-password', ['password' => 'void-pass-123'])->assertOk();
+        $this->withToken($token)->postJson("/api/payments/{$payment->id}/void", ['reason' => 'Typed the wrong amount'])->assertOk();
+    }
 }
