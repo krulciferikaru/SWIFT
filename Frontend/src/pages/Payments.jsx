@@ -140,8 +140,8 @@ function describeCoverage(months, amount) {
 
 export default function Payments() {
   const { can, user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  // The payment being cancelled (administrators only).
+  const canCancelPayments = user?.role === "admin" || user?.role === "secretary";
+  // The payment being cancelled (administrators and the secretary).
   const [voiding, setVoiding] = useState(null);
   const { methods: paymentMethods } = usePaymentMethods();
   const [search, setSearch] = useState("");
@@ -610,7 +610,7 @@ export default function Payments() {
                     <PaymentHistory
                       maxHeightClass="max-h-80"
                       payments={history}
-                      onCancelPayment={isAdmin ? setVoiding : undefined}
+                      onCancelPayment={canCancelPayments ? setVoiding : undefined}
                       subscriber={{
                         name: selected.name,
                         address: selected.address,
