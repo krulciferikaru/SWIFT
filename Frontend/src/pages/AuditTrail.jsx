@@ -39,8 +39,12 @@ const ACTION_LABELS = {
   'auth.mfa_recovery_used': 'Signed in with a recovery code',
   'auth.mfa_codes_renewed': 'Replaced their recovery codes',
   'auth.mfa_reset': 'Two-step sign-in reset by the server',
+  'account.deleted_by_owner': 'Deleted their own account',
   'user.status_changed': 'Changed an account’s status',
-  'user.password_reset': 'Reset a password',
+  'user.password_reset': 'Reset a password (an old action; it is no longer possible)',
+  'user.mobile_changed': 'Changed their mobile number',
+  'auth.password_reset_requested': 'Asked for a password reset code',
+  'auth.password_reset': 'Reset their own password',
   'company.updated': 'Updated the company contact information',
   'user.permissions_changed': 'Changed a secretary’s permissions',
   'sms.sent': 'Sent a text message',
@@ -56,6 +60,7 @@ const CATEGORIES = [
   ['payment', 'Payments'],
   ['plan', 'Service plans'],
   ['user', 'Staff accounts'],
+  ['account', 'Account deletions'],
   ['sms', 'Text messages'],
 ]
 

@@ -15,7 +15,7 @@ There are three roles. A person's role is fixed when their account is created an
 | Archive: restore or permanently delete subscribers and plans | yes | yes | |
 | Reports: view the Collection Report with filters, and download PDF / Excel / CSV | yes | yes | |
 | Send an SMS or payment reminders (Settings) | yes | yes | |
-| **Manage Roles:** create staff accounts, set account status, reset passwords, set each secretary's permissions | **yes** | | |
+| **Manage Roles:** create staff accounts, set account status, set each secretary's permissions | **yes** | | |
 | **Audit Trail:** see who did what and when | **yes** | | |
 | **Settings:** edit the payment methods and the company contact information | **yes** | | |
 | Settings: dark mode, text size, logout confirmation, tour options | yes | yes | yes |
@@ -53,7 +53,6 @@ On **Manage Roles** (opened from Settings), each secretary has a **Permissions**
 Even though they are already signed in, a person must **retype their own password** before:
 
 - changing what a secretary is allowed to do (Permissions),
-- resetting someone's password (Manage Roles),
 - permanently deleting a subscriber or a plan from the Archive.
 
 A "Confirm your password" window opens, the action carries on by itself once the password is right, and it stays confirmed for **10 minutes** for that sign-in. This protects against an unattended screen or a stolen sign-in. Someone who is not allowed to do the action is refused outright and is not asked for a password. A wrong password is written to the Audit Trail.
@@ -71,7 +70,8 @@ A "Confirm your password" window opens, the action carries on by itself once the
 - **Finer than on/off per task is not available.** Permissions are switches per task, not separate View / Edit / Delete levels inside every module.
 - **Permanent deletion is allowed for secretaries too** (unless switched off), and asks them for their password. Deleting from the Archive page removes a subscriber together with their payment history and login, and cannot be undone.
 - **Archived subscribers cannot log in** until they are restored.
+- **A subscriber can delete their own account** (Settings, bottom of the page). Their login and contact details are removed at once; their billing record stays, archived, and the Archive says it was deleted by the subscriber.
 - **Inactive accounts cannot log in.** Staff accounts are set Pending, Active or Inactive by an admin. A new self-registered subscriber stays Pending until approved.
-- **Passwords:** there is no "forgot password" feature yet; it is built but held back (see [Future improvements](future-improvements.md)). The office resets it: an admin does it from Manage Roles.
+- **Passwords:** nobody can see or reset another person's password, not even an admin. Everyone recovers their own with **Forgot password?** on the sign-in page: a 6-digit code is texted to their **verified** mobile number (see below). Staff add and verify their number in Settings, or the admin enters it when creating the account.
 - **Staff accounts** are created by an admin (as secretaries). The first admin is created with `php artisan swift:create-admin`, see [Deployment and releases](deployment.md).
 - Demo accounts are never created in production.

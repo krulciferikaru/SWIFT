@@ -34,6 +34,17 @@ const formatDate = (value) =>
 const VIEW_DEFAULTS = { t: 'subscribers', q: '', page: 1, per: 15, sort: 'archived', dir: 'desc' }
 const ARCHIVE_SORT_DEFAULT = { sort: 'archived', dir: 'desc' }
 
+// The reasons a subscriber can give when they delete their own account.
+const REASON_LABELS = {
+  not_using: 'no longer uses the service',
+  moved: 'moved away',
+  switched: 'switched provider',
+  price: 'costs too much',
+  privacy: 'privacy concerns',
+  duplicate: 'has another account',
+  other: 'another reason',
+}
+
 export default function ArchivePage() {
   const tourActive = useTourActive()
   const [view, setView] = useQueryState(VIEW_DEFAULTS)
@@ -218,7 +229,15 @@ export default function ArchivePage() {
             <TableBody>
               {items.map((item) => (
                 <TableRow key={idOf(item)}>
-                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">{nameOf(item)}</TableCell>
+                  <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                    {nameOf(item)}
+                    {isSubscribers && item.deletion && (
+                      <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-gray-400">
+                        Deleted by the subscriber, {formatDate(item.deletion.created_at)}
+                        {item.deletion.reason ? `: ${REASON_LABELS[item.deletion.reason] ?? item.deletion.reason}` : ''}
+                      </span>
+                    )}
+                  </TableCell>
                   {isSubscribers ? (
                     <>
                       <TableCell className="text-gray-600 dark:text-gray-400">{item.plan?.plan_name ?? '—'}</TableCell>

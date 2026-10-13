@@ -41,7 +41,7 @@ class AdminRecoTest extends TestCase
     {
         $this->postJson('/api/register', [
             'first_name' => 'juan', 'last_name' => 'cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
-            'password' => 'password1', 'password_confirmation' => 'password1',
+            'password' => 'password1', 'password_confirmation' => 'password1', 'accept_terms' => true,
         ])->assertCreated();
 
         $sub = Subscriber::where('contact_number', '09171112222')->first();

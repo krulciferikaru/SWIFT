@@ -70,6 +70,7 @@ Settings are not stored in the repository. They are set in each service's dashbo
 | `FRONTEND_URL` | The frontend address allowed to call this API (CORS). Several addresses can be separated by commas |
 | `PHILSMS_API_TOKEN`, `PHILSMS_SENDER_ID` | SMS provider. Leave the token empty on evaluation so no SMS is sent |
 | `RATE_LIMIT_ENABLED` and `RATE_LIMIT_*_PER_MIN` / `_PER_HOUR` / `_PER_10MIN` | Request limits (login 5 a minute, registration 5 an hour, SMS 10 a minute, verification codes 3 every 10 minutes, confirming a password 5 a minute, report views 60 a minute, report downloads 15 a minute). Can be raised or switched off on evaluation |
+| `RATE_LIMIT_PASSWORD_FORGOT_PER_10MIN`, `RATE_LIMIT_PASSWORD_RESET_PER_10MIN` | Forgot password: code requests (default 5) and reset attempts (default 10) per network address in 10 minutes. Each number is also capped separately (three codes in 10 minutes) |
 | `LOGIN_MAX_FAILURES`, `LOGIN_LOCKOUT_MINUTES` | Wrong passwords for one account before sign-in pauses, and for how long (default 5 inside 15 minutes) |
 | `MFA_ENFORCE` | Administrators must use an authenticator app (default `true`). Leave it on; switching it off is only for a development machine. `MFA_ISSUER` is the name shown in the app (default `SWIFT`); `MFA_MAX_FAILURES` and `MFA_LOCKOUT_MINUTES` set the wrong-code pause (default 5 and 15) |
 | `LOGIN_TOKEN_HOURS`, `REMEMBER_TOKEN_DAYS` | How long a sign-in lasts: an hour after the last use normally (an open page keeps it alive), a fixed 7 days with "Keep me signed in" |
@@ -83,7 +84,7 @@ Settings are not stored in the repository. They are set in each service's dashbo
 
 ## Migrations and seeders
 
-- **Migrations** change the database structure. They must run on every deploy that adds one: `php artisan migrate --force`. The release after the first evaluation adds five: the audit trail (`audit_logs`), per-secretary permissions (`users.permissions`), phone verification (`users.contact_verified_at` and `phone_verifications`), the company contact information (`company_info`), and payment methods (`payment_methods`, which also changes `payments.payment_method` from a fixed list of three values to free text while keeping the existing values). **Take a database backup first** because of that last one. **To confirm:** how Railway runs this (start command or a pre-deploy command) is set in the Railway dashboard, not in the repository. If the Archive page works on the evaluation site, that environment runs migrations automatically.
+- **Migrations** change the database structure. They must run on every deploy that adds one: `php artisan migrate --force`. The release after the first evaluation adds five: the audit trail (`audit_logs`), per-secretary permissions (`users.permissions`), phone verification (`users.contact_verified_at` and `phone_verifications`), the company contact information (`company_info`), and payment methods (`payment_methods`, which also changes `payments.payment_method` from a fixed list of three values to free text while keeping the existing values). **Take a database backup first** because of that last one. Forgot password adds one more migration, `password_reset_codes` (a table of short-lived codes; nothing existing changes). **To confirm:** how Railway runs this (start command or a pre-deploy command) is set in the Railway dashboard, not in the repository. If the Archive page works on the evaluation site, that environment runs migrations automatically.
 - **Seeders** put starting data in a database. The default seeder creates demo accounts and fake subscribers, so it is for development and testing only. In production it does nothing unless `ALLOW_DEMO_SEED=true` and a `SEED_DEMO_PASSWORD` of your own are set. Seeders are only suitable for reference data that carries no value (for example dropdown options), never for real accounts or passwords.
 - **First real admin:** run `php artisan swift:create-admin` on the service. It asks for a name, an email and a password of at least 12 characters.
 
@@ -105,7 +106,7 @@ The two daily jobs need something to run `php artisan schedule:run` regularly. S
 | Frontend still calls the old API after changing `VITE_API_URL` | The frontend was not redeployed |
 | "Too many attempts" | A rate limit was hit. Wait a minute, or raise the limit |
 | "Sign-in is paused for about N minutes" | Five wrong passwords for that account. It unlocks by itself; the countdown is on the sign-in page |
-| A "Confirm your password" window appears | Normal: the action is a sensitive one (permissions, password reset, permanent delete). Type your own password |
+| A "Confirm your password" window appears | Normal: the action is a sensitive one (changing permissions, permanent delete). Type your own password |
 | The sign-in page shows no phone or email | An admin has not filled in the company contact information in Settings yet |
 | Verification codes never arrive | SMS is off on evaluation, the number is not on Globe, or the SMS credit has run out |
 | Cannot log in on evaluation with a production account | Different databases, so accounts do not carry over |

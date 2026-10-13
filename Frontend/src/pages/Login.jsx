@@ -36,6 +36,22 @@ export default function Login() {
   const [challenge, setChallenge] = useState(null)
   const passwordRef = useRef(null)
   const navigate = useNavigate()
+  // A message left for this page by whatever signed the person out (for example deleting their
+  // account). It is shown once. Router state would be lost in the redirect that signing out causes.
+  const [notice] = useState(() => {
+    try {
+      return sessionStorage.getItem('swift.notice')
+    } catch {
+      return null
+    }
+  })
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('swift.notice')
+    } catch {
+      // nothing to clear
+    }
+  }, [])
   const { login, isAuthenticated, loading: authLoading } = useAuth()
 
   useEffect(() => {
@@ -155,6 +171,12 @@ export default function Login() {
         )}
       </div>
 
+      {notice && (
+        <p role="status" className="mt-6 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+          {notice}
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div className="space-y-2">
           <Label htmlFor="login">Mobile number or email</Label>
@@ -172,7 +194,12 @@ export default function Login() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <PasswordField
             id="password"
             ref={passwordRef}
@@ -222,7 +249,7 @@ export default function Login() {
             <ul className="list-disc space-y-1.5 pl-5">
               <li>Use the mobile number or email you registered with.</li>
               <li>Passwords are case-sensitive. Tap <strong>Show</strong> to check what you typed.</li>
-              <li>Forgot your password? Contact the office to have it reset. Staff can ask an administrator.</li>
+              <li>Forgot your password? Use <strong>Forgot password?</strong> to get a code by text message. Your mobile number must be verified first (in Settings). Nobody at the office can see or reset your password for you.</li>
               <li>After 5 wrong passwords, sign-in for that account pauses for 15 minutes.</li>
               <li>"Awaiting approval" means staff have not approved your registration yet.</li>
             </ul>

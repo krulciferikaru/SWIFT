@@ -10,7 +10,9 @@ use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\MfaController;
+use App\Http\Controllers\Auth\AccountDeletionController;
 use App\Http\Controllers\Auth\PasswordConfirmationController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\SubscriberApprovalController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
@@ -29,6 +31,11 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('throt
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 // The second step for administrators: the code from their authenticator app.
 Route::post('/login/mfa', [AuthController::class, 'loginMfa'])->middleware('throttle:login');
+
+// Forgot password: a code by text message to a verified mobile number.
+// Nobody else can reset a password for someone: people do it themselves.
+Route::post('/password/forgot', [PasswordResetController::class, 'forgot'])->middleware('throttle:password-forgot');
+Route::post('/password/reset', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
 
 // How to reach the company. Public so the sign-in page can show it.
 Route::get('/company-info', [CompanyInfoController::class, 'show'])->middleware('throttle:reports');
@@ -51,6 +58,15 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
     Route::post('/me/mfa/enable', [MfaController::class, 'enable'])->middleware('throttle:confirm-password');
     Route::post('/me/mfa/recovery-codes', [MfaController::class, 'recoveryCodes'])
         ->middleware(['password.confirmed', 'throttle:confirm-password']);
+    // A staff member adds or changes their own mobile number (they are verified afterwards,
+    // in the same way as a subscriber's). It is what lets them use Forgot password.
+    Route::patch('/me/mobile-number', [PhoneVerificationController::class, 'update'])
+        ->middleware('throttle:confirm-password');
+
+    // A subscriber deletes their own account (their right under the Data Privacy Act).
+    Route::get('/me/delete-account/reasons', [AccountDeletionController::class, 'reasons']);
+    Route::post('/me/delete-account', [AccountDeletionController::class, 'destroy'])
+        ->middleware('throttle:confirm-password');
 
     Route::post('/me/phone/send-code', [PhoneVerificationController::class, 'send'])
         ->middleware('throttle:phone-code');
@@ -152,8 +168,6 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
-        Route::patch('/users/{user}/password', [UserController::class, 'resetPassword'])
-            ->middleware('password.confirmed');
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
             ->middleware('password.confirmed');

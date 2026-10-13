@@ -38,10 +38,14 @@ class SubscriberApprovalController extends Controller
                 'name' => $subscriber->name,
                 'email' => $subscriber->email,
                 'contact_number' => $subscriber->contact_number,
-                // No known default password: someone without one must have it reset by an admin.
+                // A subscriber added by staff has no password. They get an unknowable one and set their
+                // own with Forgot password once their mobile number is verified.
                 'password' => $subscriber->password ?: Hash::make(Str::random(40)),
                 'role' => 'subscriber',
                 'account_status' => 'active',
+                // What they agreed to at registration carries over to their login.
+                'terms_accepted_at' => $subscriber->terms_accepted_at,
+                'terms_version' => $subscriber->terms_version,
             ]
         );
 
