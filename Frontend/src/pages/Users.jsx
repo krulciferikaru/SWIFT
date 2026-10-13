@@ -33,6 +33,7 @@ import { UserPlus, KeyRound, SlidersHorizontal } from 'lucide-react'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
+import BackToSettings from '../components/BackToSettings.jsx'
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -208,6 +209,8 @@ export default function Users() {
   return (
     <div>
       <Toast toast={toast} />
+
+      <BackToSettings className="mb-3" />
 
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
         {initialLoad ? (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
@@ -14,13 +15,31 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, Send, BellRing, PlayCircle } from 'lucide-react'
+import { Sun, Moon, Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight } from 'lucide-react'
 import TourButton from "../components/TourButton.jsx";
 import { runTour } from '../tour/useTour'
 import { useShowTourButtons, setShowTourButtons } from '../tour/tourState'
 import Toast from "../components/Toast.jsx";
 
 const SMS_MESSAGE_MAX = 300
+
+function SettingsLink({ to, icon: Icon, title, description }) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-primary/50 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</span>
+        <span className="block text-xs text-gray-500 dark:text-gray-400">{description}</span>
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+    </Link>
+  )
+}
 
 export default function Settings() {
   const { theme, toggleTheme } = useTheme()
@@ -91,6 +110,23 @@ export default function Settings() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your preferences for SWIFT.</p>
         </div>
         <TourButton tour="settings" />
+      </div>
+
+      <div data-tour="settings-pages" className="grid gap-3 sm:grid-cols-2">
+        {user?.role === 'admin' && (
+          <SettingsLink
+            to="/users"
+            icon={ShieldCheck}
+            title="Manage Roles"
+            description="Staff accounts, permissions and password resets."
+          />
+        )}
+        <SettingsLink
+          to="/guide"
+          icon={HelpCircle}
+          title="Guide"
+          description="How every page works, with step-by-step tours."
+        />
       </div>
 
       <Card data-tour="settings-appearance">

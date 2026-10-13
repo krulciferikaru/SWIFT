@@ -28,7 +28,7 @@ There are three roles. A person's role is fixed when their account is created an
 
 ## Per-secretary permissions
 
-On **Manage Roles**, each secretary has a **Permissions** button. The admin ticks exactly which of these tasks that secretary may do:
+On **Manage Roles** (opened from Settings), each secretary has a **Permissions** button. The admin ticks exactly which of these tasks that secretary may do:
 
 | Permission | Lets them |
 |---|---|

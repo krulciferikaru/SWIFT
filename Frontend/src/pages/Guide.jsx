@@ -7,6 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useAuth } from '../context/AuthContext'
+import BackToSettings from '../components/BackToSettings.jsx'
 import { TOUR_PAGES } from '../tour/tours'
 import {
   PlayCircle,
@@ -167,11 +168,11 @@ const SECTIONS = [
     tour: 'users',
     icon: ShieldCheck,
     title: 'Manage Roles',
-    summary: 'Admin-only: create staff accounts and manage all user accounts.',
+    summary: 'Admin-only: create staff accounts and manage all user accounts. Opened from Settings.',
     roles: ['admin'],
     body: (
       <>
-        <p>This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
+        <p>Open it from <strong>Settings</strong>. This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
           <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
@@ -217,6 +218,7 @@ const SECTIONS = [
       <>
         <p>These preferences are saved on the device and browser you are using.</p>
         <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Guide</strong>{role === 'admin' && <> and <strong>Manage Roles</strong></>} — the links at the top open {role === 'admin' ? 'them' : 'it'}. Use <em>Back to Settings</em> to return.</li>
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
           <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>
@@ -359,6 +361,8 @@ export default function Guide() {
           ))}
         </ol>
       </div>
+
+      <BackToSettings />
 
       <div className="flex items-start justify-between gap-3 print:hidden">
         <div>

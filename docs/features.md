@@ -41,7 +41,7 @@ Everything on this page was added in response to the evaluators' feedback or the
 
 | Feature | What it does |
 |---|---|
-| **Grouped menu** | The sidebar is split into sections (Overview, Customers, Billing, Administration) with Settings and the Guide at the bottom. A section only shows if you have a page in it. Collapsed, it shows icons with dividers; on a phone it becomes a top menu with the same sections. |
+| **Grouped menu** | The sidebar is split into sections (Overview, Customers, Billing, Administration) with Settings at the bottom. **Manage Roles** (admins) and the **Guide** are opened from the Settings page, and Settings stays highlighted while you are on them. A section only shows if you have a page in it. Collapsed, it shows icons with dividers; on a phone it becomes a top menu with the same sections. |
 | **Tables on phones** | Below 768 pixels wide, lists show one card per row with the column title beside each value. Report tables keep horizontal scrolling. |
 | **Guide and tours** | A searchable, printable guide with a section for each role, and step-by-step guided tours of every page and form (Driver.js). Tours skip steps for things a person cannot see. |
 | **Offline and errors** | A banner, forms that keep what was typed, lists that reload by themselves, and clear messages. See [Offline behaviour and errors](offline-and-errors.md). |

@@ -21,9 +21,7 @@ import {
   ClipboardCheck,
   FileText,
   Wifi,
-  ShieldCheck,
   Settings as SettingsIcon,
-  HelpCircle,
   LogOut,
   Sun,
   Moon,
@@ -42,6 +40,9 @@ import { Button } from "@/components/ui/button";
 // least one page in it. "bottom" sections sit at the foot of the menu, away from the work pages.
 const STAFF = ["admin", "secretary"];
 const EVERYONE = ["admin", "secretary", "subscriber"];
+
+// Pages that are opened from the Settings page; Settings stays highlighted while on them.
+const SETTINGS_PAGES = ["/settings", "/users", "/guide"];
 
 const NAV_GROUPS = [
   {
@@ -67,16 +68,14 @@ const NAV_GROUPS = [
     label: "Administration",
     items: [
       { label: "Archive", path: "/archive", icon: Archive, roles: STAFF },
-      { label: "Manage Roles", path: "/users", icon: ShieldCheck, roles: ["admin"] },
       { label: "Audit Trail", path: "/audit", icon: ScrollText, roles: ["admin"] },
     ],
   },
   {
-    label: "Support",
+    label: "Settings",
     bottom: true,
     items: [
       { label: "Settings", path: "/settings", icon: SettingsIcon, roles: EVERYONE },
-      { label: "Guide", path: "/guide", icon: HelpCircle, roles: EVERYONE },
     ],
   },
 ];
@@ -129,6 +128,8 @@ export default function Sidebar({ open: pinned, onToggle }) {
         (!PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path]))),
     ),
   })).filter((group) => group.items.length > 0);
+  const isActivePath = (path) =>
+    path === "/settings" ? SETTINGS_PAGES.includes(location.pathname) : location.pathname === path;
   const canSeeApprovals = can("approvals.manage");
   const totalApprovalsCount = pendingCount + claimsCount;
 
@@ -253,7 +254,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
             )}
             {group.items.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = isActivePath(item.path);
           return (
             <Link
               key={item.path}
@@ -465,7 +466,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
               )}
               {group.items.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = isActivePath(item.path);
             return (
               <Link
                 key={item.path}
