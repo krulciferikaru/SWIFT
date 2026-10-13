@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight } from 'lucide-react'
+import { Sun, Moon, Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight, FileText } from 'lucide-react'
 import TourButton from "../components/TourButton.jsx";
 import { runTour } from '../tour/useTour'
 import { useShowTourButtons, setShowTourButtons } from '../tour/tourState'
@@ -126,6 +126,18 @@ export default function Settings() {
           icon={HelpCircle}
           title="Guide"
           description="How every page works, with step-by-step tours."
+        />
+        <SettingsLink
+          to="/privacy"
+          icon={FileText}
+          title="Privacy Policy"
+          description="How your information is collected, used, kept and deleted."
+        />
+        <SettingsLink
+          to="/terms"
+          icon={FileText}
+          title="Terms of Service"
+          description="The rules for using SWIFT."
         />
       </div>
 

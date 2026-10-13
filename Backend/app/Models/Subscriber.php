@@ -29,6 +29,8 @@ class Subscriber extends Model
         'mac_address',
         'connection_date',
         'status',
+        'terms_accepted_at',
+        'terms_version',
     ];
 
     protected $hidden = [

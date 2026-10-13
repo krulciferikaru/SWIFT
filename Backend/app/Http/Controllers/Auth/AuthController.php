@@ -60,6 +60,9 @@ class AuthController extends Controller
             'email' => $emailRule,
             'password' => 'required|string|min:8|confirmed',
             'address' => ['required', 'string', Rule::in(self::BARANGAYS)],
+            'accept_terms' => ['accepted'],
+        ], [
+            'accept_terms.accepted' => 'You need to agree to the Terms of Service and Privacy Policy to register.',
         ]);
 
         if ($validator->fails()) {
@@ -67,6 +70,8 @@ class AuthController extends Controller
         }
 
         $fullName = trim($requestData['first_name']) . ' ' . trim($requestData['last_name']);
+        // Remember what the person agreed to, and which wording it was.
+        $agreement = ['terms_accepted_at' => now(), 'terms_version' => config('legal.version')];
 
         if ($existingSubscriber) {
             // Claiming an existing subscriber record — don't create a new Subscriber row.
@@ -85,6 +90,7 @@ class AuthController extends Controller
                 'password' => Hash::make($requestData['password']),
                 'role' => 'subscriber',
                 'account_status' => 'pending',
+                ...$agreement,
             ]);
 
             return response()->json([
@@ -102,6 +108,7 @@ class AuthController extends Controller
             'password' => Hash::make($requestData['password']),
             'account_status' => 'pending',
             'status' => 'Unpaid',
+            ...$agreement,
         ]);
 
         return response()->json([

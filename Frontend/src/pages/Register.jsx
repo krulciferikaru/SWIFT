@@ -3,7 +3,8 @@ import { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
 import { useNavigate, Link } from 'react-router-dom'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, CircleAlert } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import PasswordField from '../components/PasswordField.jsx'
 import api from '../api/axios'
 import { capitalizeWords, BARANGAYS } from '../utils/text'
@@ -22,6 +23,7 @@ export default function Register() {
     password_confirmation: '',
     contact_number: '',
     address: '',
+    accept_terms: false,
   })
   const [errors, setErrors] = useState({})
   const [message, setMessage] = useState('')
@@ -52,6 +54,7 @@ export default function Register() {
       required('Password confirmation'),
       matches(() => form.password, 'The two passwords do not match.'),
     ),
+    accept_terms: form.accept_terms ? '' : 'You need to agree to the Terms of Service and Privacy Policy to register.',
   }
   // A message from the server wins until the field is edited; otherwise show our own check.
   const fieldError = (name) => errors[name]?.[0] ?? (touched[name] ? localErrors[name] : '')
@@ -190,6 +193,37 @@ export default function Register() {
                 autoComplete="new-password"
               />
             </FormField>
+
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2.5">
+                <Checkbox
+                  id="accept_terms"
+                  checked={form.accept_terms}
+                  onCheckedChange={(checked) => {
+                    setForm((f) => ({ ...f, accept_terms: !!checked }))
+                    setTouched((t) => ({ ...t, accept_terms: true }))
+                    if (errors.accept_terms) setErrors(({ accept_terms: _gone, ...rest }) => rest)
+                  }}
+                  aria-invalid={fieldError('accept_terms') ? true : undefined}
+                  aria-describedby={fieldError('accept_terms') ? 'accept_terms-error' : undefined}
+                  className="mt-0.5"
+                />
+                <label htmlFor="accept_terms" className="text-sm leading-snug text-gray-700 dark:text-gray-300">
+                  I have read and agree to the{' '}
+                  <Link to="/terms" target="_blank" rel="noopener" className="font-medium text-primary underline underline-offset-2 dark:text-blue-300">Terms of Service</Link>{' '}
+                  and the{' '}
+                  <Link to="/privacy" target="_blank" rel="noopener" className="font-medium text-primary underline underline-offset-2 dark:text-blue-300">Privacy Policy</Link>
+                  <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+                  <span className="sr-only"> (required)</span>
+                </label>
+              </div>
+              {fieldError('accept_terms') && (
+                <p id="accept_terms-error" aria-live="polite" className="flex items-start gap-1 text-xs text-red-600 dark:text-red-400">
+                  <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                  <span><span className="font-semibold">Error: </span>{fieldError('accept_terms')}</span>
+                </p>
+              )}
+            </div>
 
             <Button type="submit" disabled={loading} className="h-11 w-full text-base">
               {loading ? 'Registering...' : 'Create account'}
