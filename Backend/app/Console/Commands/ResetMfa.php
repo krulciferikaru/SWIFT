@@ -15,13 +15,13 @@ class ResetMfa extends Command
 {
     protected $signature = 'swift:reset-mfa {email : The administrator\'s email address}';
 
-    protected $description = 'Turn off two-step sign-in for an administrator who is locked out (they set it up again at next sign-in)';
+    protected $description = 'Turn off two-step sign-in for someone who is locked out (an administrator sets it up again at next sign-in, anyone else may do it again from Settings)';
 
     public function handle(): int
     {
-        $user = User::where('email', $this->argument('email'))->where('role', 'admin')->first();
+        $user = User::where('email', $this->argument('email'))->first();
         if (! $user) {
-            $this->error('No administrator with that email address.');
+            $this->error('No account with that email address.');
 
             return self::FAILURE;
         }

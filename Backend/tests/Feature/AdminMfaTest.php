@@ -126,8 +126,9 @@ class AdminMfaTest extends TestCase
         $this->assertCount(8, $res->json('recovery_codes'));
         $this->assertTrue($admin->fresh()->mfa_enabled);
 
-        // Everything opens up, and it cannot be set up a second time over the top.
+        // Everything opens up, and it cannot be set up a second time over the top (the password is typed again for that).
         $this->withToken($token)->getJson('/api/subscribers')->assertOk();
+        $this->withToken($token)->postJson('/api/me/confirm-password', ['password' => 'boss-pass-123'])->assertOk();
         $this->withToken($token)->postJson('/api/me/mfa/setup')->assertStatus(422);
     }
 
@@ -244,12 +245,11 @@ class AdminMfaTest extends TestCase
         $this->assertSame('recovery', $service->check($admin->fresh(), $new[0]));
     }
 
-    public function test_it_is_only_for_administrators(): void
+    public function test_only_administrators_are_required_to_have_it(): void
     {
         Sanctum::actingAs($this->user('secretary', 'sec@mfa.test'));
 
-        $this->getJson('/api/me/mfa')->assertForbidden();
-        $this->postJson('/api/me/mfa/enable', ['code' => '123456'])->assertForbidden();
+        $this->getJson('/api/me/mfa')->assertOk()->assertJsonPath('required', false)->assertJsonPath('enabled', false);
     }
 
     public function test_the_server_command_turns_it_off_for_a_locked_out_admin(): void

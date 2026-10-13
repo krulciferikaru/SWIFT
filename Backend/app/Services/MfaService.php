@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Support\Totp;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * The authenticator-app second step for administrators: setting it up, checking a code, and the
- * single-use recovery codes that get an administrator back in if the phone is lost.
+ * The authenticator-app second step: setting it up, checking a code, moving it to a new phone, and
+ * the single-use recovery codes that get someone back in if the phone is lost. Required for
+ * administrators, optional for everyone else.
  */
 class MfaService
 {
@@ -22,6 +24,49 @@ class MfaService
             'secret' => $secret,
             'uri' => Totp::uri($user->email ?? $user->name, config('mfa.issuer'), $secret),
         ];
+    }
+
+    /**
+     * Starts moving to a new phone: a fresh secret kept aside (not yet in use) until the new app proves it
+     * works. The current secret stays in force meanwhile.
+     */
+    public function beginReplacement(User $user, int $minutes): array
+    {
+        $secret = Totp::generateSecret();
+        Cache::put('mfa-pending:'.$user->id, $secret, now()->addMinutes($minutes));
+
+        return ['secret' => $secret, 'uri' => Totp::uri($user->email ?? $user->name, config('mfa.issuer'), $secret)];
+    }
+
+    /**
+     * Swaps to the new phone once it gives a correct code. The old app stops working and the old
+     * recovery codes are replaced.
+     *
+     * @return list<string>|null the new recovery codes (shown once), or null when the code was wrong or too late
+     */
+    public function completeReplacement(User $user, string $code): ?array
+    {
+        $secret = Cache::get('mfa-pending:'.$user->id);
+        if (! $secret) {
+            return null;
+        }
+
+        $step = Totp::verify($secret, $code);
+        if ($step === null) {
+            return null;
+        }
+
+        $user->forceFill(['mfa_secret' => $secret, 'mfa_last_step' => $step])->save();
+        Cache::forget('mfa-pending:'.$user->id);
+
+        return $this->newRecoveryCodes($user);
+    }
+
+    /** Switches it off and forgets everything about it. */
+    public function clear(User $user): void
+    {
+        $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'mfa_last_step' => null])->save();
+        Cache::forget('mfa-pending:'.$user->id);
     }
 
     /**

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import QRCode from 'qrcode'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
@@ -9,17 +8,18 @@ import RecoveryCodes from '../components/RecoveryCodes.jsx'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import CodeInput from '../components/CodeInput.jsx'
+import AuthenticatorQr from '../components/AuthenticatorQr.jsx'
 
 /**
  * Setting up two-step sign-in. Administrators land here after signing in until it is done, because
- * it is required for them. Steps: get an authenticator app, scan the QR code (or type the key), type
+ * it is required for them. Everyone else can come here from Settings if they want it (they can leave
+ * and switch it off later). Steps: get an authenticator app, scan the QR code (or type the key), type
  * the code the app shows to prove it works, then keep the recovery codes somewhere safe.
  */
 export default function MfaSetup() {
   const { user, refetch, logout } = useAuth()
   const navigate = useNavigate()
   const [setup, setSetup] = useState(null) // { secret, uri }
-  const [qr, setQr] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -38,13 +38,11 @@ export default function MfaSetup() {
       .catch((err) => setLoadError(errorMessage(err, 'Could not start the setup. Please try again.')))
   }, [user?.mfa_enabled])
 
-  useEffect(() => {
-    if (!setup) return
-    QRCode.toDataURL(setup.uri, { width: 220, margin: 1 }).then(setQr).catch(() => setQr(''))
-  }, [setup])
+  const isAdmin = user?.role === 'admin'
 
-  if (user?.role !== 'admin' || (user?.mfa_enabled && !codes)) {
-    return <Navigate to={user?.mfa_enabled ? '/settings' : '/dashboard'} replace />
+  // Already on (and not just finished setting it up): nothing to do here.
+  if (user?.mfa_enabled && !codes) {
+    return <Navigate to="/settings" replace />
   }
 
   const confirm = async (e) => {
@@ -63,7 +61,7 @@ export default function MfaSetup() {
 
   const finish = async () => {
     await refetch()
-    navigate('/dashboard', { replace: true })
+    navigate(isAdmin ? '/dashboard' : '/settings', { replace: true })
   }
 
   return (
@@ -71,8 +69,9 @@ export default function MfaSetup() {
       <div className="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950 sm:p-8">
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Set up two-step sign-in</h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Administrators can see and change everything in SWIFT, so signing in needs a second proof as well as the password: a 6-digit code from an app on your
-          phone. It takes about two minutes, and you only do it once.
+          {isAdmin
+            ? 'Administrators can see and change everything in SWIFT, so signing in needs a second proof as well as the password: a 6-digit code from an app on your phone. It takes about two minutes, and you only do it once.'
+            : 'This adds a second step to signing in: a 6-digit code from an app on your phone, as well as your password. It takes about two minutes. It is your choice, and you can switch it off again in Settings.'}
         </p>
 
         {!codes ? (
@@ -89,15 +88,8 @@ export default function MfaSetup() {
               ) : !setup ? (
                 <p className="mt-2 text-gray-500">Preparing…</p>
               ) : (
-                <div className="mt-2 flex flex-col items-start gap-4 sm:flex-row">
-                  {qr && <img src={qr} alt="QR code to scan with your authenticator app" width="176" height="176" className="rounded-lg border border-gray-200 bg-white" />}
-                  <div className="space-y-2">
-                    <p>In the app, choose to add an account and scan this code with your phone&apos;s camera.</p>
-                    <p>
-                      Cannot scan? Choose <em>enter a key</em> and type:
-                      <span className="mt-1 block select-all break-all rounded bg-gray-100 px-2 py-1.5 font-mono text-xs tracking-wider dark:bg-gray-800">{setup.secret}</span>
-                    </p>
-                  </div>
+                <div className="mt-2">
+                  <AuthenticatorQr setup={setup} />
                 </div>
               )}
             </li>
@@ -131,9 +123,15 @@ export default function MfaSetup() {
         )}
 
         {!codes && (
-          <button type="button" onClick={async () => { await logout(); navigate('/login', { replace: true }) }} className="mt-8 text-sm text-gray-600 hover:underline dark:text-gray-400">
-            Sign out instead
-          </button>
+          isAdmin ? (
+            <button type="button" onClick={async () => { await logout(); navigate('/login', { replace: true }) }} className="mt-8 text-sm text-gray-600 hover:underline dark:text-gray-400">
+              Sign out instead
+            </button>
+          ) : (
+            <button type="button" onClick={() => navigate('/settings')} className="mt-8 text-sm text-gray-600 hover:underline dark:text-gray-400">
+              Not now, back to Settings
+            </button>
+          )
         )}
       </div>
     </div>

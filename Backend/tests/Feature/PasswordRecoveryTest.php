@@ -234,7 +234,9 @@ class PasswordRecoveryTest extends TestCase
     public function test_staff_can_add_verify_and_then_use_forgot_password(): void
     {
         $this->staffUser('secretary', 'sec@own.test');
-        Sanctum::actingAs(User::where('email', 'sec@own.test')->first());
+        $sec = User::where('email', 'sec@own.test')->first();
+        Sanctum::actingAs($sec);
+        $this->passwordConfirmed($sec); // changing the number asks for the password
 
         $this->patchJson('/api/me/mobile-number', ['contact_number' => '0917 555 0100'])->assertOk();
         $this->assertNull(User::where('email', 'sec@own.test')->first()->contact_verified_at);
@@ -255,6 +257,7 @@ class PasswordRecoveryTest extends TestCase
         $user = $this->staffUser('admin', 'adm@own.test', '09171110000', true);
         $this->staffUser('secretary', 'other@own.test', '09172220000');
         Sanctum::actingAs($user);
+        $this->passwordConfirmed($user);
 
         $this->patchJson('/api/me/mobile-number', ['contact_number' => '12345'])->assertStatus(422);
         $this->patchJson('/api/me/mobile-number', ['contact_number' => '09172220000'])->assertStatus(422); // someone else's
@@ -267,7 +270,9 @@ class PasswordRecoveryTest extends TestCase
 
     public function test_a_subscriber_cannot_change_their_number_this_way(): void
     {
-        Sanctum::actingAs($this->subscriberUser('09170000007'));
+        $subscriber = $this->subscriberUser('09170000007');
+        Sanctum::actingAs($subscriber);
+        $this->passwordConfirmed($subscriber);
 
         $this->patchJson('/api/me/mobile-number', ['contact_number' => '09173330000'])->assertForbidden();
     }

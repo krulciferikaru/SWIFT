@@ -29,7 +29,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { useOnReconnect } from '../hooks/useOnline'
-import { UserPlus, SlidersHorizontal, ShieldCheck, Info } from 'lucide-react'
+import { UserPlus, SlidersHorizontal, ShieldCheck, ShieldOff, Info } from 'lucide-react'
+import ConfirmAction from '../components/ConfirmAction.jsx'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
@@ -111,6 +112,8 @@ export default function Users() {
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
   const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
+  const [mfaResetTarget, setMfaResetTarget] = useState(null) // someone whose two-step sign-in is being reset
+  const [mfaResetting, setMfaResetting] = useState(false)
 
   const { toast, showToast } = useToast()
 
@@ -378,6 +381,18 @@ export default function Users() {
                           Permissions
                         </Button>
                       )}
+                      {user.mfa_enabled && user.id !== currentUser?.id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setMfaResetTarget(user)}
+                          aria-label={`Reset two-step sign-in for ${user.name}`}
+                        >
+                          <ShieldOff className="size-3.5" aria-hidden="true" />
+                          Reset two-step
+                        </Button>
+                      )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -468,6 +483,37 @@ export default function Users() {
           </FormField>
         </form>
       </Modal>
+
+      <ConfirmAction
+        open={!!mfaResetTarget}
+        onOpenChange={(open) => { if (!open) setMfaResetTarget(null) }}
+        title="Reset two-step sign-in?"
+        description={
+          mfaResetTarget && (
+            <>
+              <strong>{mfaResetTarget.name}</strong> lost their phone or their recovery codes. Their two-step sign-in is switched off and they are signed out
+              everywhere. {mfaResetTarget.role === 'admin' ? 'They have to set it up again the next time they sign in.' : 'They can switch it on again from Settings if they want to.'}
+            </>
+          )
+        }
+        confirmLabel="Reset"
+        busyLabel="Resetting..."
+        destructive
+        busy={mfaResetting}
+        onConfirm={async () => {
+          setMfaResetting(true)
+          try {
+            const res = await usersApi.resetMfa(mfaResetTarget.id)
+            showToast(res.data.message)
+            setMfaResetTarget(null)
+            fetchUsers()
+          } catch (err) {
+            showToast(err.response?.data?.message || 'Could not reset it.', 'error')
+          } finally {
+            setMfaResetting(false)
+          }
+        }}
+      />
 
       <PermissionsModal
         user={permTarget}

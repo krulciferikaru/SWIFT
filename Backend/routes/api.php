@@ -55,15 +55,22 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
     Route::post('/me/confirm-password', [PasswordConfirmationController::class, 'store'])
         ->middleware('throttle:confirm-password');
 
-    // An administrator's authenticator app (required for administrators).
+    // Authenticator app: required for administrators, optional for everyone else.
     Route::get('/me/mfa', [MfaController::class, 'status']);
-    Route::post('/me/mfa/setup', [MfaController::class, 'setup'])->middleware('password.confirmed');
+    Route::post('/me/mfa/setup', [MfaController::class, 'setup'])->middleware('password.confirmed:fresh');
     Route::post('/me/mfa/enable', [MfaController::class, 'enable'])->middleware('throttle:confirm-password');
     Route::post('/me/mfa/recovery-codes', [MfaController::class, 'recoveryCodes'])
+        ->middleware(['password.confirmed', 'throttle:confirm-password']);
+    Route::post('/me/mfa/replace', [MfaController::class, 'replaceStart'])
+        ->middleware(['password.confirmed', 'throttle:confirm-password']);
+    Route::post('/me/mfa/replace/confirm', [MfaController::class, 'replaceConfirm'])
+        ->middleware('throttle:confirm-password');
+    Route::delete('/me/mfa', [MfaController::class, 'disable'])
         ->middleware(['password.confirmed', 'throttle:confirm-password']);
     // A staff member adds or changes their own mobile number (they are verified afterwards,
     // in the same way as a subscriber's). It is what lets them use Forgot password.
     Route::patch('/me/mobile-number', [PhoneVerificationController::class, 'update'])
+        ->middleware('password.confirmed:fresh')
         ->middleware('throttle:confirm-password');
 
     // A subscriber deletes their own account (their right under the Data Privacy Act).
@@ -179,6 +186,9 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
+            ->middleware('password.confirmed');
+        // Someone lost their phone and their recovery codes: switch their two-step sign-in off.
+        Route::post('/users/{user}/mfa/reset', [MfaController::class, 'adminReset'])
             ->middleware('password.confirmed');
 
         Route::get('/barangays/manage', [BarangayController::class, 'manage']);

@@ -248,11 +248,10 @@ export default function Settings() {
         </div>
       </section>
 
-      {(showPhoneCard || user?.role === 'admin' || user?.role === 'subscriber') && (
       <section className="space-y-4">
         <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Your account</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Your mobile number and sign-in security.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Your mobile number and how you sign in.</p>
         </div>
         <div className="grid items-stretch gap-6 xl:grid-cols-2 xl:[&>*:last-child:nth-child(odd)]:col-span-2">
       {showPhoneCard && (
@@ -272,12 +271,11 @@ export default function Settings() {
         </Card>
       )}
 
-      {user?.role === 'admin' && <SecurityCard />}
+      <SecurityCard />
 
       {user?.role === 'subscriber' && <DeleteAccountCard />}
         </div>
       </section>
-      )}
 
       {canSendSms && (
       <section className="space-y-4">

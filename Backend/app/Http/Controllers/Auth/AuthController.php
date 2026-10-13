@@ -201,9 +201,9 @@ class AuthController extends Controller
 
         $remember = filter_var($requestData['remember'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        // Administrators with an authenticator app are not signed in yet: the password was the
-        // first step. They get a short-lived challenge and must send the code from their app.
-        if ($user->role === 'admin' && $user->mfa_enabled_at) {
+        // Anyone with an authenticator app (administrators must; others may) is not signed in yet: the
+        // password was the first step. They get a short-lived challenge and must send the code from their app.
+        if ($user->mfa_enabled_at) {
             $challenge = \Illuminate\Support\Str::random(48);
             Cache::put('mfa-challenge:'.hash('sha256', $challenge), ['user_id' => $user->id, 'remember' => $remember], now()->addMinutes(config('mfa.challenge_minutes')));
 
@@ -234,7 +234,7 @@ class AuthController extends Controller
         $challenge = Cache::get($key);
         $user = $challenge ? User::find($challenge['user_id']) : null;
 
-        if (! $user || $user->role !== 'admin' || ! $user->mfa_enabled_at) {
+        if (! $user || ! $user->mfa_enabled_at) {
             return response()->json(['message' => 'That sign-in expired. Please enter your password again.', 'expired' => true], 422);
         }
 
