@@ -30,7 +30,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "../hooks/useToast";
-import { Search, CheckCircle2, Check, ChevronRight } from "lucide-react";
+import { Search, CheckCircle2, Check, ChevronRight, Wallet } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
@@ -724,7 +724,8 @@ export default function Payments() {
                       />
                     </div>
 
-                    <Button type="submit" disabled={saving} className="w-full">
+                    <Button type="submit" disabled={saving} className="w-full gap-2">
+                      <Wallet className="size-4" aria-hidden="true" />
                       {saving ? "Recording..." : "Record Payment"}
                     </Button>
                   </form>

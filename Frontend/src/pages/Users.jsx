@@ -409,7 +409,8 @@ export default function Users() {
             <Button type="button" variant="outline" onClick={requestClose}>
               Cancel
             </Button>
-            <Button type="submit" form="staff-create-form" disabled={creating}>
+            <Button type="submit" form="staff-create-form" disabled={creating} className="gap-2">
+              <UserPlus className="size-4" aria-hidden="true" />
               {creating ? 'Creating...' : 'Create Account'}
             </Button>
           </div>

@@ -37,7 +37,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
 import { spelledDate } from "../../utils/text";
-import { Archive, BellRing, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil, Users2 } from "lucide-react";
+import { Archive, BellRing, ChevronRight, CreditCard, Download, FileDown, FilterX, MousePointerClick, Pencil, Save, UserPlus, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -463,8 +463,9 @@ export default function SubscribersPage() {
               <Button
                 data-tour="subs-export"
                 onClick={() => setShowPreview(true)}
-                className="bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
+                className="gap-2 bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
               >
+                <FileDown className="size-4" aria-hidden="true" />
                 Export CSV
               </Button>
             )}
@@ -473,8 +474,9 @@ export default function SubscribersPage() {
               <Button
                 data-tour="subs-add"
                 onClick={() => setShowAdd(true)}
-                className="whitespace-nowrap"
+                className="gap-2 whitespace-nowrap"
               >
+                <UserPlus className="size-4" aria-hidden="true" />
                 Add Subscriber
               </Button>
             )}
@@ -801,8 +803,9 @@ export default function SubscribersPage() {
               </Button>
               <Button
                 onClick={handleExportReport}
-                className="bg-green-700 text-white hover:bg-green-800"
+                className="gap-2 bg-green-700 text-white hover:bg-green-800"
               >
+                <Download className="size-4" aria-hidden="true" />
                 Download CSV
               </Button>
             </div>
@@ -835,7 +838,9 @@ export default function SubscribersPage() {
               type="submit"
               form="add-subscriber-form"
               disabled={formLoading}
+              className="gap-2"
             >
+              <Save className="size-4" aria-hidden="true" />
               {formLoading ? "Saving..." : "Save Subscriber"}
             </Button>
           </div>
@@ -880,7 +885,9 @@ export default function SubscribersPage() {
               type="submit"
               form="edit-subscriber-form"
               disabled={formLoading}
+              className="gap-2"
             >
+              <Save className="size-4" aria-hidden="true" />
               {formLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
