@@ -220,7 +220,7 @@ export default function BarangaysManager({ showToast }) {
         ) : (
           <>
             {renderList(items.slice(0, RECENT))}
-            {items.length > RECENT && (
+            {items.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={() => setShowAll(true)}>
                 View all ({items.length})
               </Button>

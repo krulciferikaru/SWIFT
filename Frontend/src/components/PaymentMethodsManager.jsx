@@ -219,7 +219,7 @@ export default function PaymentMethodsManager({ showToast }) {
         ) : (
           <>
             {renderList(methods.slice(0, RECENT))}
-            {methods.length > RECENT && (
+            {methods.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={() => setShowAll(true)}>
                 View all ({methods.length})
               </Button>
