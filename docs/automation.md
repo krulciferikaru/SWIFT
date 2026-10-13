@@ -33,7 +33,8 @@ All SMS go through PhilSMS. If no token is configured (as on evaluation), nothin
 | A payment is recorded | Amount received, OR number, date and the remaining balance | Payments, Record Payment |
 | A staff member changes the status by hand to Active, Unpaid or Disconnected | A message matching the new status | Subscribers, status change |
 | The due date is tomorrow | Reminder that the monthly bill is due tomorrow | Daily job |
-| Staff send reminders | Reminder with the outstanding balance, to **every Unpaid subscriber** | Settings, Payment Reminders |
+| Staff send reminders | Reminder with the outstanding balance, to **every Unpaid subscriber** who owes something | Settings, Payment Reminders |
+| Staff send reminders to picked people | The same reminder, only to the subscribers ticked on the Subscribers page (anyone who owes nothing is skipped) | Subscribers, tick people, Send payment reminder |
 | Staff send a one-off message | Any text (up to 300 characters) to any Philippine mobile number | Settings, Send SMS |
 | Someone asks to verify their mobile number | A 6-digit code that works for 10 minutes. It is the only message that goes to a number that has not been verified yet | My Account or Settings, Verify |
 

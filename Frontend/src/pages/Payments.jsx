@@ -40,6 +40,7 @@ import ReviewDialog from "../components/ReviewDialog.jsx";
 import FormField, { RequiredNote } from "../components/FormField.jsx";
 import { required, positiveAmount, firstError } from "../utils/validators";
 import { spelledDate } from "../utils/text";
+import { Clock } from "lucide-react";
 import EmptyState from "../components/EmptyState.jsx";
 
 const STATUS_BADGE_STYLES = {
@@ -57,6 +58,46 @@ const EMPTY_FORM = {
   or_number: "",
   payment_method: "Cash",
   notes: "",
+};
+
+// A collector goes from house to house, so the page remembers, on this device only:
+//  - the last few people they opened, to pick again with one tap
+//  - the payment method they used last
+const RECENT_KEY = "swift.recentSubscribers";
+const METHOD_KEY = "swift.lastPaymentMethod";
+const RECENT_MAX = 5;
+
+const readRecent = () => {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+    return Array.isArray(list) ? list.slice(0, RECENT_MAX) : [];
+  } catch {
+    return [];
+  }
+};
+const rememberRecent = (subscriber) => {
+  try {
+    const entry = {
+      subscriber_id: subscriber.subscriber_id,
+      name: subscriber.name,
+      address: subscriber.address,
+      contact_number: subscriber.contact_number,
+      status: subscriber.status,
+      plan: subscriber.plan ? { plan_name: subscriber.plan.plan_name } : null,
+    };
+    const next = [entry, ...readRecent().filter((r) => r.subscriber_id !== entry.subscriber_id)].slice(0, RECENT_MAX);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return readRecent();
+  }
+};
+const lastMethod = () => {
+  try {
+    return localStorage.getItem(METHOD_KEY) || "";
+  } catch {
+    return "";
+  }
 };
 
 const peso = (value) =>
@@ -110,7 +151,25 @@ export default function Payments() {
   const [history, setHistory] = useState([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const [form, setForm] = useState(EMPTY_FORM);
+  // Today by the clock on this device (not UTC, which is still yesterday before 8 AM in the Philippines).
+  const todayHere = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  const freshForm = () => ({ ...EMPTY_FORM, payment_date: todayHere(), payment_method: lastMethod() || EMPTY_FORM.payment_method });
+  const [form, setForm] = useState(freshForm);
+  const [recent, setRecent] = useState(readRecent);
+  // The OR number that probably comes next in this person's receipt book.
+  const [orSuggestion, setOrSuggestion] = useState(null);
+  const loadOrSuggestion = useCallback(() => {
+    if (!can("payments.record")) return;
+    paymentsApi
+      .nextOrNumber()
+      .then((res) => setOrSuggestion(res.data?.data?.suggestion ?? null))
+      .catch(() => setOrSuggestion(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // If the chosen method was renamed or switched off, fall back to the first one on offer.
   useEffect(() => {
@@ -180,9 +239,11 @@ export default function Payments() {
 
   const selectSubscriber = (subscriber) => {
     setSelected(subscriber);
-    setForm(EMPTY_FORM);
+    setForm(freshForm());
     setErrors({});
     setTouched({});
+    setRecent(rememberRecent(subscriber));
+    loadOrSuggestion();
     loadDetail(subscriber);
   };
 
@@ -236,8 +297,9 @@ export default function Payments() {
     try {
       const res = await paymentsApi.create(selected.subscriber_id, form);
       setBilling(res.data.data.billing);
-      setForm(EMPTY_FORM);
+      setForm(freshForm());
       setTouched({});
+      loadOrSuggestion(); // the book moves on by one
       showToast("Payment recorded.");
       const historyRes = await paymentsApi.getHistory(selected.subscriber_id);
       setHistory(historyRes.data.data);
@@ -323,6 +385,24 @@ export default function Payments() {
                   className="pl-9"
                 />
               </div>
+
+              {!search && recent.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <Clock className="size-3.5" aria-hidden="true" />
+                    Recently opened
+                  </p>
+                  <ul className="flex flex-wrap gap-2">
+                    {recent.map((r) => (
+                      <li key={r.subscriber_id}>
+                        <Button type="button" variant="outline" size="sm" onClick={() => selectSubscriber(r)}>
+                          {r.name}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {search && (
                 <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-100 dark:divide-gray-800 max-h-64 overflow-y-auto">
@@ -532,7 +612,29 @@ export default function Payments() {
                           onBlur={handleBlur}
                         />
                       </FormField>
-                      <FormField id="or_number" label="OR Number" required hint="From the paper receipt" error={fieldError("or_number")}>
+                      <FormField
+                        id="or_number"
+                        label="OR Number"
+                        required
+                        hint={
+                          <>
+                            From the paper receipt.
+                            {orSuggestion && form.or_number !== orSuggestion && (
+                              <>
+                                {" "}
+                                <button
+                                  type="button"
+                                  onClick={() => setForm((f) => ({ ...f, or_number: orSuggestion }))}
+                                  className="font-medium text-primary underline underline-offset-2 dark:text-blue-300"
+                                >
+                                  Use next in your book: {orSuggestion}
+                                </button>
+                              </>
+                            )}
+                          </>
+                        }
+                        error={fieldError("or_number")}
+                      >
                         <Input
                           name="or_number"
                           value={form.or_number}
@@ -558,9 +660,14 @@ export default function Payments() {
                         <Label>Payment Method</Label>
                         <Select
                           value={form.payment_method}
-                          onValueChange={(v) =>
-                            setForm({ ...form, payment_method: v })
-                          }
+                          onValueChange={(v) => {
+                            setForm({ ...form, payment_method: v });
+                            try {
+                              localStorage.setItem(METHOD_KEY, v);
+                            } catch {
+                              // not remembered, that is all
+                            }
+                          }}
                         >
                           <SelectTrigger className="w-full" aria-label="Payment method">
                             <SelectValue />

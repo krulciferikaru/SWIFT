@@ -67,6 +67,7 @@ const SECTIONS = [
           <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. It happens straight away, and the message at the top has an <em>Undo</em> button for a few seconds. Nothing is lost; you can also restore them anytime from the Archive page.</li>
           <li><strong>Payments</strong> (per row) — jumps straight to that subscriber's billing page (see the Payments section below).</li>
           <li><strong>Export CSV</strong> — downloads the current filtered list as a spreadsheet file.</li>
+          <li><strong>Tick boxes</strong> (if you may send texts) — tick the people to remind, or press <em>Select everyone who owes on this page</em>, then <em>Send payment reminder</em>. A window shows how many people will be texted. Texts cannot be recalled, and anyone who owes nothing is skipped.</li>
         </ul>
       </>
     ),
@@ -123,6 +124,7 @@ const SECTIONS = [
           <li>Search for the subscriber by name, mobile number, or MAC address.</li>
           <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Payment History</strong>. Each payment has a <em>Receipt</em> button: it opens a receipt you can print for the subscriber.</li>
           <li>Fill in the <strong>Record Payment</strong> form: amount, OR (official receipt) number, date, and payment method (Cash, GCash, or Others). As you type an amount, it shows you a live preview of which month(s) that payment will cover.</li>
+          <li>The page helps you go faster: <em>Recently opened</em> shows the last few subscribers to open with one tap, the payment method you used last is already chosen, and under the OR number a link offers the <em>next number in your book</em>. These are kept on your own device only.</li>
           <li>Click <strong>Record Payment</strong>. A window shows the subscriber, the amount in large type, the date, the OR number and the method. Check them, then press <em>Record payment</em> to save, or <em>Go back and edit</em> to fix a mistake. A payment can't be edited or deleted once it is saved, so this is the moment to catch a wrong digit. If the amount is far above what the subscriber owes, the window warns you.</li>
         </ol>
         <p>If a subscriber was disconnected for non-payment and has now fully paid off their balance, a <strong>Reconnect Subscriber</strong> button appears — use it only after you've physically reconnected their service, not before.</p>

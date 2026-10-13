@@ -40,6 +40,42 @@ class PaymentController extends Controller
     }
 
     /**
+     * GET /api/payments/next-or-number
+     *
+     * Official receipt books are numbered in order, so the number after the last one this person
+     * recorded is usually the next one. It is only a suggestion: the person can type another.
+     * Returns null when there is nothing to go on (their first payment) or the last number has
+     * no digits at the end.
+     */
+    public function nextOrNumber(Request $request): JsonResponse
+    {
+        $last = Payment::where('recorded_by', $request->user()->id)->orderByDesc('id')->value('or_number');
+
+        return response()->json([
+            'success' => true,
+            'data' => ['suggestion' => $last ? $this->followingOrNumber($last) : null],
+        ]);
+    }
+
+    /** "OR-00041" -> "OR-00042": keeps the prefix and the zero padding, and skips numbers already used. */
+    private function followingOrNumber(string $last): ?string
+    {
+        if (! preg_match('/^(.*?)(\d+)$/', trim($last), $parts)) {
+            return null;
+        }
+        [, $prefix, $digits] = $parts;
+
+        for ($step = 1; $step <= 50; $step++) {
+            $candidate = $prefix.str_pad((string) ((int) $digits + $step), strlen($digits), '0', STR_PAD_LEFT);
+            if (! Payment::where('or_number', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * POST /api/subscribers/{subscriber}/payments
      */
     public function store(Request $request, Subscriber $subscriber): JsonResponse
