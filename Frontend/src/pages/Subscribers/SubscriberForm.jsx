@@ -320,7 +320,7 @@ export default function SubscriberForm({
             aria-describedby={errors.address ? "address-error" : undefined}
             className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? "border-red-400" : "border-input"}`}
           >
-            <option value="">Select a barangay</option>
+            <option value="" disabled hidden>Select a barangay</option>
             {/* Keep an older free-text address selectable when editing. */}
             {form.address && !BARANGAYS.includes(form.address) && (
               <option value={form.address}>{form.address}</option>

@@ -173,7 +173,7 @@ export default function Register() {
                 onBlur={handleBlur}
                 className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm dark:bg-gray-950"
               >
-                <option value="">Select your barangay</option>
+                <option value="" disabled hidden>Select your barangay</option>
                 {BARANGAYS.map((b) => (
                   <option key={b} value={b}>
                     {b}
