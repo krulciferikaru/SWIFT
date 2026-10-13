@@ -38,6 +38,9 @@ return [
     'philsms' => [
         'token' => env('PHILSMS_API_TOKEN'),
         'sender_id' => env('PHILSMS_SENDER_ID', 'PhilSMS'),
+        // Texts are really sent only on a production server, unless SMS_ENABLED says otherwise. On a
+        // developer's machine they are written to the log instead, so a test can't text real people.
+        'enabled' => (bool) env('SMS_ENABLED', env('APP_ENV') === 'production'),
     ],
 
 ];
