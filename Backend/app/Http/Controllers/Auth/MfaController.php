@@ -165,8 +165,9 @@ class MfaController extends Controller
      * POST /api/users/{user}/mfa/reset (administrators, asks for their password).
      *
      * For someone who lost their phone and has no recovery codes left. Their two-step sign-in is
-     * switched off and they are signed out everywhere; an administrator is asked to set it up again
-     * at the next sign-in, anyone else may do it again from Settings.
+     * switched off and they are signed out everywhere. An administrator, a secretary and a field
+     * collector have to set it up again at their next sign-in, so it is never removed silently; a
+     * subscriber may turn it on again from Settings if they want to.
      */
     public function adminReset(Request $request, User $user): JsonResponse
     {
@@ -177,10 +178,13 @@ class MfaController extends Controller
             return response()->json(['message' => 'Two-step sign-in is not on for that account.'], 422);
         }
 
-        $this->mfa->clear($user);
+        $mustSetUpAgain = in_array($user->role, ['admin', 'secretary', 'collector'], true);
+        $this->mfa->clear($user, requireAgain: $mustSetUpAgain);
         $user->tokens()->delete();
         Audit::log('auth.mfa_reset', $user, $user->name, ['by' => $request->user()->name]);
 
-        return response()->json(['message' => "Two-step sign-in was reset for {$user->name}. They are signed out everywhere."]);
+        return response()->json([
+            'message' => "Two-step sign-in was reset for {$user->name}. They are signed out everywhere".($mustSetUpAgain ? ' and have to set it up again when they next sign in.' : '.'),
+        ]);
     }
 }

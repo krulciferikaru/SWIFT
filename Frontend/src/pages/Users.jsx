@@ -492,7 +492,7 @@ export default function Users() {
           mfaResetTarget && (
             <>
               <strong>{mfaResetTarget.name}</strong> lost their phone or their recovery codes. Their two-step sign-in is switched off and they are signed out
-              everywhere. {mfaResetTarget.role === 'admin' ? 'They have to set it up again the next time they sign in.' : 'They can switch it on again from Settings if they want to.'}
+              everywhere. {mfaResetTarget.role === 'subscriber' ? 'They can switch it on again from Settings if they want to.' : 'They have to set it up again the next time they sign in, so it is never left off without them knowing.'}
             </>
           )
         }

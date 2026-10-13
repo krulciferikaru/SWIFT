@@ -39,6 +39,8 @@ export default function MfaSetup() {
   }, [user?.mfa_enabled])
 
   const isAdmin = user?.role === 'admin'
+  // Required (so no way to skip it): administrators, and staff whose two-step sign-in an administrator reset.
+  const required = Boolean(user?.mfa_setup_required)
 
   // Already on (and not just finished setting it up): nothing to do here.
   if (user?.mfa_enabled && !codes) {
@@ -61,7 +63,7 @@ export default function MfaSetup() {
 
   const finish = async () => {
     await refetch()
-    navigate(isAdmin ? '/dashboard' : '/settings', { replace: true })
+    navigate(required ? '/dashboard' : '/settings', { replace: true })
   }
 
   return (
@@ -71,7 +73,9 @@ export default function MfaSetup() {
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {isAdmin
             ? 'Administrators can see and change everything in SWIFT, so signing in needs a second proof as well as the password: a 6-digit code from an app on your phone. It takes about two minutes, and you only do it once.'
-            : 'This adds a second step to signing in: a 6-digit code from an app on your phone, as well as your password. It takes about two minutes. It is your choice, and you can switch it off again in Settings.'}
+            : required
+              ? 'An administrator reset your two-step sign-in, so you need to set it up again before you continue: a 6-digit code from an app on your phone, as well as your password. It takes about two minutes.'
+              : 'This adds a second step to signing in: a 6-digit code from an app on your phone, as well as your password. It takes about two minutes. It is your choice, and you can switch it off again in Settings.'}
         </p>
 
         {!codes ? (
@@ -123,7 +127,7 @@ export default function MfaSetup() {
         )}
 
         {!codes && (
-          isAdmin ? (
+          required ? (
             <button type="button" onClick={async () => { await logout(); navigate('/login', { replace: true }) }} className="mt-8 text-sm text-gray-600 hover:underline dark:text-gray-400">
               Sign out instead
             </button>

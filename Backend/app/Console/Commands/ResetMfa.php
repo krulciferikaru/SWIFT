@@ -26,11 +26,11 @@ class ResetMfa extends Command
             return self::FAILURE;
         }
 
-        $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'mfa_last_step' => null])->save();
+        app(\App\Services\MfaService::class)->clear($user, requireAgain: in_array($user->role, ['admin', 'secretary', 'collector'], true));
         $user->tokens()->delete();
         Audit::log('auth.mfa_reset', $user, null, ['by' => 'server command'], null);
 
-        $this->info("Two-step sign-in was reset for {$user->email}. They will be asked to set it up again when they sign in.");
+        $this->info("Two-step sign-in was reset for {$user->email}. Administrators, secretaries and field collectors have to set it up again when they sign in.");
 
         return self::SUCCESS;
     }

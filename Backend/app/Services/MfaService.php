@@ -62,10 +62,16 @@ class MfaService
         return $this->newRecoveryCodes($user);
     }
 
-    /** Switches it off and forgets everything about it. */
-    public function clear(User $user): void
+    /**
+     * Switches it off and forgets everything about it. `requireAgain` makes the person set it up again at their next
+     * sign-in (used when someone else, not they, switched it off).
+     */
+    public function clear(User $user, bool $requireAgain = false): void
     {
-        $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'mfa_last_step' => null])->save();
+        $user->forceFill([
+            'mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'mfa_last_step' => null,
+            'mfa_reenrol_required' => $requireAgain,
+        ])->save();
         Cache::forget('mfa-pending:'.$user->id);
     }
 
@@ -86,7 +92,7 @@ class MfaService
         }
 
         $codes = $this->newRecoveryCodes($user, save: false);
-        $user->forceFill(['mfa_enabled_at' => now(), 'mfa_last_step' => $step])->save();
+        $user->forceFill(['mfa_enabled_at' => now(), 'mfa_last_step' => $step, 'mfa_reenrol_required' => false])->save();
 
         return $codes;
     }

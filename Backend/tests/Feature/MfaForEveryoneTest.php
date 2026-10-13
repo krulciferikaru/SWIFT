@@ -248,4 +248,44 @@ class MfaForEveryoneTest extends TestCase
         $this->assertSame(1, $admin->tokens()->where('name', 'mine')->count());
         $this->assertFalse(app(MfaService::class)->check($admin->fresh(), $codes[0]) === 'recovery');
     }
+
+    public function test_after_a_reset_staff_have_to_set_it_up_again_and_nothing_else_opens_until_they_do(): void
+    {
+        $secretary = $this->user('secretary', 'sec@mfa.test');
+        [$secret] = $this->enrol($secretary);
+        $admin = $this->user('admin', 'boss@mfa.test');
+        $this->enrol($admin);
+        Sanctum::actingAs($admin->fresh());
+        $this->passwordConfirmed($admin);
+
+        $this->postJson("/api/users/{$secretary->id}/mfa/reset")->assertOk()->assertJsonPath('message', fn ($m) => str_contains($m, 'set it up again'));
+        $this->assertTrue($secretary->fresh()->mfa_setup_required);
+
+        // At the next sign-in they can do nothing but set it up.
+        $this->app['auth']->forgetGuards();
+        $login = $this->login('sec@mfa.test')->assertOk()->assertJsonPath('user.mfa_setup_required', true);
+        $token = $login->json('token');
+        $this->withToken($token)->getJson('/api/subscribers')->assertStatus(403)->assertJsonPath('mfa_setup_required', true);
+
+        $this->withToken($token)->postJson('/api/me/confirm-password', ['password' => 'pass-12345'])->assertOk();
+        $setup = $this->withToken($token)->postJson('/api/me/mfa/setup')->assertOk()->json();
+        $this->withToken($token)->postJson('/api/me/mfa/enable', ['code' => Totp::code($setup['secret'])])->assertOk();
+
+        $this->assertFalse($secretary->fresh()->mfa_setup_required);
+        $this->withToken($token)->getJson('/api/subscribers')->assertOk();
+    }
+
+    public function test_a_subscriber_who_is_reset_is_not_forced_to_set_it_up_again(): void
+    {
+        $subscriber = $this->user('subscriber', 'sub@mfa.test');
+        $this->enrol($subscriber);
+        $admin = $this->user('admin', 'boss@mfa.test');
+        $this->enrol($admin);
+        Sanctum::actingAs($admin->fresh());
+        $this->passwordConfirmed($admin);
+
+        $this->postJson("/api/users/{$subscriber->id}/mfa/reset")->assertOk();
+
+        $this->assertFalse($subscriber->fresh()->mfa_setup_required);
+    }
 }
