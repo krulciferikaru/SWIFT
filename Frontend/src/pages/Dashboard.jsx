@@ -45,12 +45,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import TourButton from "../components/TourButton.jsx";
-
-// A count card that opens the Subscribers list, already filtered, for people who may view it.
-function SubscribersLink({ to, enabled, children }) {
-  return enabled ? <Link to={to}>{children}</Link> : <div>{children}</div>;
-}
-const cardHover = (enabled) => (enabled ? "hover:border-primary/50 transition-colors cursor-pointer" : "");
+import CardAction from "../components/CardAction.jsx";
 
 const STATUS_COLORS = {
   Active: "#305CDE",
@@ -151,6 +146,8 @@ export default function Dashboard() {
 
   const needsAttention = summary?.pending > 0 || claimsList.length > 0;
   const canViewSubscribers = can("subscribers.view");
+  const canViewPayments = can("payments.view", "payments.record");
+  const canApprove = can("approvals.manage");
 
   // Revenue trend delta: compare the last two months in the trend array
   const trendDelta = (() => {
@@ -334,7 +331,7 @@ export default function Dashboard() {
             <Skeleton className="h-5 w-24" />
             <Skeleton className="h-3 w-72 max-w-full" />
           </div>
-          <StatCardsSkeleton count={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" />
+          <StatCardsSkeleton count={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -421,7 +418,10 @@ export default function Dashboard() {
                       : "Submitted today"}
                   </p>
                 </div>
-                <ArrowRight className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+                  Review
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </span>
               </Link>
             )}
 
@@ -441,7 +441,10 @@ export default function Dashboard() {
                       : "Submitted today"}
                   </p>
                 </div>
-                <ArrowRight className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+                  Review
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </span>
               </Link>
             )}
           </CardContent>
@@ -454,35 +457,31 @@ export default function Dashboard() {
       {/* 2. Financial Snapshot */}
       {financials && (
         <div data-tour="dash-financials" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link to="/payments">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collected This Month</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">
-                    {formatCurrency(financials.collected_this_month)}
-                  </p>
-                </div>
-                <PiggyBank className="size-8 text-green-500/40" />
-              </CardContent>
-            </Card>
-          </Link>
+          <CardAction to={canViewPayments ? "/payments" : undefined} hint="View payments">
+            <CardContent className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collected This Month</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">
+                  {formatCurrency(financials.collected_this_month)}
+                </p>
+              </div>
+              <PiggyBank className="size-8 text-green-500/40" />
+            </CardContent>
+          </CardAction>
 
-          <Link to="/subscribers">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Outstanding</p>
-                  <p className={`text-2xl font-bold mt-1 ${financials.total_outstanding > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
-                    {formatCurrency(financials.total_outstanding)}
-                  </p>
-                </div>
-                <CircleDollarSign className="size-8 text-red-500/40" />
-              </CardContent>
-            </Card>
-          </Link>
+          <CardAction to={canViewSubscribers ? "/subscribers?status=Unpaid" : undefined} hint="View who has not paid">
+            <CardContent className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Outstanding</p>
+                <p className={`text-2xl font-bold mt-1 ${financials.total_outstanding > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
+                  {formatCurrency(financials.total_outstanding)}
+                </p>
+              </div>
+              <CircleDollarSign className="size-8 text-red-500/40" />
+            </CardContent>
+          </CardAction>
 
-          <Card>
+          <CardAction>
             <CardContent className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collection Rate</p>
@@ -492,7 +491,7 @@ export default function Dashboard() {
               </div>
               <TrendingUp className={`size-8 opacity-40 ${collectionRateColor(financials.collection_rate)}`} />
             </CardContent>
-          </Card>
+          </CardAction>
         </div>
       )}
 
@@ -500,81 +499,69 @@ export default function Dashboard() {
       <div style={{ marginBottom: "0.75rem" }}>
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Right now</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Current numbers, as of today. They cannot be filtered by period.
+          Current numbers, as of today. They cannot be filtered by period. Click a card to see the people behind the number.
         </p>
       </div>
-      <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <SubscribersLink to="/subscribers" enabled={canViewSubscribers}>
-          <Card className={cardHover(canViewSubscribers)}>
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <Users2 className="size-5 text-primary" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Subscribers</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.total}</p>
-            </CardContent>
-          </Card>
-        </SubscribersLink>
+      <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
+        <CardAction to={canViewSubscribers ? "/subscribers" : undefined} hint="View all subscribers">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <Users2 className="size-5 text-primary" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Subscribers</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.total}</p>
+          </CardContent>
+        </CardAction>
 
-        <Link to="/approvals">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <ClipboardCheck className="size-5 text-amber-500" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pending Applications</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.pending}</p>
-            </CardContent>
-          </Card>
-        </Link>
+        <CardAction to={canApprove ? "/approvals" : undefined} hint="Review applications">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <ClipboardCheck className="size-5 text-amber-500" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pending Applications</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.pending}</p>
+          </CardContent>
+        </CardAction>
 
-        <Link to="/approvals" state={{ tab: "claims" }}>
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <ShieldCheck className="size-5 text-blue-500" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Claims</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{claimsList.length}</p>
-            </CardContent>
-          </Card>
-        </Link>
+        <CardAction to={canApprove ? "/approvals" : undefined} state={{ tab: "claims" }} hint="Review claims">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <ShieldCheck className="size-5 text-blue-500" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Claims</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{claimsList.length}</p>
+          </CardContent>
+        </CardAction>
 
-        <SubscribersLink to="/subscribers?status=Active" enabled={canViewSubscribers}>
-          <Card className={cardHover(canViewSubscribers)}>
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <TrendingUp className="size-5 text-green-700 dark:text-green-400" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.active}</p>
-            </CardContent>
-          </Card>
-        </SubscribersLink>
+        <CardAction to={canViewSubscribers ? "/subscribers?status=Active" : undefined} hint="View active subscribers">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp className="size-5 text-green-700 dark:text-green-400" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.active}</p>
+          </CardContent>
+        </CardAction>
 
-        <SubscribersLink to="/subscribers?status=Unpaid" enabled={canViewSubscribers}>
-          <Card className={cardHover(canViewSubscribers)}>
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <Wifi className="size-5 text-amber-500" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unpaid</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.unpaid}</p>
-            </CardContent>
-          </Card>
-        </SubscribersLink>
+        <CardAction to={canViewSubscribers ? "/subscribers?status=Unpaid" : undefined} hint="View unpaid subscribers">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <Wifi className="size-5 text-amber-500" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unpaid</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.unpaid}</p>
+          </CardContent>
+        </CardAction>
 
-        <SubscribersLink to="/subscribers?status=Disconnected" enabled={canViewSubscribers}>
-          <Card className={cardHover(canViewSubscribers)}>
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <WifiOff className="size-5 text-gray-400" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Disconnected</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.disconnected}</p>
-            </CardContent>
-          </Card>
-        </SubscribersLink>
+        <CardAction to={canViewSubscribers ? "/subscribers?status=Disconnected" : undefined} hint="View disconnected subscribers">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <WifiOff className="size-5 text-gray-400" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Disconnected</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.disconnected}</p>
+          </CardContent>
+        </CardAction>
       </div>
 
       {/* 4. Deeper analysis */}
