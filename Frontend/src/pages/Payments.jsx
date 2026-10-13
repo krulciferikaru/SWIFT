@@ -537,7 +537,7 @@ export default function Payments() {
           </Card>
 
           {loadingDetail ? (
-            <LoadingStatus className="space-y-6">
+            <LoadingStatus contentClassName="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <CardListSkeleton rows={4} />
                 <CardListSkeleton rows={4} />

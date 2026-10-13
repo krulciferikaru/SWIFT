@@ -212,7 +212,7 @@ export default function BarangaysManager({ showToast }) {
         )}
 
         {loading ? (
-          <LoadingStatus className="space-y-2">
+          <LoadingStatus contentClassName="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}

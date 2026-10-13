@@ -7,7 +7,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import CardAction from "../../components/CardAction.jsx";
 import DateHint from "../../components/DateHint.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
@@ -413,15 +413,14 @@ export default function SubscribersPage() {
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2"
-              >
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-7 w-10" />
-              </div>
+          <div className="grid grid-cols-2 gap-4 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": can("approvals.manage") ? 5 : 4 }}>
+            {Array.from({ length: can("approvals.manage") ? 5 : 4 }).map((_, i) => (
+              <Card key={i} className={can("approvals.manage") ? "min-h-[141px]" : "min-h-[125px]"}>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-7 w-10" />
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
@@ -429,10 +428,10 @@ export default function SubscribersPage() {
         {/* Toolbar */}
         {initialLoading ? (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <Skeleton className="h-9 flex-1" />
-            <Skeleton className="h-9 w-full sm:w-40" />
-            <Skeleton className="h-9 w-full sm:w-32" />
-            <Skeleton className="h-9 w-full sm:w-36" />
+            <Skeleton className="h-8 flex-1" />
+            <Skeleton className="h-8 w-full sm:w-40" />
+            {can("reports.view") && <Skeleton className="h-8 w-full sm:w-32" />}
+            {can("subscribers.manage") && <Skeleton className="h-8 w-full sm:w-36" />}
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -483,6 +482,17 @@ export default function SubscribersPage() {
           </div>
         )}
 
+        {initialLoading && (
+          <div className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="min-h-14 space-y-1 sm:flex-1">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ))}
+          </div>
+        )}
+
         {!initialLoading && (
           <div data-tour="subs-filters" className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="space-y-1 sm:flex-1">
@@ -529,6 +539,12 @@ export default function SubscribersPage() {
           <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
           Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
         </p>
+
+        {canRemind && initialLoading && (
+          <div className="-mt-1 mb-3 flex h-7 items-center">
+            <Skeleton className="h-7 w-72 max-w-full" />
+          </div>
+        )}
 
         {canRemind && !initialLoading && subscribers.length > 0 && (
           <div data-tour="subs-remind" className="-mt-1 mb-3 flex flex-wrap items-center gap-3 text-sm">

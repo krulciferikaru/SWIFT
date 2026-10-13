@@ -24,7 +24,7 @@ export default function AuthLayout({ children, wide = false }) {
 
         <div className="max-w-md space-y-3">
           <h2 className="text-4xl font-bold leading-tight tracking-tight">
-            Jubal Brothers Cable TV Corp.
+            Jubal Brothers Cable TV Corporation
           </h2>
           <p className="text-xl font-medium text-blue-50">Palayan Branch</p>
           <p className="pt-2 text-sm text-blue-100">
@@ -35,7 +35,7 @@ export default function AuthLayout({ children, wide = false }) {
         <div className="space-y-4">
           <CompanyContact variant="panel" />
           <p className="text-sm text-blue-100">
-            © {new Date().getFullYear()} Jubal Brothers Cable TV Corp. ·{' '}
+            © {new Date().getFullYear()} Jubal Brothers Cable TV Corporation · {' '}
             <Link to="/privacy" className={legalLink}>Privacy Policy</Link> ·{' '}
             <Link to="/terms" className={legalLink}>Terms</Link>
           </p>
@@ -50,7 +50,7 @@ export default function AuthLayout({ children, wide = false }) {
               <img src="/SWIFT_Logo.svg" alt="" className="size-9" />
               <span className="text-xl font-bold tracking-tight text-primary">SWIFT</span>
             </div>
-            <p className="mt-3 text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100">Jubal Brothers Cable TV Corp.</p>
+            <p className="mt-3 text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100">Jubal Brothers Cable TV Corporation</p>
             <p className="text-base font-medium text-gray-700 dark:text-gray-300">Palayan Branch</p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Subscriber and Web-based Information and Financial Tracking System

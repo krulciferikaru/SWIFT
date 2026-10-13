@@ -202,7 +202,7 @@ export default function Dashboard() {
   if (!isStaff) {
     if (myLoading) {
       return (
-        <LoadingStatus className="space-y-6" heading="My Account">
+        <LoadingStatus contentClassName="space-y-6" heading="My Account">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
               <Skeleton className="h-8 w-44" />
@@ -210,10 +210,13 @@ export default function Dashboard() {
             </div>
             <Skeleton className="h-9 w-40" />
           </div>
-          <Skeleton className="h-28 w-full rounded-lg" />
-          <StatCardsSkeleton />
-          <CardListSkeleton rows={4} />
-          <CardListSkeleton rows={3} />
+          <Skeleton className="h-[156px] w-full rounded-lg" />
+          <StatCardsSkeleton cardClassName="h-[112px]" />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <CardListSkeleton rows={6} className="min-h-[461px]" />
+            <CardListSkeleton rows={6} className="min-h-[461px]" />
+          </div>
+          <CardListSkeleton rows={3} className="min-h-[204px]" />
         </LoadingStatus>
       );
     }
@@ -363,8 +366,10 @@ export default function Dashboard() {
   // ---------------------------------------------------------------------
 
   if (loading) {
+    // The placeholders follow the same permissions as the loaded page, so nothing jumps when it arrives.
+    const showMoneyCards = can("reports.view");
     return (
-      <LoadingStatus className="space-y-6" heading="Dashboard">
+      <LoadingStatus contentClassName="space-y-6" heading="Dashboard">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
             <Skeleton className="h-8 w-40" />
@@ -373,33 +378,41 @@ export default function Dashboard() {
           <Skeleton className="h-9 w-32" />
         </div>
 
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-20" />
-              <Skeleton className="h-3 w-28" />
+        {user?.role !== "collector" && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <Skeleton className="h-8 w-full sm:w-96" />
             </div>
-            <Skeleton className="h-10 w-full sm:w-96" />
+            <StatCardsSkeleton cardClassName="h-[112px]" />
           </div>
-          <StatCardsSkeleton />
-        </div>
+        )}
 
-        <StatCardsSkeleton />
+        {showMoneyCards && <StatCardsSkeleton cardClassName="min-h-[125px]" />}
 
         <div className="space-y-3">
           <div className="space-y-2">
             <Skeleton className="h-5 w-24" />
             <Skeleton className="h-3 w-72 max-w-full" />
           </div>
-          <StatCardsSkeleton count={6} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" />
+          <StatCardsSkeleton
+            count={canApprove ? 6 : 4}
+            cardClassName="min-h-[157px]"
+            className={canApprove ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}
+          />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
-            <CardContent><Skeleton className="h-55 w-full rounded-md" /></CardContent>
-          </Card>
-          <Card>
+        <div className={`grid grid-cols-1 gap-4 ${showMoneyCards ? "lg:grid-cols-2" : ""}`}>
+          {showMoneyCards && (
+            <Card className="min-h-[292px]">
+              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardContent><Skeleton className="h-55 w-full rounded-md" /></CardContent>
+            </Card>
+          )}
+          <Card className="min-h-[292px]">
             <CardHeader><Skeleton className="h-5 w-36" /></CardHeader>
             <CardContent><Skeleton className="mx-auto h-55 w-55 max-w-full rounded-full" /></CardContent>
           </Card>
@@ -407,9 +420,9 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
-          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-md" />
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": quickColumns }}>
+            {Array.from({ length: Math.max(quickActionCount, 1) }).map((_, i) => (
+              <Skeleton key={i} className="h-[72px] w-full rounded-md" />
             ))}
           </CardContent>
         </Card>

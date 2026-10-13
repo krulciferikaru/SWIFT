@@ -209,7 +209,7 @@ export default function Plans() {
             <>
               <h1 className="sr-only">Service Plans</h1>
               <Skeleton className="h-8 w-40" />
-              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-8 w-28" />
             </>
           ) : (
             <>
@@ -221,6 +221,7 @@ export default function Plans() {
             </>
           )}
         </div>
+        <Skeleton className="mb-2 h-5 w-[34rem] max-w-full" />
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <TableSkeleton rows={5} columns={[
             { label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' },
