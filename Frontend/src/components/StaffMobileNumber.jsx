@@ -6,11 +6,13 @@ import { firstError, required, mobileNumber } from '../utils/validators'
 import FormField from './FormField.jsx'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import CodeInput from './CodeInput.jsx'
 
 /**
  * Lets a staff member add or change their own mobile number. Nobody at the office can reset another
  * person's password, so this number (once verified with a texted code) is how a staff member gets
- * back in if they forget theirs. Subscribers' numbers belong to their subscriber record and are
+ * back in if they forget theirs. Because it is also a way to take over an account, someone with two-step sign-in
+ * has to type a current code from their app (or a recovery code) to change it. Subscribers' numbers belong to their subscriber record and are
  * changed by staff, so this is not shown to them.
  */
 export default function StaffMobileNumber() {
@@ -21,6 +23,10 @@ export default function StaffMobileNumber() {
   const [serverError, setServerError] = useState('')
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState('')
+  const [code, setCode] = useState('')
+  const [codeError, setCodeError] = useState('')
+  const [useRecovery, setUseRecovery] = useState(false)
+  const needsCode = Boolean(user?.mfa_enabled)
 
   const localError = firstError(value, required('Mobile number'), mobileNumber)
   const error = serverError || (touched ? localError : '')
@@ -29,15 +35,26 @@ export default function StaffMobileNumber() {
     e.preventDefault()
     setTouched(true)
     if (localError) return
+    if (needsCode && code.trim().length < (useRecovery ? 8 : 6)) {
+      setCodeError('Type the current code from your authenticator app.')
+      return
+    }
     setBusy(true)
     setServerError('')
+    setCodeError('')
     try {
-      const res = await api.patch('/me/mobile-number', { contact_number: value.trim() })
+      const res = await api.patch('/me/mobile-number', { contact_number: value.trim(), ...(needsCode ? { code: code.trim() } : {}) })
       setSaved(res.data.message)
       setEditing(false)
+      setCode('')
       await refetch()
     } catch (err) {
-      setServerError(err.response?.data?.errors?.contact_number?.[0] ?? errorMessage(err, 'Could not save the number.'))
+      const errors = err.response?.data?.errors
+      setServerError(errors?.contact_number?.[0] ?? (errors?.code ? '' : errorMessage(err, 'Could not save the number.')))
+      if (errors?.code) {
+        setCodeError(errors.code[0])
+        setCode('')
+      }
     } finally {
       setBusy(false)
     }
@@ -78,6 +95,36 @@ export default function StaffMobileNumber() {
           placeholder="0917 123 4567"
         />
       </FormField>
+      {needsCode && (
+        <div className="space-y-2">
+          <FormField
+            id="staff-mobile-code"
+            label={useRecovery ? 'Recovery code' : 'Code from your authenticator app'}
+            hint="Changing your number also needs a current code, because it is how a forgotten password is recovered."
+            error={codeError}
+          >
+            {useRecovery ? (
+              <Input
+                value={code}
+                onChange={(e) => { setCode(e.target.value); setCodeError('') }}
+                autoComplete="off"
+                maxLength={12}
+                placeholder="XXXX-XXXX"
+                className="h-11 text-center font-mono text-lg tracking-[0.3em]"
+              />
+            ) : (
+              <CodeInput value={code} onChange={(v) => { setCode(v); setCodeError('') }} />
+            )}
+          </FormField>
+          <button
+            type="button"
+            onClick={() => { setUseRecovery((r) => !r); setCode(''); setCodeError('') }}
+            className="text-sm font-medium text-primary hover:underline dark:text-blue-300"
+          >
+            {useRecovery ? 'Use the code from my authenticator app' : 'My phone is lost: use a recovery code'}
+          </button>
+        </div>
+      )}
       <div className="flex gap-2">
         <Button type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save number'}</Button>
         {user?.contact_number && (

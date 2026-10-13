@@ -288,4 +288,26 @@ class MfaForEveryoneTest extends TestCase
 
         $this->assertFalse($subscriber->fresh()->mfa_setup_required);
     }
+
+    public function test_with_two_step_on_changing_the_mobile_number_needs_a_current_code_too(): void
+    {
+        $user = $this->user('collector', 'col@mfa.test');
+        [$secret, $codes] = $this->enrol($user);
+        Sanctum::actingAs($user->fresh());
+        $this->passwordConfirmed($user);
+
+        // The password is not enough.
+        $this->patchJson('/api/me/mobile-number', ['contact_number' => '09175551234'])->assertStatus(422)->assertJsonValidationErrors('code');
+        $this->patchJson('/api/me/mobile-number', ['contact_number' => '09175551234', 'code' => '000000'])->assertStatus(422);
+        $this->assertNotSame('09175551234', $user->fresh()->contact_number);
+
+        // A bad number is refused before a code is used up.
+        $this->patchJson('/api/me/mobile-number', ['contact_number' => '12345', 'code' => Totp::code($secret)])->assertStatus(422);
+
+        $this->patchJson('/api/me/mobile-number', ['contact_number' => '09175551234', 'code' => Totp::code($secret)])->assertOk();
+        $this->assertSame('09175551234', $user->fresh()->contact_number);
+
+        // A recovery code works too (the phone may be the thing that was lost).
+        $this->patchJson('/api/me/mobile-number', ['contact_number' => '09175559999', 'code' => $codes[0]])->assertOk();
+    }
 }
