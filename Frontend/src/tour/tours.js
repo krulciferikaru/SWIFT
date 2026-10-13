@@ -16,7 +16,7 @@ export const TOURS = {
         selector: t('nav'),
         title: 'Navigation',
         description:
-          'Everything in SWIFT is reached from this menu, grouped into sections: Overview, Customers, Billing and Administration, with Settings and the Guide at the bottom. You only see the pages your role allows. Hover the menu when it is collapsed to see the labels.',
+          'Everything in SWIFT is reached from this menu, grouped into sections: Overview, Customers, Billing and Administration, with Settings at the bottom. You only see the pages your role allows. Hover the menu when it is collapsed to see the labels.',
         side: 'right',
       },
       {
@@ -52,10 +52,10 @@ export const TOURS = {
         side: 'right',
       },
       {
-        selector: t('nav-guide'),
-        title: 'Need help later?',
+        selector: t('nav-settings'),
+        title: 'Settings and help',
         description:
-          'The Guide explains every screen, and each section has a "Show me" button that starts a tour of that page.',
+          'Your preferences are here, and so are the Guide and, for admins, Manage Roles. The Guide explains every screen, and each section has a "Show me" button that starts a tour of that page.',
         side: 'right',
       },
       {
@@ -439,6 +439,12 @@ export const TOURS = {
   settings: {
     title: 'Settings tour',
     steps: [
+      {
+        selector: t('settings-pages'),
+        title: 'Guide and Manage Roles',
+        description: 'The Guide and, for admins, Manage Roles are opened from here.',
+        side: 'bottom',
+      },
       {
         selector: t('settings-appearance'),
         title: 'Appearance',
