@@ -23,6 +23,16 @@ Every figure on the Payments page, the subscriber's own dashboard, the reports a
 - **A Disconnected subscriber is never reconnected automatically**, even after paying. Staff do it by hand with **Reconnect Subscriber** on the Payments page, which appears once the balance is paid, and only after the service has really been reconnected.
 - Staff can also set a status by hand on the Subscribers page. That sends the subscriber an SMS.
 
+### Status history
+
+Every time a subscriber's service status changes, a line is kept: what it became, what it was, **when**, and whether **staff** set it, the system worked it out **automatically** from the payments, or it came from approving or adding the subscriber. Lines are only ever added, never changed.
+
+- **Staff** see it in the subscriber's details window (*Service history*), with who made each change.
+- **The subscriber** sees their own on their page (*Service History*), without staff names, because they have a right to it.
+- The history shows the **installation date** and how long the current status has lasted.
+- **It starts on the day it was introduced.** For people who were already subscribers, the first line says "this is where the history begins"; earlier changes were not recorded and cannot be recovered.
+- An applicant waiting for approval has no history yet; their first line is added when they are approved.
+
 ### What the subscriber sees
 
 The top of the subscriber's account page says it in plain words: **active** (nothing owed, any advance credit, next bill date), **payment needed** (how much is owed, the number of unpaid months, and that 3 unpaid months means disconnection) or **disconnected** (pay the balance, then contact the company to be reconnected). The same page shows the amount owed, the monthly bill, the month-by-month breakdown, the payment history and the company's contact details and how to pay.
@@ -53,7 +63,24 @@ An admin manages the list in **Settings, Payment methods**: add a method (for ex
 
 Every subscriber has a payment history (newest first, with a year filter and the total paid), shown to them on their account page and to staff on the Payments page. Each payment has a **Receipt** button that opens a printable "Payment Receipt" with the company, amount, OR number, who it is for, plan, date, method, notes and who received it. It is generated from the recorded payment and is **not** a BIR-registered official receipt.
 
-> **Payments cannot be edited or deleted in the app.** The system only lists and adds payments. If one was entered wrongly, the correction has to be handled outside the app (for example by a database change by whoever maintains the system). The audit trail records who recorded each payment and when, but it cannot undo one.
+> **Payments are never edited or deleted.** A payment is sensitive, so a recorded one is never changed. If one was entered wrongly (an extra zero, the wrong date, the wrong subscriber), an **administrator cancels it** and then the correct payment is recorded as a new one. See the next section.
+
+### Correcting a mistake: cancelling a payment
+
+On the Payments page, an administrator sees a **Cancel** button on each payment in the history. It asks for:
+
+- a **reason** (required, at least a few words, for example "Typed 5000 instead of 500"), and
+- the administrator's **own password**, like other sensitive actions.
+
+What happens:
+
+- The payment **stays in the history**, struck through and marked **Cancelled**, with who cancelled it, when, and why. Its amount and OR number are untouched. Nothing is deleted or rewritten.
+- It **stops counting at once** towards the subscriber's balance, the Collection Report, the dashboard totals and the "total paid" line. The subscriber's service status is worked out again (a subscriber who was Active because of the wrong payment becomes Unpaid, and so on). A subscriber who was already marked Disconnected stays so, as always, until staff reconnect them.
+- The cancellation is written to the **audit trail** ("Cancelled a payment").
+- The window offers to **fill in the payment form with the old details**, so the person corrects only what was wrong. The same OR number can be used again, because it is the same paper receipt.
+- A cancelled payment cannot be cancelled again, and cannot be un-cancelled: if it was cancelled by mistake, record it again.
+- The subscriber sees the cancelled payment in their own history, marked as cancelled. **No text message is sent** when a payment is cancelled, so if the wrong amount was already texted to them, tell them.
+- Only administrators can cancel payments. Secretaries cannot, and this cannot be granted.
 
 ## What the system does not do
 

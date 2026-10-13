@@ -157,7 +157,13 @@ class BillingService
         };
 
         if ($newStatus !== $subscriber->status) {
-            $subscriber->update(['status' => $newStatus]);
+            // The system, not a person, is changing it: the history says so.
+            StatusHistoryService::$source = 'automatic';
+            try {
+                $subscriber->update(['status' => $newStatus]);
+            } finally {
+                StatusHistoryService::$source = null;
+            }
         }
     }
 }

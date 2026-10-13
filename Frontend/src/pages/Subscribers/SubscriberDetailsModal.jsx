@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext'
 import { VerifiedBadge } from '../../components/PhoneVerification.jsx'
 import { Skeleton } from '@/components/ui/skeleton'
 import paymentsApi from '../../api/payments'
+import StatusTimeline from '../../components/StatusTimeline.jsx'
 
 export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, onArchive, onPayments }) {
   const { can } = useAuth()
@@ -145,6 +146,13 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
                 <DetailField label="Advance credit">{peso(billing.advance_credit)}</DetailField>
               </dl>
             )}
+          </section>
+
+          <section aria-labelledby="sub-history-heading">
+            <h3 id="sub-history-heading" className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Service history
+            </h3>
+            <StatusTimeline subscriberId={id} />
           </section>
         </div>
       )}

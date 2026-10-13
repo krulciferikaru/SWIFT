@@ -326,6 +326,19 @@ class SubscriberController extends Controller
     }
 
     /**
+     * GET /api/subscribers/{id}/status-history
+     *
+     * When the installation was and every time the service status changed, newest first, with who
+     * or what changed it. For staff who may view subscribers.
+     */
+    public function statusHistory(int $id): JsonResponse
+    {
+        $subscriber = Subscriber::withTrashed()->findOrFail($id);
+
+        return response()->json(['success' => true, 'data' => app(\App\Services\StatusHistoryService::class)->timeline($subscriber, forStaff: true)]);
+    }
+
+    /**
      * GET /api/subscribers/summary
      *
      * Returns a count breakdown by status.
