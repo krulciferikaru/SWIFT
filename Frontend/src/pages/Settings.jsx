@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Sun, Moon, Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight, FileText } from 'lucide-react'
 import TourButton from "../components/TourButton.jsx";
+import ReviewDialog from '../components/ReviewDialog.jsx'
 import { runTour } from '../tour/useTour'
 import { useShowTourButtons, setShowTourButtons } from '../tour/tourState'
 import Toast from "../components/Toast.jsx";
@@ -55,6 +56,9 @@ export default function Settings() {
   const [sendingSms, setSendingSms] = useState(false)
   const [unpaidCount, setUnpaidCount] = useState(null)
   const [sendingReminders, setSendingReminders] = useState(false)
+  // Texts cannot be recalled, so both ways of sending one ask first.
+  const [confirmSms, setConfirmSms] = useState(false)
+  const [confirmReminders, setConfirmReminders] = useState(false)
 
   const canSendSms = can('sms.send')
 
@@ -75,10 +79,13 @@ export default function Settings() {
     localStorage.setItem('skipLogoutConfirm', String(!checked))
   }
 
-  const handleSendSms = async (e) => {
+  const handleSendSms = (e) => {
     e.preventDefault()
     if (!smsPhone.trim() || !smsMessage.trim()) return
+    setConfirmSms(true)
+  }
 
+  const sendSms = async () => {
     setSendingSms(true)
     try {
       const res = await smsApi.send(smsPhone.trim(), smsMessage.trim())
@@ -88,6 +95,7 @@ export default function Settings() {
       showToast(err.response?.data?.message || 'Failed to send SMS.', 'error')
     } finally {
       setSendingSms(false)
+      setConfirmSms(false)
     }
   }
 
@@ -100,6 +108,7 @@ export default function Settings() {
       showToast(err.response?.data?.message || 'Failed to send reminders.', 'error')
     } finally {
       setSendingReminders(false)
+      setConfirmReminders(false)
     }
   }
 
@@ -313,7 +322,7 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleSendReminders} disabled={sendingReminders || unpaidCount === 0}>
+            <Button onClick={() => setConfirmReminders(true)} disabled={sendingReminders || unpaidCount === 0}>
               <BellRing className="size-4" />
               {sendingReminders ? 'Sending...' : 'Send Reminders'}
             </Button>
@@ -322,6 +331,38 @@ export default function Settings() {
       )}
 
       {user?.role === 'subscriber' && <DeleteAccountCard />}
+
+      <ReviewDialog
+        open={confirmSms}
+        onOpenChange={setConfirmSms}
+        title="Send this text message?"
+        description="Check the number and the message before it goes out."
+        rows={[
+          { label: 'To', value: smsPhone.trim(), emphasis: true },
+          { label: 'Message', value: smsMessage.trim() },
+        ]}
+        warning="A text cannot be recalled and uses SMS credit."
+        confirmLabel="Send SMS"
+        busyLabel="Sending..."
+        busy={sendingSms}
+        onConfirm={sendSms}
+      />
+
+      <ReviewDialog
+        open={confirmReminders}
+        onOpenChange={setConfirmReminders}
+        title="Send payment reminders to everyone who is Unpaid?"
+        description="Each Unpaid subscriber gets a text with the amount they owe."
+        rows={[
+          { label: 'People who will be texted', value: unpaidCount ?? 'All Unpaid subscribers', emphasis: true },
+          { label: 'Message', value: 'Reminder with their balance' },
+        ]}
+        warning="Texts go to the real mobile numbers on file. They cannot be recalled and each one uses SMS credit."
+        confirmLabel="Send reminders"
+        busyLabel="Sending..."
+        busy={sendingReminders}
+        onConfirm={handleSendReminders}
+      />
     </div>
   )
 }
