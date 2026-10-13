@@ -12,13 +12,6 @@ class PhilSmsService
 
     public function send(string $recipient, string $message): array
     {
-        if (! config('services.philsms.enabled')) {
-            // Nothing leaves this machine. The text is in the log so the message can still be checked.
-            Log::info('PhilSMS: not sent, texts are turned off here (SMS_ENABLED).', ['recipient' => $recipient, 'message' => $message]);
-
-            return ['success' => false, 'message' => 'Texts are turned off on this server, so nothing was sent.'];
-        }
-
         $token = config('services.philsms.token');
 
         if (!$token) {
