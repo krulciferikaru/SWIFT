@@ -41,6 +41,7 @@ const ACTION_LABELS = {
   'auth.mfa_codes_renewed': 'Replaced their recovery codes',
   'auth.mfa_replaced': 'Moved two-step sign-in to a new phone',
   'auth.sessions_ended': 'Signed out of all other devices',
+  'auth.session_ended': 'Signed out of one device',
   'auth.mfa_disabled': 'Turned off two-step sign-in',
   'auth.mfa_reset': 'Two-step sign-in was reset',
   'account.deleted_by_owner': 'Deleted their own account',

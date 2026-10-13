@@ -101,4 +101,50 @@ class SessionsTest extends TestCase
 
         $this->assertSame(1, $secretary->tokens()->count());
     }
+
+    private function signInFrom(string $email, string $agent, string $ip)
+    {
+        return $this->withHeader('User-Agent', $agent)->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->postJson('/api/login', ['login' => $email, 'password' => 'pass-12345'])->assertOk()->json('token');
+    }
+
+    public function test_the_list_shows_each_place_with_a_device_name_a_hidden_address_and_which_is_this_one(): void
+    {
+        $this->user('secretary', 'sec@s.test');
+        $laptop = $this->signInFrom('sec@s.test', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', '203.0.113.45');
+        $phone = $this->signInFrom('sec@s.test', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1', '198.51.100.7');
+
+        $this->app['auth']->forgetGuards();
+        $rows = $this->withToken($phone)->getJson('/api/me/sessions')->assertOk()->json('data');
+
+        $this->assertCount(2, $rows);
+        $byDevice = collect($rows)->keyBy('device');
+        $this->assertSame('203.0.113.•', $byDevice['Chrome on Windows']['network']);
+        $this->assertFalse($byDevice['Chrome on Windows']['is_current']);
+        $this->assertTrue($byDevice['Safari on iPhone']['is_current']);
+        // The full address is never sent to the browser.
+        $this->assertStringNotContainsString('203.0.113.45', json_encode($rows));
+    }
+
+    public function test_one_other_place_can_be_ended_but_not_this_one_and_not_someone_elses(): void
+    {
+        $this->user('secretary', 'sec@s.test');
+        $other = $this->user('collector', 'col@s.test');
+        $laptop = $this->signInFrom('sec@s.test', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36', '203.0.113.45');
+        $mine = $this->signInFrom('sec@s.test', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Version/17.2 Safari/605.1.15', '203.0.113.46');
+        $strangers = $other->createToken('theirs')->accessToken->id;
+
+        $this->app['auth']->forgetGuards();
+        $rows = $this->withToken($mine)->getJson('/api/me/sessions')->json('data');
+        $laptopId = collect($rows)->firstWhere('device', 'Chrome on Windows')['id'];
+        $mineId = collect($rows)->firstWhere('is_current', true)['id'];
+
+        $this->deleteJson("/api/me/sessions/{$mineId}", [], ['Authorization' => "Bearer {$mine}"])->assertStatus(422);
+        $this->deleteJson("/api/me/sessions/{$strangers}", [], ['Authorization' => "Bearer {$mine}"])->assertNotFound();
+        $this->deleteJson("/api/me/sessions/{$laptopId}", [], ['Authorization' => "Bearer {$mine}"])->assertOk();
+
+        $this->assertSame(1, User::where('email', 'sec@s.test')->first()->tokens()->count());
+        $this->assertSame(1, $other->tokens()->count()); // theirs untouched
+        $this->assertDatabaseHas('audit_logs', ['action' => 'auth.session_ended']);
+    }
 }

@@ -51,8 +51,12 @@ Route::middleware(['auth:sanctum', 'account.active', 'session.slide', 'mfa.enrol
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
-    // Sign out of every other place (lost device, password seen, account taken over).
-    Route::post('/me/sessions/end-others', [\App\Http\Controllers\Auth\SessionController::class, 'endOthers'])
+    // Where you are signed in, and ending one place or all the others (lost device, password seen, account taken over).
+    Route::get('/me/sessions', [\App\Http\Controllers\Auth\SessionController::class, 'index']);
+    Route::delete('/me/sessions/{id}', [\App\Http\Controllers\Auth\SessionController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('throttle:confirm-password');
+    Route::post('/me/sessions/end-others',[\App\Http\Controllers\Auth\SessionController::class, 'endOthers'])
         ->middleware('throttle:confirm-password');
 
     // Type your password again before a sensitive action (valid for 10 minutes).

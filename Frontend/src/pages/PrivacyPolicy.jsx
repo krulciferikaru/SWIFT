@@ -47,6 +47,7 @@ export default function PrivacyPolicy() {
           <li><strong>About your service:</strong> your service plan, installation date, the MAC address of your equipment, and your service status (Active, Unpaid or Disconnected).</li>
           <li><strong>About your payments:</strong> each payment recorded for you: amount, date, official receipt (OR) number, method, notes, and which staff member recorded it.</li>
           <li><strong>Your account:</strong> your password (kept only in a scrambled form that nobody can read back), whether your mobile number is verified, and the date you agreed to our Terms and this policy.</li>
+          <li><strong>Where you are signed in:</strong> for each open sign-in, the type of browser and device it came from (for example “Chrome on Windows”), its network (IP) address, and when it was started and last used. It is shown to you in Settings so you can spot and end a sign-in that is not yours.</li>
           <li><strong>Activity records:</strong> an audit trail of important actions in the system, such as sign-ins, edits and payments, with the date and the person who did them. Passwords and codes are never written to it.</li>
           <li><strong>Messages:</strong> the text messages we send you (reminders, payment confirmations, verification and reset codes).</li>
         </ul>
@@ -57,7 +58,7 @@ export default function PrivacyPolicy() {
         <ul>
           <li><strong>To provide and bill your cable TV service:</strong> to know who you are, which plan you are on, what you owe, and what you have paid.</li>
           <li><strong>To contact you about your service:</strong> payment confirmations, due-date reminders, status changes, and codes for verifying your number or resetting your password.</li>
-          <li><strong>To keep the system and your account safe:</strong> signing you in, limiting wrong-password guesses, and keeping the audit trail.</li>
+          <li><strong>To keep the system and your account safe:</strong> signing you in, limiting wrong-password guesses, showing you where you are signed in, and keeping the audit trail.</li>
           <li><strong>To meet our legal and accounting duties:</strong> billing and payment records have to be kept, and may have to be shown to the authorities.</li>
         </ul>
         <p>We do not use your information for advertising, and we do not sell it.</p>
@@ -89,6 +90,7 @@ export default function PrivacyPolicy() {
           <li><strong>The company&apos;s record of you as a subscriber</strong> (your name, address, mobile number, plan, installation date, service status and payments): <Todo>number of years, to be confirmed by the company with its accountant</Todo>. We keep this even after you delete your account, because it is the company&apos;s own record and the integrity of its books depends on it. It is marked with a note that you deleted your account, and we send you no more text messages. After that period it is anonymised or destroyed.</li>
           <li><strong>The audit trail:</strong> <Todo>period, to be confirmed by the company</Todo>.</li>
           <li><strong>Verification and reset codes:</strong> ten minutes, and they are stored scrambled.</li>
+          <li><strong>Where you are signed in</strong> (browser, device type and network address): only while the sign-in is open. It is deleted when you sign out or end it, and a sign-in that simply runs out is cleared within about a day. The network address is shown to you with its last part hidden.</li>
         </ul>
       </Section>
 

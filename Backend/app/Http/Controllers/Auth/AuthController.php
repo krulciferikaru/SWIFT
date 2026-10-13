@@ -278,6 +278,12 @@ class AuthController extends Controller
         $newToken = $user->createToken($tokenName, ['*'], $expiresAt);
         $token = $newToken->plainTextToken;
 
+        // Where this sign-in came from, so the person can see it in their list of devices and end it.
+        $newToken->accessToken->forceFill([
+            'ip_address' => request()->ip(),
+            'user_agent' => \Illuminate\Support\Str::limit((string) request()->userAgent(), 250, ''),
+        ])->save();
+
         // They have just typed their password to get here: no second prompt for the usual 10 minutes.
         \App\Http\Middleware\CheckPasswordConfirmed::confirmNewSignIn($newToken->accessToken);
 
