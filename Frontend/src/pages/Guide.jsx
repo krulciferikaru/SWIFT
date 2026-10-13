@@ -179,7 +179,7 @@ const SECTIONS = [
         <p>Open it from <strong>Settings</strong>. This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
-          <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
+          <li><strong>Permissions</strong> (Secretary and Field Collector rows) — tick exactly what that person may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
           <li><strong>Passwords</strong> — nobody here can see or reset another person's password. Everyone recovers their own with <em>Forgot password?</em> on the sign-in page: a 6-digit code is texted to their <strong>verified</strong> mobile number. Staff add and verify theirs in Settings (or when the account is created), so it is worth doing straight away.</li>
         </ul>

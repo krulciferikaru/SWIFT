@@ -111,7 +111,7 @@ export default function Users() {
   const [touched, setTouched] = useState({})
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
-  const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
+  const [permTarget, setPermTarget] = useState(null) // secretary or collector whose permissions are being edited
   const [mfaResetTarget, setMfaResetTarget] = useState(null) // someone whose two-step sign-in is being reset
   const [mfaResetting, setMfaResetting] = useState(false)
 
@@ -368,7 +368,7 @@ export default function Users() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
-                      {user.role === 'secretary' && (
+                      {(user.role === 'secretary' || user.role === 'collector') && (
                         <Button
                           data-tour="users-permissions"
                           variant="outline"

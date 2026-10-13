@@ -52,7 +52,7 @@ class FieldCollectorTest extends TestCase
         );
     }
 
-    public function test_admin_can_create_a_collector_and_cannot_widen_the_role(): void
+    public function test_admin_can_create_a_collector_who_starts_with_the_short_default_list(): void
     {
         $admin = $this->user('admin');
         Sanctum::actingAs($admin);
@@ -62,10 +62,59 @@ class FieldCollectorTest extends TestCase
             'password' => 'password1', 'password_confirmation' => 'password1', 'role' => 'collector',
         ])->assertCreated();
         $collector = User::where('email', 'pedro@swift.test')->firstOrFail();
-        $this->assertSame('collector', $collector->role);
 
+        $this->assertSame('collector', $collector->role);
+        $this->assertEqualsCanonicalizing(['subscribers.view', 'payments.view', 'payments.record'], $collector->effective_permissions);
+    }
+
+    public function test_an_admin_can_adjust_a_collectors_permissions_like_a_secretarys(): void
+    {
+        $admin = $this->user('admin');
+        $collector = $this->user('collector');
+        Sanctum::actingAs($admin);
         $this->passwordConfirmed($admin);
-        $this->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => ['plans.manage']])->assertStatus(422);
+
+        // Grant one more task, switch one off.
+        $this->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => ['subscribers.view', 'payments.view', 'plans.manage']])
+            ->assertOk();
+        $this->assertEqualsCanonicalizing(['subscribers.view', 'payments.view', 'plans.manage'], $collector->fresh()->effective_permissions);
+
+        // Anything that is not a grantable task is refused.
+        $this->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => ['users.manage']])->assertStatus(422);
+
+        // Reset goes back to the collector's short default list (not to everything).
+        $this->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => null])->assertOk();
+        $this->assertEqualsCanonicalizing(['subscribers.view', 'payments.view', 'payments.record'], $collector->fresh()->effective_permissions);
+    }
+
+    public function test_the_changed_permissions_decide_what_a_collector_can_do(): void
+    {
+        $collector = $this->user('collector');
+        $sub = $this->subscriber();
+
+        // Recording is switched off, planning is switched on.
+        $collector->forceFill(['permissions' => ['subscribers.view', 'payments.view', 'plans.manage']])->save();
+        Sanctum::actingAs($collector->fresh());
+
+        $this->postJson("/api/subscribers/{$sub->subscriber_id}/payments", [
+            'amount' => 800, 'payment_date' => now()->toDateString(), 'or_number' => 'OR-9', 'payment_method' => 'Cash',
+        ])->assertForbidden();
+        $this->postJson('/api/plans', ['plan_name' => 'Promo', 'monthly_rate' => 600, 'speed_mbps' => 10, 'status' => 'Active'])->assertCreated();
+
+        // Whatever is switched on, email and MAC address stay hidden from a collector.
+        $row = $this->getJson('/api/subscribers')->assertOk()->json('data.data.0');
+        $this->assertArrayNotHasKey('email', $row);
+        $this->assertArrayNotHasKey('mac_address', $row);
+    }
+
+    public function test_only_secretaries_and_collectors_have_adjustable_permissions(): void
+    {
+        $admin = $this->user('admin');
+        $subscriberUser = $this->user('subscriber');
+        Sanctum::actingAs($admin);
+        $this->passwordConfirmed($admin);
+
+        $this->patchJson("/api/users/{$subscriberUser->id}/permissions", ['permissions' => []])->assertStatus(422);
     }
 
     public function test_a_collector_sees_subscribers_without_email_or_mac_address(): void

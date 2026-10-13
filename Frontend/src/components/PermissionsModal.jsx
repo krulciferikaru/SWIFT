@@ -7,8 +7,9 @@ import { errorMessage } from '../utils/errors'
 import { Button } from '@/components/ui/button'
 
 /**
- * Lets an admin choose exactly which tasks one secretary may do.
- * `user.permissions === null` means "never customised", which behaves as everything allowed.
+ * Lets an admin choose exactly which tasks one secretary or field collector may do.
+ * `user.permissions === null` means "never customised": everything allowed for a secretary, and the short
+ * default list (view subscribers, view and record payments) for a collector.
  */
 export default function PermissionsModal({ user, onClose, onSaved }) {
   const [catalog, setCatalog] = useState([])
@@ -56,7 +57,7 @@ export default function PermissionsModal({ user, onClose, onSaved }) {
       isOpen={!!user}
       onClose={onClose}
       title="Permissions"
-      description={user ? `Choose what ${user.name} is allowed to do. Changes take effect on their next action.` : ''}
+      description={user ? `Choose what ${user.name} is allowed to do. Changes take effect on their next action.${user.role === 'collector' ? " A field collector never sees subscribers’ email or MAC addresses, whatever is switched on." : ""}` : ""}
       size="md"
       footer={(requestClose) => (
         <div className="flex flex-wrap justify-between gap-3">

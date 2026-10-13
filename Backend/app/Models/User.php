@@ -74,7 +74,9 @@ class User extends Authenticatable
             'admin' => [...$grantable, ...config('permissions.admin_only')],
             // null means "never customised": a secretary gets everything grantable.
             'secretary' => array_values(array_intersect($this->permissions ?? $grantable, $grantable)),
-            'collector' => config('permissions.collector'),
+            // A field collector starts with the short default list; an admin can switch individual tasks on or off
+            // for them, the same way as for a secretary.
+            'collector' => array_values(array_intersect($this->permissions ?? config('permissions.collector'), $grantable)),
             default => [],
         };
     }
