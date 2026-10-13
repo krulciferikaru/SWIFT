@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Receipt } from 'lucide-react'
+import EmptyState from './EmptyState.jsx'
 import ReceiptDialog from './ReceiptDialog'
 import { Button } from '@/components/ui/button'
 import { pesoText } from '../utils/receipt'
@@ -25,7 +26,13 @@ export default function PaymentHistory({ payments, subscriber, maxHeightClass = 
   const total = shown.reduce((sum, p) => sum + Number(p.amount), 0)
 
   if (payments.length === 0) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400">No payments recorded yet.</p>
+    return (
+      <EmptyState
+        compact
+        title="No payments yet"
+        description="Payments appear here, newest first, after the first one is recorded."
+      />
+    )
   }
 
   return (

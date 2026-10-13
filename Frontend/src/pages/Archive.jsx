@@ -3,7 +3,8 @@ import archiveApi from '../api/archive'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { RotateCcw, Trash2 } from 'lucide-react'
+import { Archive as ArchiveIcon, RotateCcw, Trash2 } from 'lucide-react'
+import EmptyState from '../components/EmptyState.jsx'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -163,7 +164,14 @@ export default function ArchivePage() {
           } />
         ) : items.length === 0 ? (
           <>
-            <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Nothing archived here.</p>
+            <EmptyState
+              icon={ArchiveIcon}
+              title={search ? 'No archived subscribers match your search' : `No archived ${isSubscribers ? 'subscribers' : 'plans'}`}
+              description={search
+                ? 'Check the spelling, or clear the search to see everything that was archived.'
+                : `Anything you archive is kept here, not deleted. You can restore ${isSubscribers ? 'a subscriber' : 'a plan'} or delete it for good.`}
+              onClearFilters={search ? () => { setSearch(''); setPage(1) } : undefined}
+            />
             {tourActive && (
               <div className="px-6 pb-6">
                 <ArchiveSample kind={isSubscribers ? 'subscriber' : 'plan'} />
