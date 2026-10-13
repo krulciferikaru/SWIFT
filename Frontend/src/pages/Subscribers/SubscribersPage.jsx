@@ -351,7 +351,7 @@ export default function SubscribersPage() {
         </div>
 
         {summary ? (
-          <div data-tour="subs-summary" className={`grid grid-cols-2 gap-4 ${can("approvals.manage") ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
+          <div data-tour="subs-summary" className="grid grid-cols-2 gap-4 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": can("approvals.manage") ? 5 : 4 }}>
             {[
               {
                 label: "Total",
@@ -459,13 +459,15 @@ export default function SubscribersPage() {
               </SelectContent>
             </Select>
 
-            <Button
-              data-tour="subs-export"
-              onClick={() => setShowPreview(true)}
-              className="bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
-            >
-              Export CSV
-            </Button>
+            {can("reports.view") && (
+              <Button
+                data-tour="subs-export"
+                onClick={() => setShowPreview(true)}
+                className="bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
+              >
+                Export CSV
+              </Button>
+            )}
 
             {can("subscribers.manage") && (
               <Button
@@ -481,10 +483,10 @@ export default function SubscribersPage() {
 
         {!initialLoading && (
           <div data-tour="subs-filters" className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-            <div className="space-y-1">
+            <div className="space-y-1 sm:flex-1">
               <label htmlFor="subs-plan" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Plan</label>
               <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger id="subs-plan" aria-label="Filter by plan" className="w-full sm:w-52">
+                <SelectTrigger id="subs-plan" aria-label="Filter by plan" className="w-full">
                   <SelectValue>
                     {planId === "All"
                       ? "All plans"
@@ -501,14 +503,14 @@ export default function SubscribersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 sm:flex-1">
               <label htmlFor="subs-from" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed from</label>
-              <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full sm:w-40" />
+              <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full" />
               <DateHint value={installedFrom} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 sm:flex-1">
               <label htmlFor="subs-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed to</label>
-              <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full sm:w-40" />
+              <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full" />
               <DateHint value={installedTo} />
             </div>
             {(hasExtraFilters || search || status !== "All") && (

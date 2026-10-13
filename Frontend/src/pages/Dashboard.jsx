@@ -150,6 +150,9 @@ export default function Dashboard() {
   const canViewSubscribers = can("subscribers.view");
   const canViewPayments = can("payments.view", "payments.record");
   const canApprove = can("approvals.manage");
+  // Whatever is left after permissions are applied shares the full row, with no empty space.
+  const quickActionCount = [can("payments.view", "payments.record"), can("subscribers.view"), can("reports.view"), can("plans.manage"), user?.role === "admin"].filter(Boolean).length;
+  const quickColumns = quickActionCount <= 3 ? Math.max(quickActionCount, 1) : quickActionCount === 4 ? 2 : 3;
 
   // Revenue trend delta: compare the last two months in the trend array
   const trendDelta = (() => {
@@ -413,7 +416,7 @@ export default function Dashboard() {
               Needs Attention
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <CardContent className="grid grid-cols-1 gap-3 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": Math.max(1, (summary.pending > 0 ? 1 : 0) + (claimsList.length > 0 ? 1 : 0)) }}>
             {summary.pending > 0 && (
               <Link
                 to="/approvals"
@@ -513,7 +516,7 @@ export default function Dashboard() {
           Current numbers, as of today. They cannot be filtered by period. Click a card to see the people behind the number.
         </p>
       </div>
-      <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
+      <div data-tour="dash-counts" className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${canApprove ? "lg:grid-cols-3 2xl:grid-cols-6" : "lg:grid-cols-4"}`}>
         <CardAction to={canViewSubscribers ? "/subscribers" : undefined} hint="View all subscribers">
           <CardContent>
             <div className="flex items-center justify-between mb-2">
@@ -580,7 +583,7 @@ export default function Dashboard() {
       </div>
 
       {/* 4. Deeper analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${financials?.trend ? "lg:grid-cols-2" : ""}`}>
         {financials?.trend && (
           <Card data-tour="dash-trend">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -631,7 +634,7 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <CardContent className={`grid grid-cols-1 sm:grid-cols-2 gap-3 lg:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]`} style={{ "--cols": quickColumns }}>
           {can("payments.view", "payments.record") && (
           <Link to="/payments" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
