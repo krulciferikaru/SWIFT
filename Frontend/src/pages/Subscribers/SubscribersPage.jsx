@@ -7,6 +7,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { CardContent } from "@/components/ui/card";
+import CardAction from "../../components/CardAction.jsx";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -316,43 +318,33 @@ export default function SubscribersPage() {
                 color: "text-red-600 dark:text-red-400",
               },
             ].map((card) => {
-              const cardClass =
-                "bg-white dark:bg-gray-800 rounded-lg border px-4 py-3 text-left";
               const body = (
-                <>
+                <CardContent>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     {card.label}
                   </p>
                   <p className={`text-2xl font-bold mt-1 ${card.color}`}>
                     {card.value}
                   </p>
-                </>
+                </CardContent>
               );
-              // Pending is not a subscriber status (those people are on the Approvals page).
+              // Pending is not a subscriber status: those people wait on the Approvals page.
               if (card.label === "Pending") {
                 return (
-                  <div key={card.label} className={`${cardClass} border-gray-200 dark:border-gray-700`}>
+                  <CardAction key={card.label} to={can("approvals.manage") ? "/approvals" : undefined} hint="Review applications">
                     {body}
-                  </div>
+                  </CardAction>
                 );
               }
               const target = card.label === "Total" ? "All" : card.label;
               const selected = status === target;
+              const hint = selected
+                ? target === "All" ? "Showing everyone" : `Showing ${card.label.toLowerCase()} only`
+                : target === "All" ? "Show everyone" : `Show only ${card.label.toLowerCase()}`;
               return (
-                <button
-                  key={card.label}
-                  type="button"
-                  aria-pressed={selected}
-                  aria-label={`Show ${card.label === "Total" ? "all" : card.label} subscribers (${card.value})`}
-                  onClick={() => setStatus(target)}
-                  className={`${cardClass} transition-colors cursor-pointer hover:border-primary/50 ${
-                    selected
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-gray-200 dark:border-gray-700"
-                  }`}
-                >
+                <CardAction key={card.label} onClick={() => setStatus(target)} pressed={selected} hint={hint}>
                   {body}
-                </button>
+                </CardAction>
               );
             })}
           </div>
@@ -426,7 +418,7 @@ export default function SubscribersPage() {
         {!initialLoading && (
           <div data-tour="subs-filters" className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="space-y-1">
-              <label htmlFor="subs-plan" className="text-xs font-medium text-gray-600 dark:text-gray-400">Plan</label>
+              <label htmlFor="subs-plan" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Plan</label>
               <Select value={planId} onValueChange={setPlanId}>
                 <SelectTrigger id="subs-plan" aria-label="Filter by plan" className="w-full sm:w-52">
                   <SelectValue>
@@ -446,11 +438,11 @@ export default function SubscribersPage() {
               </Select>
             </div>
             <div className="space-y-1">
-              <label htmlFor="subs-from" className="text-xs font-medium text-gray-600 dark:text-gray-400">Installed from</label>
+              <label htmlFor="subs-from" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed from</label>
               <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full sm:w-40" />
             </div>
             <div className="space-y-1">
-              <label htmlFor="subs-to" className="text-xs font-medium text-gray-600 dark:text-gray-400">Installed to</label>
+              <label htmlFor="subs-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed to</label>
               <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full sm:w-40" />
             </div>
             {(hasExtraFilters || search || status !== "All") && (

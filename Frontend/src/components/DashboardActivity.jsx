@@ -153,7 +153,7 @@ export default function DashboardActivity() {
       {period === 'custom' && (
         <form onSubmit={applyRange} className="flex flex-wrap items-end gap-3" aria-label="Custom date range">
           <div className="space-y-1">
-            <label htmlFor="dash-from" className="text-xs font-medium text-gray-600 dark:text-gray-400">From</label>
+            <label htmlFor="dash-from" className="block text-xs font-medium text-gray-600 dark:text-gray-400">From</label>
             <Input
               id="dash-from"
               type="date"
@@ -165,7 +165,7 @@ export default function DashboardActivity() {
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="dash-to" className="text-xs font-medium text-gray-600 dark:text-gray-400">To</label>
+            <label htmlFor="dash-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">To</label>
             <Input
               id="dash-to"
               type="date"

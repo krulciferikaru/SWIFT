@@ -1,0 +1,22 @@
+# Interface principles
+
+Rules the screens follow so that people can tell what they can click, without being taught. They come from common usability guidance (affordances and signifiers, target size, accessible cards) and from feedback by the chair panel. New screens should follow them too.
+
+## Clickable things must look clickable
+
+- **A written hint, always visible.** A clickable card ends with a line that says what happens ("View unpaid subscribers", "Review applications") and an arrow. It is not hidden behind hover, because a phone has no hover.
+- **A reaction when pointed at.** On a computer the card lifts slightly and its border turns blue, and the cursor becomes a hand.
+- **A visible focus ring.** Someone using the keyboard (Tab) sees which card is selected.
+- **A card that cannot be clicked has none of this.** The Collection Rate card, for example, is plain, so a look-alike never leads nowhere.
+- **One card, one action.** The whole card is a single link or button, with nothing inside it that competes for the click. The title and number are what a screen reader reads as the link.
+- **A filter shows that it is on.** A card used as a filter (the status cards on Subscribers) gets a blue outline, a tick, and a hint that reads "Showing unpaid only".
+
+These are built once, in the shared `CardAction` component, and used for the dashboard cards and the status cards on Subscribers.
+
+## Other habits
+
+- **Big enough to hit.** Cards and buttons are well above the 24 by 24 pixel minimum of WCAG 2.2, and most are above the recommended 44.
+- **Say what a button does.** Buttons carry a word ("Review", "Record payment"), not only an icon.
+- **Check before it cannot be undone.** Things that cannot be edited afterwards (a payment, a plan's rate) open a review window first. See [Billing and payments](billing-and-payments.md).
+- **Never rely on colour alone.** Statuses use words as well as colours, and the interface was checked for contrast in light and dark mode.
+- **Keep the same thing in the same place.** Manage Roles and the Guide are under Settings; the sidebar groups follow the usual order of work.

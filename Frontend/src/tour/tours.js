@@ -96,7 +96,7 @@ export const TOURS = {
         selector: t('dash-counts'),
         title: 'Subscriber counts',
         description:
-          'Total subscribers, pending applications, account claims, and how many are Active, Unpaid or Disconnected, as of right now. These are current numbers, so they do not follow the period filter above. Click a card to open the matching page. The Active, Unpaid and Disconnected cards open the Subscribers list already filtered to that status.',
+          'Total subscribers, pending applications, account claims, and how many are Active, Unpaid or Disconnected, as of right now. These are current numbers, so they do not follow the period filter above. Every card you can click ends with a line saying where it goes (for example "View unpaid subscribers"). The Active, Unpaid and Disconnected cards open the Subscribers list already filtered to that status.',
         side: 'bottom',
       },
       {
@@ -180,7 +180,7 @@ export const TOURS = {
       {
         selector: t('subs-summary'),
         title: 'At a glance',
-        description: 'Totals for every status: Pending, Active, Unpaid and Disconnected. Click Total, Active, Unpaid or Disconnected to filter the table to it; click again on Total to show everyone.',
+        description: 'Totals for every status: Pending, Active, Unpaid and Disconnected. Click Total, Active, Unpaid or Disconnected to filter the table to it; the card you picked gets a blue outline and a tick, and Total shows everyone again. Pending opens the Approvals page.',
         side: 'bottom',
       },
       {
