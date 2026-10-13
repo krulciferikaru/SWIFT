@@ -79,6 +79,7 @@ const COLUMN_CHOICES = [
   { key: "plan", label: "Plan" },
   { key: "email", label: "Email", private: true },
   { key: "mobile", label: "Mobile" },
+  { key: "address", label: "Address" },
   { key: "mac", label: "MAC address", private: true },
   { key: "installed", label: "Installed" },
   { key: "status", label: "Service status" },
@@ -655,7 +656,7 @@ export default function SubscribersPage() {
           {initialLoading ? (
             <TableSkeleton rows={9} columns={[
               ...(canRemind ? [{ label: "" }] : []), { label: "Name" },
-              ...(shows("plan") ? [{ label: "Plan" }] : []), ...(shows("email") ? [{ label: "Email" }] : []), ...(shows("mobile") ? [{ label: "Mobile" }] : []),
+              ...(shows("plan") ? [{ label: "Plan" }] : []), ...(shows("email") ? [{ label: "Email" }] : []), ...(shows("mobile") ? [{ label: "Mobile" }] : []), ...(shows("address") ? [{ label: "Address" }] : []),
               ...(shows("mac") ? [{ label: "MAC Address" }] : []), ...(shows("installed") ? [{ label: "Installed" }] : []),
               ...(shows("status") ? [{ label: "Service status", kind: "badge" }] : []), ...(shows("balance") ? [{ label: "Balance" }] : []),
               { label: "Actions", kind: "actions" },
@@ -693,6 +694,7 @@ export default function SubscribersPage() {
                   {shows("plan") && <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>}
                   {shows("email") && <TableHead>Email</TableHead>}
                   {shows("mobile") && <TableHead>Mobile</TableHead>}
+                  {shows("address") && <TableHead>Address</TableHead>}
                   {shows("mac") && <TableHead>MAC Address</TableHead>}
                   {shows("installed") && <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>}
                   {shows("status") && <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Service status</SortableHead>}
@@ -747,6 +749,11 @@ export default function SubscribersPage() {
                                               <div><VerifiedBadge verified={sub.contact_verified} /></div>
                                             </div>
                     </TableCell>
+                    )}
+                    {shows("address") && (
+                      <TableCell className="min-w-40 text-gray-600 dark:text-gray-400">
+                        {sub.address || "—"}
+                      </TableCell>
                     )}
                     {shows("mac") && (
                       <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
