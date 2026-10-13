@@ -180,19 +180,25 @@ class MfaForEveryoneTest extends TestCase
         $this->enrol($secretary);
         $secretary->createToken('x');
         $admin = $this->user('admin', 'boss@mfa.test');
-        $this->enrol($admin); // an administrator has to have it set up to do anything
+        [$adminSecret] = $this->enrol($admin); // an administrator has to have it set up to do anything
         Sanctum::actingAs($admin->fresh());
 
         $this->postJson("/api/users/{$secretary->id}/mfa/reset")->assertStatus(423); // password first
         $this->passwordConfirmed($admin);
-        $this->postJson("/api/users/{$secretary->id}/mfa/reset")->assertOk();
+        // The password alone is not enough: a current code from the admin's own app is needed too.
+        $this->postJson("/api/users/{$secretary->id}/mfa/reset")->assertStatus(422)->assertJsonPath('mfa_code_required', true);
+        $this->postJson("/api/users/{$secretary->id}/mfa/reset", ['code' => '000000'])->assertStatus(422);
+        $this->assertTrue($secretary->fresh()->mfa_enabled);
+        $this->postJson("/api/users/{$secretary->id}/mfa/reset", ['code' => Totp::code($adminSecret)])->assertOk();
 
         $this->assertFalse($secretary->fresh()->mfa_enabled);
         $this->assertSame(0, $secretary->tokens()->count());
         $this->assertDatabaseHas('audit_logs', ['action' => 'auth.mfa_reset']);
 
-        $this->postJson("/api/users/{$secretary->id}/mfa/reset")->assertStatus(422); // nothing left to reset
-        $this->postJson("/api/users/{$admin->id}/mfa/reset")->assertStatus(422);      // not your own
+        $this->travel(31)->seconds(); // each code works once
+        $this->postJson("/api/users/{$secretary->id}/mfa/reset", ['code' => Totp::code($adminSecret)])->assertStatus(422); // nothing left to reset
+        $this->travel(31)->seconds();
+        $this->postJson("/api/users/{$admin->id}/mfa/reset", ['code' => Totp::code($adminSecret)])->assertStatus(422);      // not your own
     }
 
     public function test_only_an_administrator_can_reset_it_for_someone_else(): void
@@ -254,11 +260,11 @@ class MfaForEveryoneTest extends TestCase
         $secretary = $this->user('secretary', 'sec@mfa.test');
         [$secret] = $this->enrol($secretary);
         $admin = $this->user('admin', 'boss@mfa.test');
-        $this->enrol($admin);
+        [$adminSecret] = $this->enrol($admin);
         Sanctum::actingAs($admin->fresh());
         $this->passwordConfirmed($admin);
 
-        $this->postJson("/api/users/{$secretary->id}/mfa/reset")->assertOk()->assertJsonPath('message', fn ($m) => str_contains($m, 'set it up again'));
+        $this->postJson("/api/users/{$secretary->id}/mfa/reset", ['code' => Totp::code($adminSecret)])->assertOk()->assertJsonPath('message', fn ($m) => str_contains($m, 'set it up again'));
         $this->assertTrue($secretary->fresh()->mfa_setup_required);
 
         // At the next sign-in they can do nothing but set it up.
@@ -280,11 +286,11 @@ class MfaForEveryoneTest extends TestCase
         $subscriber = $this->user('subscriber', 'sub@mfa.test');
         $this->enrol($subscriber);
         $admin = $this->user('admin', 'boss@mfa.test');
-        $this->enrol($admin);
+        [$adminSecret] = $this->enrol($admin);
         Sanctum::actingAs($admin->fresh());
         $this->passwordConfirmed($admin);
 
-        $this->postJson("/api/users/{$subscriber->id}/mfa/reset")->assertOk();
+        $this->postJson("/api/users/{$subscriber->id}/mfa/reset", ['code' => Totp::code($adminSecret)])->assertOk();
 
         $this->assertFalse($subscriber->fresh()->mfa_setup_required);
     }
@@ -309,5 +315,41 @@ class MfaForEveryoneTest extends TestCase
 
         // A recovery code works too (the phone may be the thing that was lost).
         $this->patchJson('/api/me/mobile-number', ['contact_number' => '09175559999', 'code' => $codes[0]])->assertOk();
+    }
+
+    public function test_changing_permissions_needs_a_fresh_password_and_a_current_code_from_the_admin(): void
+    {
+        $collector = $this->user('collector', 'col@mfa.test');
+        $admin = $this->user('admin', 'boss@mfa.test');
+        [$secret] = $this->enrol($admin);
+
+        // Just signed in: the sign-in does not count for this, the password has to be typed again.
+        $token = $this->login('boss@mfa.test')->json('mfa_token');
+        $token = $this->postJson('/api/login/mfa', ['mfa_token' => $token, 'code' => Totp::code($secret)])->assertOk()->json('token');
+        $this->travel(31)->seconds();
+        $this->withToken($token)->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => ['subscribers.view'], 'code' => Totp::code($secret)])
+            ->assertStatus(423);
+
+        $this->withToken($token)->postJson('/api/me/confirm-password', ['password' => 'pass-12345'])->assertOk();
+
+        // Password typed, but no code, or a wrong one.
+        $this->withToken($token)->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => ['subscribers.view']])->assertStatus(422)->assertJsonPath('mfa_code_required', true);
+        $this->withToken($token)->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => ['subscribers.view'], 'code' => '123456'])->assertStatus(422);
+        $this->assertNull($collector->fresh()->permissions);
+
+        $this->withToken($token)->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => ['subscribers.view'], 'code' => Totp::code($secret)])->assertOk();
+        $this->assertSame(['subscribers.view'], $collector->fresh()->permissions);
+    }
+
+    public function test_a_recovery_code_is_not_accepted_for_these_admin_actions(): void
+    {
+        $collector = $this->user('collector', 'col@mfa.test');
+        $admin = $this->user('admin', 'boss@mfa.test');
+        [, $codes] = $this->enrol($admin);
+        Sanctum::actingAs($admin->fresh());
+        $this->passwordConfirmed($admin);
+
+        $this->patchJson("/api/users/{$collector->id}/permissions", ['permissions' => [], 'code' => $codes[0]])->assertStatus(422);
+        $this->assertNull($collector->fresh()->permissions);
     }
 }

@@ -193,11 +193,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'session.slide', 'mfa.enrol
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
+        // The two most powerful admin actions: the password typed again (the sign-in does not count) and a
+        // current code from the admin's authenticator app.
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
-            ->middleware('password.confirmed');
+            ->middleware(['password.confirmed:fresh', 'throttle:confirm-password', 'mfa.code']);
         // Someone lost their phone and their recovery codes: switch their two-step sign-in off.
         Route::post('/users/{user}/mfa/reset', [MfaController::class, 'adminReset'])
-            ->middleware('password.confirmed');
+            ->middleware(['password.confirmed:fresh', 'throttle:confirm-password', 'mfa.code']);
 
         Route::get('/barangays/manage', [BarangayController::class, 'manage']);
         Route::post('/barangays', [BarangayController::class, 'store']);

@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'session.slide' => \App\Http\Middleware\SlideSession::class,
             'mfa.enrolled' => \App\Http\Middleware\EnsureMfaEnrolled::class,
             'account.active' => \App\Http\Middleware\EnsureAccountActive::class,
+            'mfa.code' => \App\Http\Middleware\RequireMfaCode::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

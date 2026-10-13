@@ -30,7 +30,7 @@ import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { useOnReconnect } from '../hooks/useOnline'
 import { UserPlus, SlidersHorizontal, ShieldCheck, ShieldOff, Info } from 'lucide-react'
-import ConfirmAction from '../components/ConfirmAction.jsx'
+import StepUpDialog from '../components/StepUpDialog.jsx'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
@@ -113,7 +113,6 @@ export default function Users() {
 
   const [permTarget, setPermTarget] = useState(null) // secretary or collector whose permissions are being edited
   const [mfaResetTarget, setMfaResetTarget] = useState(null) // someone whose two-step sign-in is being reset
-  const [mfaResetting, setMfaResetting] = useState(false)
 
   const { toast, showToast } = useToast()
 
@@ -484,9 +483,10 @@ export default function Users() {
         </form>
       </Modal>
 
-      <ConfirmAction
+      <StepUpDialog
         open={!!mfaResetTarget}
-        onOpenChange={(open) => { if (!open) setMfaResetTarget(null) }}
+        onClose={() => setMfaResetTarget(null)}
+        needCode={Boolean(currentUser?.mfa_enabled)}
         title="Reset two-step sign-in?"
         description={
           mfaResetTarget && (
@@ -497,21 +497,12 @@ export default function Users() {
           )
         }
         confirmLabel="Reset"
-        busyLabel="Resetting..."
-        destructive
-        busy={mfaResetting}
-        onConfirm={async () => {
-          setMfaResetting(true)
-          try {
-            const res = await usersApi.resetMfa(mfaResetTarget.id)
-            showToast(res.data.message)
-            setMfaResetTarget(null)
-            fetchUsers()
-          } catch (err) {
-            showToast(err.response?.data?.message || 'Could not reset it.', 'error')
-          } finally {
-            setMfaResetting(false)
-          }
+        risky
+        onConfirm={async (code) => {
+          const res = await usersApi.resetMfa(mfaResetTarget.id, code)
+          showToast(res.data.message)
+          setMfaResetTarget(null)
+          fetchUsers()
         }}
       />
 
