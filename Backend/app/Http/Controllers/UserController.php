@@ -13,6 +13,10 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $direction = $request->input('direction') === 'desc' ? 'desc' : 'asc';
+        $columns = ['name' => 'name', 'role' => 'role', 'status' => 'account_status', 'created' => 'created_at'];
+        $sort = (string) $request->input('sort');
+
         $users = User::query()
             ->when($request->filled('role'), fn ($query) => $query->where('role', $request->role))
             ->when($request->filled('account_status'), fn ($query) => $query->where('account_status', $request->account_status))
@@ -24,8 +28,13 @@ class UserController extends Controller
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->latest()
-            ->paginate($request->integer('per_page', 15));
+            // Newest first unless a column was chosen.
+            ->when(
+                isset($columns[$sort]),
+                fn ($q) => $q->orderBy($columns[$sort], $direction)->orderBy('name'),
+                fn ($q) => $q->latest(),
+            )
+            ->paginate(min(max($request->integer('per_page', 15), 1), 100));
 
         return response()->json([
             'success' => true,

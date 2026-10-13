@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { TableSkeleton } from "../components/Skeletons.jsx";
 import { Check, ClipboardCheck, RotateCcw, X } from "lucide-react";
 import EmptyState from "../components/EmptyState.jsx";
+import Pager from "../components/Pager.jsx";
 import { useOnReconnect } from "../hooks/useOnline";
 import subscriberApi from "../api/subscribers";
 import {
@@ -48,6 +49,9 @@ export default function Approvals() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  // The lists are loaded whole and shown a page at a time, so a long queue stays easy to scan.
+  const [pageNo, setPageNo] = useState(1);
+  const [perPage, setPerPage] = useState(25);
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectClaimTarget, setRejectClaimTarget] = useState(null);
@@ -259,7 +263,7 @@ export default function Approvals() {
           ? claims
           : rejectedClaims;
 
-  const list = search
+  const fullList = search
     ? baseList.filter((s) => {
         const q = search.toLowerCase();
         return (
@@ -269,6 +273,21 @@ export default function Approvals() {
         );
       })
     : baseList;
+
+  const lastPage = Math.max(Math.ceil(fullList.length / perPage), 1);
+  const currentPage = Math.min(pageNo, lastPage);
+  const pageStart = (currentPage - 1) * perPage;
+  const list = fullList.slice(pageStart, pageStart + perPage);
+  const pagerMeta = {
+    total: fullList.length,
+    from: fullList.length ? pageStart + 1 : 0,
+    to: Math.min(pageStart + perPage, fullList.length),
+    last_page: lastPage,
+  };
+  // A different tab or search starts again from the first page.
+  useEffect(() => {
+    setPageNo(1);
+  }, [tab, claimsSubTab, search]);
 
   const emptyState =
     tab === "pending"
@@ -590,6 +609,16 @@ export default function Approvals() {
           </Table>
         </div>
       )}
+
+      <Pager
+        meta={pagerMeta}
+        page={currentPage}
+        onPage={(n) => setPageNo(Math.max(n, 1))}
+        perPage={perPage}
+        onPerPage={(n) => { setPerPage(n); setPageNo(1); }}
+        noun={tab === "claims" ? "claims" : "applications"}
+        sizes={[25, 50, 100]}
+      />
 
       <AlertDialog
         open={!!rejectTarget}

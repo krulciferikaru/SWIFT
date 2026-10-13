@@ -6,6 +6,7 @@ use App\Services\Audit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscriber\StoreSubscriberRequest;
 use App\Http\Requests\Subscriber\UpdateSubscriberRequest;
+use App\Models\Plan;
 use App\Models\Subscriber;
 use App\Models\User;
 use App\Services\BillingService;
@@ -33,7 +34,9 @@ class SubscriberController extends Controller
      *   ?search=john          → search by name / email / address / MAC
      *   ?status=Active        → filter by status (Active | Unpaid | Disconnected)
      *   ?plan_id=2            → filter by plan
-     *   ?per_page=15          → results per page (default 15)
+     *   ?per_page=15          → results per page (default 15, at most 100)
+     *   ?sort=name|status|plan|installed|created&direction=asc|desc
+     *   ?with_balance=1       → also return each person's balance and months behind
      */
     public function index(Request $request): JsonResponse
     {
@@ -80,8 +83,38 @@ class SubscriberController extends Controller
         ]);
         $query->installedBetween($request->input('installed_from'), $request->input('installed_to'));
 
-        $perPage = $request->integer('per_page', 15);
-        $subscribers = $query->orderBy('name')->paginate($perPage);
+        // Sorting: only these columns, so nothing else can be asked for.
+        $direction = $request->input('direction') === 'desc' ? 'desc' : 'asc';
+        $sort = (string) $request->input('sort');
+        $sortColumns = ['name' => 'name', 'status' => 'status', 'installed' => 'connection_date', 'created' => 'created_at'];
+        if ($sort === 'plan') {
+            $query->orderBy(
+                Plan::query()->select('plan_name')->whereColumn('plan.plan_id', 'subscriber.plan_id')->limit(1),
+                $direction,
+            );
+        } elseif (isset($sortColumns[$sort])) {
+            $query->orderBy($sortColumns[$sort], $direction);
+        }
+        if ($sort !== 'name') {
+            $query->orderBy('name'); // keeps the order steady between equal values
+        }
+
+        $perPage = min(max($request->integer('per_page', 15), 1), 100);
+        $subscribers = $query->paginate($perPage);
+
+        // What each person owes, for the people on this page only.
+        if ($request->boolean('with_balance')) {
+            $subscribers->getCollection()->transform(function (Subscriber $subscriber) {
+                $owes = $subscriber->connection_date
+                    ? $this->billing->getBreakdown($subscriber)
+                    : ['balance' => 0, 'months_behind' => 0, 'advance_credit' => 0];
+                $subscriber->setAttribute('balance', $owes['balance']);
+                $subscriber->setAttribute('months_behind', $owes['months_behind']);
+                $subscriber->setAttribute('advance_credit', $owes['advance_credit']);
+
+                return $subscriber;
+            });
+        }
 
         return response()->json([
             'success' => true,

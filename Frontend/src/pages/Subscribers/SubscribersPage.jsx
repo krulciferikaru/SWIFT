@@ -30,9 +30,10 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
+import { spelledDate } from "../../utils/text";
 import { Archive, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
@@ -45,37 +46,42 @@ import { useSubscribers } from "../../hooks/useSubscribers";
 import { useToast } from "../../hooks/useToast";
 import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useQueryState } from "../../hooks/useQueryState";
+import SortableHead, { nextSort } from "../../components/SortableHead.jsx";
+import Pager from "../../components/Pager.jsx";
 import planApi from "../../api/plans";
 import TourButton from "../../components/TourButton.jsx";
 import Toast from "../../components/Toast.jsx";
 import SubscriberDetailsModal from "./SubscriberDetailsModal";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
+// What the address holds. A page with nothing chosen has a plain address.
+const VIEW_DEFAULTS = { q: "", status: "All", plan: "All", from: "", to: "", page: 1, per: 15, sort: "name", dir: "asc" };
+const peso = (value) => `₱${Number(value ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
 export default function SubscribersPage() {
   const { can } = useAuth();
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  // The status lives in the address (?status=Unpaid) so the dashboard cards can link straight
-  // to a filtered list, and Back / refresh keep the filter.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlStatus = searchParams.get("status");
-  const status = STATUSES.includes(urlStatus) ? urlStatus : "All";
-  const setStatus = (value) =>
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (value === "All") next.delete("status");
-        else next.set("status", value);
-        return next;
-      },
-      { replace: true },
-    );
-  const [planId, setPlanId] = useState("All");
-  const [installedFrom, setInstalledFrom] = useState("");
-  const [installedTo, setInstalledTo] = useState("");
+  // The search, filters, sort and page live in the address (for example ?status=Unpaid&sort=plan),
+  // so the dashboard cards can link to a filtered list, and refresh / Back keep the view.
+  const [view, setView] = useQueryState(VIEW_DEFAULTS);
+  const search = view.q;
+  const status = STATUSES.includes(view.status) ? view.status : "All";
+  const planId = view.plan;
+  const installedFrom = view.from;
+  const installedTo = view.to;
+  const page = view.page;
+  const perPage = view.per;
+  const sort = view.sort;
+  const dir = view.dir;
+  const setStatus = (value) => setView({ status: value, page: 1 });
+  const setPlanId = (value) => setView({ plan: value, page: 1 });
+  const setInstalledFrom = (value) => setView({ from: value, page: 1 });
+  const setInstalledTo = (value) => setView({ to: value, page: 1 });
+  const setPage = (value) => setView({ page: Math.max(value, 1) });
+  const changeSort = (column) => setView(nextSort({ sort, dir }, column));
+  // What is typed in the box; it reaches the address after a short pause.
+  const [searchInput, setSearchInput] = useState(view.q);
   const [plans, setPlans] = useState([]);
-  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -98,17 +104,18 @@ export default function SubscribersPage() {
   const hasExtraFilters = planId !== "All" || installedFrom || installedTo;
   const clearAllFilters = () => {
     setSearchInput("");
-    setStatus("All");
-    setPlanId("All");
-    setInstalledFrom("");
-    setInstalledTo("");
+    setView({ q: "", status: "All", plan: "All", from: "", to: "", page: 1 });
   };
 
   // Debounce the search box so we don't refetch on every keystroke.
+  const latestSearch = useRef(search);
+  latestSearch.current = search;
   useEffect(() => {
-    const timeout = setTimeout(() => setSearch(searchInput), 300);
+    const timeout = setTimeout(() => {
+      if (searchInput !== latestSearch.current) setView({ q: searchInput.trim() === "" ? "" : searchInput, page: 1 });
+    }, 300);
     return () => clearTimeout(timeout);
-  }, [searchInput]);
+  }, [searchInput, setView]);
 
   const {
     subscribers,
@@ -118,7 +125,7 @@ export default function SubscribersPage() {
     error,
     refetch,
     refetchSummary,
-  } = useSubscribers({ search, status, page, planId, installedFrom: activeFrom, installedTo: activeTo });
+  } = useSubscribers({ search, status, page, perPage, sort, direction: dir, planId, installedFrom: activeFrom, installedTo: activeTo });
 
   const { toast, showToast } = useToast();
 
@@ -142,11 +149,6 @@ export default function SubscribersPage() {
   useEffect(() => {
     if (!loading) setInitialLoading(false);
   }, [loading]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [search, status, planId, activeFrom, activeTo]);
 
   // -----------------------------------------------------------------------
   // CRUD handlers
@@ -473,7 +475,7 @@ export default function SubscribersPage() {
           {initialLoading ? (
             <TableSkeleton rows={9} columns={[
               { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Contact" },
-              { label: "MAC Address" }, { label: "Status", kind: "badge" }, { label: "Actions", kind: "actions" },
+              { label: "MAC Address" }, { label: "Installed" }, { label: "Status", kind: "badge" }, { label: "Balance" }, { label: "Actions", kind: "actions" },
             ]} />
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
@@ -499,12 +501,14 @@ export default function SubscribersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Plan</TableHead>
+                  <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
+                  <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>MAC Address</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>
+                  <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Status</SortableHead>
+                  <TableHead>Balance</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -539,8 +543,27 @@ export default function SubscribersPage() {
                     <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
                       {sub.mac_address || "—"}
                     </TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                      {sub.connection_date ? spelledDate(String(sub.connection_date).slice(0, 10)) : "—"}
+                    </TableCell>
                     <TableCell>
                       <StatusBadge status={sub.status} />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {sub.balance > 0 ? (
+                        <span className="font-semibold text-red-700 dark:text-red-400">
+                          {peso(sub.balance)}
+                          <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">
+                            {sub.months_behind} {sub.months_behind === 1 ? "month" : "months"} behind
+                          </span>
+                        </span>
+                      ) : sub.advance_credit > 0 ? (
+                        <span className="text-green-700 dark:text-green-400">
+                          {peso(sub.advance_credit)} credit
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 dark:text-gray-400">Paid up</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div data-tour="subs-actions" className="flex flex-wrap gap-2">
@@ -593,35 +616,14 @@ export default function SubscribersPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {meta && meta.last_page > 1 && (
-          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-            <span>
-              Showing {meta.from}–{meta.to} of {meta.total} subscribers
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="px-3 py-1">
-                Page {page} of {meta.last_page}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))}
-                disabled={page === meta.last_page}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pager
+          meta={meta}
+          page={page}
+          onPage={setPage}
+          perPage={perPage}
+          onPerPage={(n) => setView({ per: n, page: 1 })}
+          noun="subscribers"
+        />
       </div>
 
       <Modal

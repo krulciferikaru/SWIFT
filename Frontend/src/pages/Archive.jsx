@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Archive as ArchiveIcon, RotateCcw, Trash2 } from 'lucide-react'
 import EmptyState from '../components/EmptyState.jsx'
+import { useQueryState } from '../hooks/useQueryState'
+import SortableHead, { nextSort } from '../components/SortableHead.jsx'
+import Pager from '../components/Pager.jsx'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -27,11 +30,21 @@ import { ArchiveSample } from "../components/TourSamples.jsx";
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
 
+// What the address holds. Most recently archived first until a column is chosen.
+const VIEW_DEFAULTS = { t: 'subscribers', q: '', page: 1, per: 15, sort: 'archived', dir: 'desc' }
+const ARCHIVE_SORT_DEFAULT = { sort: 'archived', dir: 'desc' }
+
 export default function ArchivePage() {
   const tourActive = useTourActive()
-  const [tab, setTab] = useState('subscribers')
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
+  const [view, setView] = useQueryState(VIEW_DEFAULTS)
+  const tab = view.t === 'plans' ? 'plans' : 'subscribers'
+  const search = view.q
+  const page = view.page
+  const perPage = view.per
+  const sort = view.sort
+  const dir = view.dir
+  const setPage = (value) => setView({ page: Math.max(value, 1) })
+  const changeSort = (column) => setView(nextSort({ sort, dir }, column, ARCHIVE_SORT_DEFAULT))
   const [items, setItems] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -47,7 +60,7 @@ export default function ArchivePage() {
     setError('')
     try {
       if (isSubscribers) {
-        const res = await archiveApi.getSubscribers({ page, per_page: 15, search: search || undefined })
+        const res = await archiveApi.getSubscribers({ page, per_page: perPage, search: search || undefined, sort, direction: dir })
         setItems(res.data.data.data)
         setMeta(res.data.data)
       } else {
@@ -60,7 +73,7 @@ export default function ArchivePage() {
     } finally {
       setLoading(false)
     }
-  }, [isSubscribers, page, search])
+  }, [isSubscribers, page, perPage, search, sort, dir])
 
   useEffect(() => {
     fetchItems()
@@ -71,10 +84,8 @@ export default function ArchivePage() {
   const switchTab = (next) => {
     // Clicking the tab you are already on would clear the list without reloading it.
     if (next === tab) return
-    setTab(next)
-    setPage(1)
-    setSearch('')
     setItems([])
+    setView({ t: next, q: '', page: 1, sort: 'archived', dir: 'desc' })
   }
 
   const idOf = (item) => (isSubscribers ? item.subscriber_id : item.plan_id)
@@ -142,8 +153,7 @@ export default function ArchivePage() {
           data-tour="archive-search"
           value={search}
           onChange={(e) => {
-            setSearch(e.target.value)
-            setPage(1)
+            setView({ q: e.target.value, page: 1 })
           }}
           placeholder="Search by name, contact number, address, MAC…"
           aria-label="Search archived subscribers"
@@ -170,7 +180,7 @@ export default function ArchivePage() {
               description={search
                 ? 'Check the spelling, or clear the search to see everything that was archived.'
                 : `Anything you archive is kept here, not deleted. You can restore ${isSubscribers ? 'a subscriber' : 'a plan'} or delete it for good.`}
-              onClearFilters={search ? () => { setSearch(''); setPage(1) } : undefined}
+              onClearFilters={search ? () => setView({ q: '', page: 1 }) : undefined}
             />
             {tourActive && (
               <div className="px-6 pb-6">
@@ -184,7 +194,7 @@ export default function ArchivePage() {
               <TableRow>
                 {isSubscribers ? (
                   <>
-                    <TableHead>Name</TableHead>
+                    <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
                     <TableHead>Plan</TableHead>
                     <TableHead>Contact Number</TableHead>
                     <TableHead>Address</TableHead>
@@ -197,7 +207,11 @@ export default function ArchivePage() {
                     <TableHead>Description</TableHead>
                   </>
                 )}
-                <TableHead>Archived On</TableHead>
+                {isSubscribers ? (
+                  <SortableHead column="archived" sort={sort} dir={dir} onSort={changeSort}>Archived On</SortableHead>
+                ) : (
+                  <TableHead>Archived On</TableHead>
+                )}
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -242,29 +256,14 @@ export default function ArchivePage() {
         )}
       </div>
 
-      {meta && meta.last_page > 1 && (
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>
-            Showing {meta.from}–{meta.to} of {meta.total}
-          </span>
-          <div className="flex gap-2 items-center">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1}>
-              Previous
-            </Button>
-            <span className="px-3">
-              Page {page} of {meta.last_page}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))}
-              disabled={page === meta.last_page}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pager
+        meta={meta}
+        page={page}
+        onPage={setPage}
+        perPage={perPage}
+        onPerPage={(n) => setView({ per: n, page: 1 })}
+        noun="archived subscribers"
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
         <AlertDialogContent>
