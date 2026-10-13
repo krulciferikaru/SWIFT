@@ -36,7 +36,7 @@ Everything on this page was added in response to the evaluators' feedback or the
 | **Plan changes never re-price billed months** | Each month is billed at the plan and price that applied in that month. Changing a subscriber's plan, or a plan's price, takes effect from next month by default (the company can set it to this month); months already billed keep their price. Staff can choose the month a plan change starts from, back to the first month billed only to correct a mistake. See [Billing and payments](billing-and-payments.md). |
 | **Review before saving** | Recording a payment first shows a window that repeats what was typed, with the amount in large type, and warns when the amount is far above what the subscriber owes (for example an extra zero). Changing a plan's monthly rate asks for the same kind of confirmation, showing the old and new rate. |
 | **Payment history and receipts** | A full history with a year filter and total paid. Each payment has a **Receipt** button: a printable page titled "Payment Receipt" (company, amount, OR number, who it is for, plan, date, method, notes, who received it). It is not a BIR-registered official receipt. Staff see the same history on the Payments page. |
-| **Contact the company** | A card with the mobile, telephone, email, office address, office hours and how to pay, with tap-to-call and email links. The sign-in and register pages show it too. It appears once an admin has filled it in. |
+| **Contact the company** | A card with the mobile number, email, office address, office hours and how to pay, with tap-to-call and email links. The sign-in and register pages show it too. It appears once an admin has filled it in. |
 
 ## For staff and admins
 
