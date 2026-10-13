@@ -24,7 +24,7 @@ export function receiptRows({ payment, subscriber }) {
   const rows = [
     ['Received from', subscriber?.name],
     ['Address', subscriber?.address],
-    ['Contact number', subscriber?.contact_number],
+    ['Mobile number', subscriber?.contact_number],
     ['Service plan', subscriber?.plan_name],
     ['Payment date', receiptDate(payment.payment_date)],
     ['Payment method', payment.payment_method],

@@ -60,11 +60,11 @@ const SECTIONS = [
         <p>This is the master list of everyone signed up for service. At the top you'll see totals for Total, Pending, Active, Unpaid, and Disconnected.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Name</strong> — click a subscriber's name to open all of their details in one window, including their balance, months behind and advance credit. It has the same Edit, Archive and Payments buttons as the row.</li>
-          <li><strong>Search box</strong> — type a name, contact number, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
-          <li><strong>Status dropdown</strong> — narrow the list to only Active, Unpaid, or Disconnected subscribers.</li>
+          <li><strong>Search box</strong> — type a name, mobile number, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
+          <li><strong>Service status</strong> — the dropdown, or the cards at the top, narrow the list to only Active, Unpaid, or Disconnected subscribers. (This is the service status; it follows payments. It is not the same as an account being approved or deactivated, which is the <em>Account status</em> in Manage Roles.)</li>
           <li><strong>Add Subscriber</strong> — opens a form to manually register a new subscriber (name, plan, contact info, etc.).</li>
-          <li><strong>Edit</strong> (per row) — update a subscriber's details, like their assigned plan or contact number.</li>
-          <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. Nothing is lost; you can restore them anytime.</li>
+          <li><strong>Edit</strong> (per row) — update a subscriber's details, like their assigned plan or mobile number.</li>
+          <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. It happens straight away, and the message at the top has an <em>Undo</em> button for a few seconds. Nothing is lost; you can also restore them anytime from the Archive page.</li>
           <li><strong>Payments</strong> (per row) — jumps straight to that subscriber's billing page (see the Payments section below).</li>
           <li><strong>Export CSV</strong> — downloads the current filtered list as a spreadsheet file.</li>
         </ul>
@@ -84,7 +84,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Pending tab</strong> — new applications. Click <em>Approve</em> to activate them, or <em>Reject</em> if the application looks wrong or fraudulent.</li>
           <li><strong>Rejected tab</strong> — applications you previously rejected. You can re-approve from here if it turns out to be a mistake.</li>
-          <li><strong>Account Claims tab</strong> — this is different from a new sign-up. It happens when someone registers using a contact number that matches an <em>existing</em> subscriber already on file (for example, an old subscriber who never had a login before). Always double-check the name, address, and contact number shown against what you have on file before approving a claim — approving it links that login to the existing subscriber's record and billing history.</li>
+          <li><strong>Account Claims tab</strong> — this is different from a new sign-up. It happens when someone registers using a mobile number that matches an <em>existing</em> subscriber already on file (for example, an old subscriber who never had a login before). Always double-check the name, address, and mobile number shown against what you have on file before approving a claim — approving it links that login to the existing subscriber's record and billing history.</li>
         </ul>
       </>
     ),
@@ -103,7 +103,8 @@ const SECTIONS = [
           <li><strong>Name</strong> — click a plan's name to see its full details, with Edit and Archive buttons.</li>
           <li><strong>Add Plan</strong> — create a new plan with a name, monthly rate, speed, and description.</li>
           <li><strong>Edit</strong> — change a plan's price or details. This affects future billing, not past payments.</li>
-          <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. Restore it from the Archive page.</li>
+          <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. It happens straight away, with an <em>Undo</em> button in the message; you can also restore it from the Archive page.</li>
+          <li><strong>Availability</strong> — <em>Offered</em> plans can be given to subscribers. Set a plan to <em>Not offered</em> to stop giving it out without archiving it.</li>
         </ul>
       </>
     ),
@@ -119,7 +120,7 @@ const SECTIONS = [
       <>
         <p>This is where you'll spend the most time day-to-day.</p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>Search for the subscriber by name, contact number, or MAC address.</li>
+          <li>Search for the subscriber by name, mobile number, or MAC address.</li>
           <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Payment History</strong>. Each payment has a <em>Receipt</em> button: it opens a receipt you can print for the subscriber.</li>
           <li>Fill in the <strong>Record Payment</strong> form: amount, OR (official receipt) number, date, and payment method (Cash, GCash, or Others). As you type an amount, it shows you a live preview of which month(s) that payment will cover.</li>
           <li>Click <strong>Record Payment</strong>. A window shows the subscriber, the amount in large type, the date, the OR number and the method. Check them, then press <em>Record payment</em> to save, or <em>Go back and edit</em> to fix a mistake. A payment can't be edited or deleted once it is saved, so this is the moment to catch a wrong digit. If the amount is far above what the subscriber owes, the window warns you.</li>

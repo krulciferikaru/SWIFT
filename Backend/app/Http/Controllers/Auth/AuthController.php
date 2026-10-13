@@ -43,7 +43,7 @@ class AuthController extends Controller
             ? Subscriber::where('contact_number', $requestData['contact_number'])->first()
             : null;
 
-        // Claiming an existing subscriber record: the contact number (and any
+        // Claiming an existing subscriber record: the mobile number (and any
         // email on file) already exists in the subscriber table, so only check
         // the users table.
         $contactRule = $existingSubscriber
@@ -88,7 +88,7 @@ class AuthController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Registration submitted. Since this contact number matches an existing subscriber record, our staff will verify your identity before approving your account.',
+                'message' => 'Registration submitted. Since this mobile number matches an existing subscriber record, our staff will verify your identity before approving your account.',
                 'claim' => true,
                 'user' => $user,
             ], 201);
@@ -123,7 +123,7 @@ class AuthController extends Controller
             }
         }
 
-        // "login" is the contact number (subscribers) or email (staff accounts).
+        // "login" is the mobile number (subscribers) or email (staff accounts).
         // "email" is still accepted so older clients keep working.
         $identifier = trim((string) ($requestData['login'] ?? $requestData['email'] ?? ''));
 
@@ -149,7 +149,7 @@ class AuthController extends Controller
         $user = User::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
         $subscriber = Subscriber::where('contact_number', $identifier)->orWhere('email', $identifier)->first();
 
-        // Staff can add or change a subscriber's email/contact number after the
+        // Staff can add or change a subscriber's email/mobile number after the
         // login was created, so the users row may be out of date. Fall back to
         // the login linked to the matching subscriber record.
         if (! $user && $subscriber) {

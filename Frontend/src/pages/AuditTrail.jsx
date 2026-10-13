@@ -73,7 +73,7 @@ const FIELD_LABELS = {
   plan_name: 'Plan name',
   monthly_rate: 'Monthly rate',
   speed_mbps: 'Speed (Mbps)',
-  contact_number: 'Contact number',
+  contact_number: 'Mobile number',
   mac_address: 'MAC address',
   connection_date: 'Installation date',
   account_status: 'Account status',

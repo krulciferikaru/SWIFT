@@ -87,7 +87,7 @@ export default function SubscriberForm({
   const [touched, setTouched] = useState({});
   const localErrors = {
     name: required("Name")(form.name),
-    contact_number: required("Contact number")(form.contact_number),
+    contact_number: required("Mobile number")(form.contact_number),
     email: emailAddress(form.email),
     mac_address:
       form.mac_address && form.mac_address.length !== 17
@@ -158,7 +158,7 @@ export default function SubscriberForm({
       {/* Section: Plan & Status */}
       <div className="space-y-4">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          Service Plan & Status
+          Service Plan and Service Status
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div data-tour="sub-plan" className="space-y-1.5">
@@ -194,9 +194,9 @@ export default function SubscriberForm({
           </div>
 
           <div data-tour="sub-status" className="space-y-1.5">
-            <Label>Status</Label>
+            <Label>Service status</Label>
             <Select value={form.status} onValueChange={setValue("status")}>
-              <SelectTrigger className="w-full" aria-label="Status">
+              <SelectTrigger className="w-full" aria-label="Service status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -241,7 +241,7 @@ export default function SubscriberForm({
             </div>
           )}
           {field(
-            "Contact Number",
+            "Mobile Number",
             "contact_number",
             "text",
             { placeholder: "09XX-XXX-XXXX" },

@@ -100,7 +100,7 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
               Contact and connection
             </h3>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailField label="Contact number">
+              <DetailField label="Mobile number">
                 {(s.contact || s.contact_number) && (
                   <span className="inline-flex flex-wrap items-center gap-x-2">
                     {s.contact || s.contact_number}

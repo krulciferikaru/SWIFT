@@ -186,7 +186,7 @@ export const TOURS = {
       {
         selector: t('subs-search'),
         title: 'Search',
-        description: 'Type a name, contact number, address or MAC address. The list filters as you type.',
+        description: 'Type a name, mobile number, address or MAC address. The list filters as you type.',
         side: 'bottom',
       },
       {
@@ -223,7 +223,7 @@ export const TOURS = {
         selector: t('subs-table'),
         title: 'Subscriber list',
         description:
-          'One row per subscriber. A green Verified tag beside a contact number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
+          'One row per subscriber. A green Verified tag beside a mobile number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
         side: 'top',
       },
       {
@@ -251,13 +251,13 @@ export const TOURS = {
         selector: t('approvals-tabs'),
         title: 'Three lists',
         description:
-          'Pending is new sign-ups, Rejected holds ones you turned down, and Account Claims is someone registering with the contact number of an existing subscriber. This tour visits each one.',
+          'Pending is new sign-ups, Rejected holds ones you turned down, and Account Claims is someone registering with the mobile number of an existing subscriber. This tour visits each one.',
         side: 'bottom',
       },
       {
         selector: t('approvals-search'),
         title: 'Search',
-        description: 'Filter any of these lists by name, contact number or email.',
+        description: 'Filter any of these lists by name, mobile number or email.',
         side: 'bottom',
       },
       {
@@ -281,7 +281,7 @@ export const TOURS = {
         selector: t('approvals-claims-subtabs'),
         title: 'Account Claims',
         description:
-          'This list has two sub-tabs: Pending Claims and Rejected Claims. A claim happens when someone registers with the contact number of a subscriber who is already on file.',
+          'This list has two sub-tabs: Pending Claims and Rejected Claims. A claim happens when someone registers with the mobile number of a subscriber who is already on file.',
         side: 'bottom',
       },
       {
@@ -289,7 +289,7 @@ export const TOURS = {
         selector: t('approvals-row-actions'),
         title: 'Pending Claims',
         description:
-          'Compare the requested name with the "Existing Subscriber on File" column (name, address, contact number) before you approve. Approving links this login to that subscriber\'s billing history. Reject if the details do not match.',
+          'Compare the requested name with the "Existing Subscriber on File" column (name, address, mobile number) before you approve. Approving links this login to that subscriber\'s billing history. Reject if the details do not match.',
         side: 'left',
       },
       {
@@ -316,7 +316,7 @@ export const TOURS = {
         selector: t('plans-table'),
         title: 'Your plans',
         description:
-          'Name, monthly rate, speed and whether the plan is Active. Every subscriber is assigned one of these.',
+          'Name, monthly rate, speed and whether the plan is currently offered. Every subscriber is assigned one of these.',
         side: 'top',
       },
       {
@@ -342,7 +342,7 @@ export const TOURS = {
       {
         selector: t('payments-search'),
         title: 'Find the subscriber',
-        description: 'Search by name, contact number or MAC address, then click the subscriber in the results.',
+        description: 'Search by name, mobile number or MAC address, then click the subscriber in the results.',
         side: 'bottom',
       },
       {
@@ -540,9 +540,9 @@ TOURS.subscriberForm = {
     },
     {
       selector: d('sub-status'),
-      title: 'Status',
+      title: 'Service status',
       description:
-        'Leave this on Active for a new subscriber. SWIFT keeps it up to date from payments: Active, Unpaid or Disconnected.',
+        'Leave this on Active for a new subscriber. SWIFT keeps it up to date from payments: Active, Unpaid or Disconnected. (This is the service status. It is not the same as an account being approved or deactivated.)',
       side: 'bottom',
     },
     {
@@ -554,7 +554,7 @@ TOURS.subscriberForm = {
     },
     {
       selector: dlg('#contact_number'),
-      title: 'Contact Number',
+      title: 'Mobile Number',
       description:
         'Required. Used for SMS reminders, and it is how a subscriber can later claim their own login: if someone registers with this number, it appears under Account Claims for you to verify. Use the format 09XX-XXX-XXXX.',
       side: 'bottom',
@@ -624,8 +624,8 @@ TOURS.planForm = {
     },
     {
       selector: d('plan-status'),
-      title: 'Status',
-      description: 'Active plans can be given to subscribers. Mark a plan Inactive to stop offering it without deleting it.',
+      title: 'Availability',
+      description: 'A plan that is Offered can be given to subscribers. Mark it Not offered to stop offering it without deleting it.',
       side: 'top',
     },
     {
@@ -695,7 +695,7 @@ TOURS.archive = {
       click: t('archive-tab-subscribers'),
       selector: t('archive-search'),
       title: 'Search archived subscribers',
-      description: 'Find one by name, contact number, address or MAC address.',
+      description: 'Find one by name, mobile number, address or MAC address.',
       side: 'bottom',
     },
     {

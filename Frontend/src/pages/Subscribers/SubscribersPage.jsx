@@ -46,6 +46,7 @@ import { useSubscribers } from "../../hooks/useSubscribers";
 import { useToast } from "../../hooks/useToast";
 import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
+import archiveApi from "../../api/archive";
 import { useNavigate } from "react-router-dom";
 import { useQueryState } from "../../hooks/useQueryState";
 import SortableHead, { nextSort } from "../../components/SortableHead.jsx";
@@ -131,10 +132,8 @@ export default function SubscribersPage() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailsTarget, setDetailsTarget] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [showPreview, setShowPreview] = useState(false);
   const [previewHeaders, setPreviewHeaders] = useState([]);
@@ -180,25 +179,32 @@ export default function SubscribersPage() {
     }
   };
 
-  const handleDelete = async () => {
-    setDeleteLoading(true);
+  // Archiving can be undone, so it happens straight away and the message offers an Undo button.
+  // (A confirmation window for something reversible only teaches people to click through windows.)
+  const undoArchive = async (sub) => {
     try {
-      const response = await subscriberApi.delete(deleteTarget.subscriber_id);
-
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error("Archive request was not successful.");
-      }
-
-      setDeleteTarget(null);
-      showToast("Subscriber archived.", "success");
+      await archiveApi.restoreSubscriber(sub.subscriber_id);
+      showToast(`${sub.name} was restored.`);
       await refetch();
       await refetchSummary();
     } catch (err) {
-      const msg = err.response?.data?.message ?? "Archive failed.";
-      showToast(msg, "error");
-      return;
-    } finally {
-      setDeleteLoading(false);
+      showToast(errorMessage(err, "Could not undo. You can restore them from the Archive page."), "error");
+    }
+  };
+
+  const archiveSubscriber = async (sub) => {
+    try {
+      const response = await subscriberApi.delete(sub.subscriber_id);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error("Archive request was not successful.");
+      }
+      showToast(`${sub.name} was archived. They can no longer sign in.`, "success", {
+        action: { label: "Undo", onClick: () => undoArchive(sub) },
+      });
+      await refetch();
+      await refetchSummary();
+    } catch (err) {
+      showToast(err.response?.data?.message ?? errorMessage(err, "Archive failed."), "error");
     }
   };
 
@@ -380,14 +386,14 @@ export default function SubscribersPage() {
               data-tour="subs-search"
               aria-label="Search subscribers"
               type="text"
-              placeholder="Search by name, contact number, address, MAC…"
+              placeholder="Search by name, mobile number, address, MAC…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1"
             />
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger data-tour="subs-status" aria-label="Filter by status" className="w-full sm:w-40">
+              <SelectTrigger data-tour="subs-status" aria-label="Filter by service status" className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -474,8 +480,8 @@ export default function SubscribersPage() {
         >
           {initialLoading ? (
             <TableSkeleton rows={9} columns={[
-              { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Contact" },
-              { label: "MAC Address" }, { label: "Installed" }, { label: "Status", kind: "badge" }, { label: "Balance" }, { label: "Actions", kind: "actions" },
+              { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Mobile" },
+              { label: "MAC Address" }, { label: "Installed" }, { label: "Service status", kind: "badge" }, { label: "Balance" }, { label: "Actions", kind: "actions" },
             ]} />
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
@@ -504,10 +510,10 @@ export default function SubscribersPage() {
                   <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
                   <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Contact</TableHead>
+                  <TableHead>Mobile</TableHead>
                   <TableHead>MAC Address</TableHead>
                   <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>
-                  <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Status</SortableHead>
+                  <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Service status</SortableHead>
                   <TableHead>Balance</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -583,7 +589,7 @@ export default function SubscribersPage() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => setDeleteTarget(sub)}
+                          onClick={() => archiveSubscriber(sub)}
                           aria-label={`Archive ${sub.name}`}
                           className="gap-1.5"
                         >
@@ -707,7 +713,7 @@ export default function SubscribersPage() {
         }}
         onArchive={(s) => {
           setDetailsTarget(null);
-          setDeleteTarget(s);
+          archiveSubscriber(s);
         }}
         onPayments={(s) => navigate("/payments", { state: { subscriber: s } })}
       />
@@ -759,33 +765,6 @@ export default function SubscribersPage() {
         )}
       </Modal>
 
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive Subscriber</AlertDialogTitle>
-            <AlertDialogDescription>
-              Archive "{deleteTarget?.name}"? They will be removed from the
-              subscriber list and can no longer log in, but you can restore
-              them anytime from the Archive page.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteLoading}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteLoading ? "Archiving..." : "Archive Subscriber"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

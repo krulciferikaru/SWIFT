@@ -56,7 +56,7 @@ export default function PlanDetailsModal({ plan: current, canArchive, onClose, o
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
             }
           >
-            {plan.status}
+            {plan.status === 'Active' ? 'Offered' : 'Not offered'}
           </Badge>
 
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">

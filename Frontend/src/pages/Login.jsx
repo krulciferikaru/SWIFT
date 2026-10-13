@@ -131,7 +131,7 @@ export default function Login() {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="login">Contact number or email</Label>
+          <Label htmlFor="login">Mobile number or email</Label>
           <Input
             id="login"
             type="text"

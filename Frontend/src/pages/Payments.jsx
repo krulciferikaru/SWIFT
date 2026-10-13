@@ -317,7 +317,7 @@ export default function Payments() {
                 <Input
                   data-tour="payments-search"
                   aria-label="Search subscribers"
-                  placeholder="Search by name, contact number, or MAC address…"
+                  placeholder="Search by name, mobile number, or MAC address…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -335,7 +335,7 @@ export default function Payments() {
                     <EmptyState
                       compact
                       title={`No subscriber matches "${search}"`}
-                      description="Check the spelling, or search by contact number or address."
+                      description="Check the spelling, or search by mobile number or address."
                     />
                   ) : (
                     results.map((s) => (

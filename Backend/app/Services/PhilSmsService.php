@@ -44,14 +44,14 @@ class PhilSmsService
     }
 
     /**
-     * Send a notification to a subscriber's contact number, if they have one.
+     * Send a notification to a subscriber's mobile number, if they have one.
      * Silently no-ops (rather than failing the caller's request) when there's
      * no number on file — subscriber notifications are best-effort.
      */
     public function sendToSubscriber(Subscriber $subscriber, string $message): array
     {
         if (!$subscriber->contact_number) {
-            return ['success' => false, 'message' => 'Subscriber has no contact number on file.'];
+            return ['success' => false, 'message' => 'Subscriber has no mobile number on file.'];
         }
 
         return $this->send(self::normalizeNumber($subscriber->contact_number), $message);

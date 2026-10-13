@@ -6,11 +6,11 @@ Boxes marked **company process** are done by people, not by the system. Wording 
 
 ## 1. Registration and activation
 
-A person registers with a name, contact number, address (chosen from the barangay list) and password (email is optional). What happens next depends on whether the contact number is already on file.
+A person registers with a name, mobile number, address (chosen from the barangay list) and password (email is optional). What happens next depends on whether the mobile number is already on file.
 
 ```mermaid
 flowchart TD
-  A["Person registers<br/>name, contact number, barangay, password"] --> B{"Is the contact number<br/>already a subscriber on file?"}
+  A["Person registers<br/>name, mobile number, barangay, password"] --> B{"Is the mobile number<br/>already a subscriber on file?"}
 
   B -- "No" --> C["New subscriber record<br/>status: Pending"]
   C --> D["Staff review it in<br/>Pending Approvals"]
@@ -21,7 +21,7 @@ flowchart TD
   B -- "Yes" --> G{"Does that subscriber<br/>already have a login?"}
   G -- "Yes" --> H["Registration refused:<br/>contact the company"]
   G -- "No" --> I["Pending login linked to the<br/>existing subscriber<br/>(an Account Claim)"]
-  I --> J["Staff compare the name, address and<br/>contact number with their records"]
+  I --> J["Staff compare the name, address and<br/>mobile number with their records"]
   J -- "Approve" --> K["Login Active and linked to the<br/>subscriber's billing history"]
   J -- "Reject" --> L["Login Inactive, kept under<br/>Rejected Claims"]
 ```
