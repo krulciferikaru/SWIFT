@@ -5,14 +5,16 @@ namespace App\Http\Controllers;
 use App\Services\Audit;
 use App\Models\Subscriber;
 use App\Models\User;
+use App\Services\BillingService;
 use App\Services\PhilSmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class SubscriberApprovalController extends Controller
 {
-    public function __construct(private PhilSmsService $sms) {}
+    public function __construct(private PhilSmsService $sms, private BillingService $billing) {}
 
     public function pending(Request $request)
     {
@@ -30,8 +32,46 @@ class SubscriberApprovalController extends Controller
         return response()->json($query->get());
     }
 
-    public function approve(Subscriber $subscriber)
+    /**
+     * PATCH /api/subscribers/{subscriber}/approve  { plan_id, connection_date }
+     *
+     * A person who signs up themselves has no plan and no installation date, and billing needs
+     * both, so whoever approves them sets both here. (If they already have them, as a subscriber
+     * added by staff would, they are not asked again, though they can be changed.)
+     */
+    public function approve(Request $request, Subscriber $subscriber)
     {
+        $validated = $request->validate([
+            'plan_id' => [
+                Rule::requiredIf(! $subscriber->plan_id),
+                'nullable',
+                'integer',
+                // Only a plan that is currently offered can be given to someone new.
+                Rule::exists('plan', 'plan_id')->whereNull('deleted_at')->where('status', 'Active'),
+            ],
+            'connection_date' => [
+                Rule::requiredIf(! $subscriber->connection_date),
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:2000-01-01',
+                'before_or_equal:'.now()->addDays(60)->toDateString(),
+            ],
+        ], [
+            'plan_id.required' => 'Choose the service plan this subscriber will be on.',
+            'plan_id.exists' => 'Choose one of the plans that are currently offered.',
+            'connection_date.required' => 'Enter the installation date.',
+            'connection_date.before_or_equal' => 'The installation date cannot be more than 60 days away.',
+        ]);
+
+        // Set the plan and the date first, and work the status out from them while the person is
+        // still an applicant, so the history starts with the right status.
+        $subscriber->fill(array_filter([
+            'plan_id' => $validated['plan_id'] ?? null,
+            'connection_date' => $validated['connection_date'] ?? null,
+        ]))->save();
+        $this->billing->recalculateStatus($subscriber->fresh());
+        $subscriber = $subscriber->fresh();
+
         $user = User::updateOrCreate(
             ['subscriber_id' => $subscriber->subscriber_id],
             [
@@ -51,7 +91,10 @@ class SubscriberApprovalController extends Controller
 
         $subscriber->update(['account_status' => 'active']);
 
-        Audit::log('approval.approved', $subscriber);
+        Audit::log('approval.approved', $subscriber, null, [
+            'plan_id' => $subscriber->plan_id,
+            'connection_date' => $subscriber->connection_date?->toDateString(),
+        ]);
 
         $this->sms->sendToSubscriber($subscriber, sprintf(
             'Hi %s, your subscriber application has been approved. You may now log in. Welcome aboard! - Jubal Brothers Cable TV Corp - Palayan Branch',

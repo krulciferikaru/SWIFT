@@ -45,7 +45,8 @@ class TermsAcceptanceTest extends TestCase
         $this->assertSame('v-test', $subscriber->terms_version);
 
         $staff = User::create(['name' => 'S', 'email' => 's@terms.test', 'password' => 'abcd1234', 'role' => 'secretary', 'account_status' => 'active']);
-        $this->actingAs($staff)->patchJson("/api/subscribers/{$subscriber->subscriber_id}/approve")->assertOk();
+        $plan = \App\Models\Plan::create(['plan_name' => 'Basic', 'monthly_rate' => 500, 'speed_mbps' => 10, 'status' => 'Active']);
+        $this->actingAs($staff)->patchJson("/api/subscribers/{$subscriber->subscriber_id}/approve", ['plan_id' => $plan->plan_id, 'connection_date' => '2026-05-01'])->assertOk();
 
         $login = User::where('subscriber_id', $subscriber->subscriber_id)->firstOrFail();
         $this->assertSame('v-test', $login->terms_version);

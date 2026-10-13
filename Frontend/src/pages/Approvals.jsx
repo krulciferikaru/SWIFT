@@ -5,6 +5,7 @@ import { TableSkeleton } from "../components/Skeletons.jsx";
 import { Check, ClipboardCheck, RotateCcw, X } from "lucide-react";
 import EmptyState from "../components/EmptyState.jsx";
 import Pager from "../components/Pager.jsx";
+import ApproveDialog from "../components/ApproveDialog.jsx";
 import { useOnReconnect } from "../hooks/useOnline";
 import subscriberApi from "../api/subscribers";
 import {
@@ -53,6 +54,8 @@ export default function Approvals() {
   const [pageNo, setPageNo] = useState(1);
   const [perPage, setPerPage] = useState(25);
   const [actionLoading, setActionLoading] = useState(null);
+  // The applicant being approved: a plan and an installation date are chosen first.
+  const [approveTarget, setApproveTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectClaimTarget, setRejectClaimTarget] = useState(null);
   const { refreshPendingCount, refreshClaimsCount } = useApprovals();
@@ -142,29 +145,16 @@ export default function Approvals() {
     else fetchRejectedClaims();
   });
 
-  const handleApprove = async (subscriber) => {
-    setActionLoading(subscriber.subscriber_id);
-    try {
-      await api.patch(`/subscribers/${subscriber.subscriber_id}/approve`);
-      if (tab === "pending") {
-        setPending((prev) =>
-          prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id),
-        );
-      } else {
-        setRejected((prev) =>
-          prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id),
-        );
-      }
-      showToast(`${subscriber.name} approved.`);
-      refreshPendingCount();
-    } catch (err) {
-      showToast(
-        err.response?.data?.message || "Failed to approve subscriber.",
-        "error",
-      );
-    } finally {
-      setActionLoading(null);
+  // The dialog has already approved them on the server; this updates the lists.
+  const handleApproved = (subscriber) => {
+    setApproveTarget(null);
+    if (tab === "pending") {
+      setPending((prev) => prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id));
+    } else {
+      setRejected((prev) => prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id));
     }
+    showToast(`${subscriber.name} approved.`);
+    refreshPendingCount();
   };
 
   const confirmReject = async () => {
@@ -580,7 +570,7 @@ export default function Approvals() {
                     <div data-tour="approvals-row-actions" className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleApprove(subscriber)}
+                        onClick={() => setApproveTarget(subscriber)}
                         aria-label={`${tab === "pending" ? "Approve" : "Re-approve"} ${subscriber.name}`}
                         disabled={actionLoading === subscriber.subscriber_id}
                         className="gap-1.5 bg-green-700 text-white hover:bg-green-800"
@@ -609,6 +599,8 @@ export default function Approvals() {
           </Table>
         </div>
       )}
+
+      <ApproveDialog subscriber={approveTarget} onClose={() => setApproveTarget(null)} onApproved={handleApproved} />
 
       <Pager
         meta={pagerMeta}

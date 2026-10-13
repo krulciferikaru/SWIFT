@@ -83,7 +83,7 @@ const SECTIONS = [
       <>
         <p>When someone registers themselves through the subscriber sign-up page, their application lands here first — they can't log in until you approve them. A red number badge on the sidebar tells you how many are waiting.</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Pending tab</strong> — new applications. Click <em>Approve</em> to activate them, or <em>Reject</em> if the application looks wrong or fraudulent.</li>
+          <li><strong>Pending tab</strong> — new applications. Click <em>Approve</em>, choose their <strong>service plan</strong> and the <strong>installation date</strong> in the window that opens (billing needs both; the first bill is for the month after the installation date), then confirm. Or click <em>Reject</em> if the application looks wrong or fraudulent.</li>
           <li><strong>Rejected tab</strong> — applications you previously rejected. You can re-approve from here if it turns out to be a mistake.</li>
           <li><strong>Account Claims tab</strong> — this is different from a new sign-up. It happens when someone registers using a mobile number that matches an <em>existing</em> subscriber already on file (for example, an old subscriber who never had a login before). Always double-check the name, address, and mobile number shown against what you have on file before approving a claim — approving it links that login to the existing subscriber's record and billing history.</li>
         </ul>
