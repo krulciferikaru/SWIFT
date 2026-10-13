@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
 import SecurityCard from '../components/SecurityCard.jsx'
+import SessionsCard from '../components/SessionsCard.jsx'
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx'
 import StaffMobileNumber from '../components/StaffMobileNumber.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
@@ -272,6 +273,8 @@ export default function Settings() {
       )}
 
       <SecurityCard />
+
+      <SessionsCard showToast={showToast} />
 
       {user?.role === 'subscriber' && <DeleteAccountCard />}
         </div>

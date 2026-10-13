@@ -220,6 +220,7 @@ const SECTIONS = [
         <p>These preferences are saved on the device and browser you are using.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Guide</strong>{role === 'admin' && <> and <strong>Manage Roles</strong></>} — the links at the top open {role === 'admin' ? 'them' : 'it'}. Use <em>Back to Settings</em> to return.</li>
+          <li><strong>Signed-in devices</strong> — <em>Sign out of all other devices</em> ends every other sign-in of your account and keeps this one. Use it after losing a phone or computer, or if someone may have your password.</li>
           <li><strong>Two-step sign-in</strong> — {role === 'admin' ? 'required for administrators.' : 'optional: you can turn it on for extra protection, and off again.'} Once it is on, this card shows how many recovery codes you have left. <em>Get new recovery codes</em> replaces them, <em>Set up on a new phone</em> moves it to a new phone{role === 'admin' ? '' : ', and Turn off switches it off'}. Each of these asks for a current code from your app (and turning it on asks for your password again). Keep the codes somewhere safe: they are how you get back in if you lose your phone.</li>
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>

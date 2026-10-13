@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'password.confirmed' => \App\Http\Middleware\CheckPasswordConfirmed::class,
             'session.slide' => \App\Http\Middleware\SlideSession::class,
             'mfa.enrolled' => \App\Http\Middleware\EnsureMfaEnrolled::class,
+            'account.active' => \App\Http\Middleware\EnsureAccountActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

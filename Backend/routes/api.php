@@ -47,9 +47,13 @@ Route::get('/barangays', [BarangayController::class, 'index'])->middleware('thro
  * Staff routes are guarded by permission (config/permissions.php), not by role name, so an
  * admin can switch individual abilities on or off for each secretary. Admins hold them all.
  */
-Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.active', 'session.slide', 'mfa.enrolled'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Sign out of every other place (lost device, password seen, account taken over).
+    Route::post('/me/sessions/end-others', [\App\Http\Controllers\Auth\SessionController::class, 'endOthers'])
+        ->middleware('throttle:confirm-password');
 
     // Type your password again before a sensitive action (valid for 10 minutes).
     Route::post('/me/confirm-password', [PasswordConfirmationController::class, 'store'])

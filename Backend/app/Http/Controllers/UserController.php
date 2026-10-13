@@ -89,6 +89,11 @@ class UserController extends Controller
         $previous = $user->account_status;
         $user->update($validated);
 
+        // Anything but Active ends the person's open sign-ins at once, not when they next expire.
+        if ($user->account_status !== 'active') {
+            $user->tokens()->delete();
+        }
+
         Audit::log('user.status_changed', $user, null, [
             'account_status' => ['old' => $previous, 'new' => $user->account_status],
         ]);
