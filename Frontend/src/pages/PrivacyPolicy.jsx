@@ -67,6 +67,7 @@ export default function PrivacyPolicy() {
       <Section id="share" title="4. Who can see it">
         <ul>
           <li><strong>Our staff:</strong> administrators and secretaries can see subscriber records. What each secretary may do is set by an administrator, and every important action is recorded in the audit trail.</li>
+          <li><strong>Our field collectors:</strong> the staff who visit households to collect payments can see only what they need for that: your name, address, mobile number, plan, service status, balance and payment history, and they can record a payment. They do not see your email address or the MAC address of your equipment. An administrator sets exactly what each field collector may do, and their actions are recorded in the audit trail too.</li>
           <li><strong>You:</strong> you can see your own account, balance and payment history.</li>
           <li><strong>Service providers that run the system for us:</strong> <strong>PhilSMS</strong> (it receives your mobile number and the text of each message in order to deliver it), and our hosting providers <strong>Vercel</strong> (the website) and <strong>Railway</strong> (the server and database). They handle information only to provide their service to us. <Todo>confirm whether any other provider or any data stored outside the Philippines needs to be listed</Todo></li>
           <li><strong>Authorities:</strong> only when the law requires it.</li>
@@ -126,7 +127,7 @@ export default function PrivacyPolicy() {
       <Section id="security" title="9. How we protect it">
         <ul>
           <li>Passwords are scrambled before they are stored. Nobody, including our administrators, can see or reset your password; you reset it yourself with a code sent to your verified mobile number.</li>
-          <li>Staff only see what their role allows, and sensitive actions ask them to type their own password again.</li>
+          <li>Staff only see what their role allows (a field collector, for example, never sees email addresses or equipment MAC addresses), and sensitive actions ask them to type their own password again.</li>
           <li>Signing in is limited after several wrong passwords, and sign-ins end after a period of inactivity.</li>
           <li>Connections to the system are encrypted, and an audit trail records who did what.</li>
         </ul>
