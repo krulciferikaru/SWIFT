@@ -180,10 +180,7 @@ const SECTIONS = [
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
           <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
-          <li className="flex items-start gap-1.5">
-            <KeyRound className="size-4 mt-0.5 shrink-0" />
-            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them. Resetting a password, changing permissions, and deleting from the Archive each ask you to type your own password first, as a safety step; it then stays confirmed for 10 minutes.</span>
-          </li>
+          <li><strong>Passwords</strong> — nobody here can see or reset another person's password. Everyone recovers their own with <em>Forgot password?</em> on the sign-in page: a 6-digit code is texted to their <strong>verified</strong> mobile number. Staff add and verify theirs in Settings (or when the account is created), so it is worth doing straight away.</li>
         </ul>
       </>
     ),
@@ -399,7 +396,7 @@ export default function Guide() {
             onKeyDown={(e) => {
               if (e.key === 'Escape') setQuery('')
             }}
-            placeholder="Search the guide, e.g. reset password, export, reconnect"
+            placeholder="Search the guide, e.g. forgot password, export, reconnect"
             aria-label="Search the guide"
             className="pl-9 pr-9"
           />

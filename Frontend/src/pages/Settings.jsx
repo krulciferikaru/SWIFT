@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
+import StaffMobileNumber from '../components/StaffMobileNumber.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
 import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
 import PaymentMethodsManager from '../components/PaymentMethodsManager.jsx'
@@ -223,13 +224,18 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {user?.contact_number && (
+      {(user?.contact_number || user?.role !== 'subscriber') && (
         <Card data-tour="settings-phone">
           <CardHeader>
             <CardTitle className="text-base">Mobile number</CardTitle>
-            <CardDescription>Verifying your number confirms that reminders and notices reach you.</CardDescription>
+            <CardDescription>
+              {user?.role === 'subscriber'
+                ? 'Verifying your number confirms that reminders and notices reach you, and lets you reset your own password.'
+                : 'Add your mobile number and verify it with a texted code. It is how you get back in if you forget your password.'}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {user?.role !== 'subscriber' && <StaffMobileNumber />}
             <PhoneVerification />
           </CardContent>
         </Card>

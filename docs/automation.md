@@ -36,6 +36,7 @@ All SMS go through PhilSMS. If no token is configured (as on evaluation), nothin
 | Staff send reminders | Reminder with the outstanding balance, to **every Unpaid subscriber** who owes something | Settings, Payment Reminders |
 | Staff send reminders to picked people | The same reminder, only to the subscribers ticked on the Subscribers page (anyone who owes nothing is skipped) | Subscribers, tick people, Send payment reminder |
 | Staff send a one-off message | Any text (up to 300 characters) to any Philippine mobile number | Settings, Send SMS |
+| Someone asks for a password reset code | A 6-digit code that works for 10 minutes, only to a verified number; later a "password was changed" notice | Sign-in page, Forgot password? |
 | Someone asks to verify their mobile number | A 6-digit code that works for 10 minutes. It is the only message that goes to a number that has not been verified yet | My Account or Settings, Verify |
 
 Notes:
