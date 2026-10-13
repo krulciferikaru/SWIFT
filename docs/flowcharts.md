@@ -14,7 +14,8 @@ flowchart TD
 
   B -- "No" --> C["New subscriber record<br/>status: Pending"]
   C --> D["Staff review it in<br/>Pending Approvals"]
-  D -- "Approve" --> E["Login created and Active<br/>SMS: application approved"]
+  D -- "Approve" --> D2["Staff choose the service plan<br/>and the installation date"]
+  D2 --> E["Status worked out from them.<br/>Login created and Active<br/>SMS: application approved"]
   D -- "Reject" --> F["Marked Rejected<br/>SMS: not approved"]
   F -. "can be re-approved<br/>from the Rejected tab" .-> D
 

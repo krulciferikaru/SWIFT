@@ -272,7 +272,7 @@ export const TOURS = {
         selector: t('approvals-row-actions'),
         title: 'Pending: approve or reject',
         description:
-          'Approve activates the subscriber so they can log in. Reject asks you to confirm first, and you can undo it later from the Rejected tab. If nothing is waiting, the dashed sample row shows what a real one looks like.',
+          'Approve opens a window where you choose the service plan and the installation date (billing needs both), then activates the subscriber so they can log in. Reject asks you to confirm first, and you can undo it later from the Rejected tab. If nothing is waiting, the dashed sample row shows what a real one looks like.',
         side: 'left',
       },
       {

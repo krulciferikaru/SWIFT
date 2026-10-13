@@ -110,7 +110,8 @@ class DemoSeederSafetyTest extends TestCase
             'status' => 'Unpaid',
         ]);
 
-        $this->patchJson("/api/subscribers/{$subscriber->subscriber_id}/approve")->assertOk();
+        $plan = \App\Models\Plan::create(['plan_name' => 'Basic', 'monthly_rate' => 500, 'speed_mbps' => 10, 'status' => 'Active']);
+        $this->patchJson("/api/subscribers/{$subscriber->subscriber_id}/approve", ['plan_id' => $plan->plan_id, 'connection_date' => '2026-05-01'])->assertOk();
 
         $user = User::where('subscriber_id', $subscriber->subscriber_id)->firstOrFail();
         $this->assertFalse(Hash::check('password', $user->password));
