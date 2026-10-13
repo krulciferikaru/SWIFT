@@ -31,7 +31,7 @@ class BillingService
         $rate = (float) ($subscriber->plan->monthly_rate ?? 0);
 
         // The installation month is not billed (the installation fee is separate);
-        // the subscription starts the month after the connection date.
+        // the subscription starts the month after the installation date.
         $start = Carbon::parse($subscriber->connection_date)->startOfMonth()->addMonth();
         $cutoff = $asOf ? Carbon::parse($asOf) : Carbon::now();
         $now = $cutoff->copy()->startOfMonth();

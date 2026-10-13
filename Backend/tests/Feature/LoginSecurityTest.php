@@ -106,14 +106,18 @@ class LoginSecurityTest extends TestCase
         $this->attempt('ghost@lock.test', 'nope')->assertStatus(429);
     }
 
-    public function test_a_normal_sign_in_expires_after_a_working_day(): void
+    public function test_a_normal_sign_in_expires_after_an_hour(): void
     {
         $this->makeUser();
         $token = $this->attempt('who@lock.test', 'correct-horse-battery')->assertOk()->json('token');
 
         $this->withToken($token)->getJson('/api/me')->assertOk();
 
-        $this->travel(13)->hours();
+        $this->travel(50)->minutes();
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->getJson('/api/me')->assertOk();
+
+        $this->travel(15)->minutes();
         $this->app['auth']->forgetGuards();
         $this->withToken($token)->getJson('/api/me')->assertUnauthorized();
     }
@@ -124,7 +128,7 @@ class LoginSecurityTest extends TestCase
         $res = $this->attempt('who@lock.test', 'correct-horse-battery', true)->assertOk();
         $token = $res->json('token');
 
-        $this->travel(29)->days();
+        $this->travel(6)->days();
         $this->app['auth']->forgetGuards();
         $this->withToken($token)->getJson('/api/me')->assertOk();
 

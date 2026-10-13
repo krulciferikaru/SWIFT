@@ -113,7 +113,7 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
               <DetailField label="MAC address">
                 {s.mac_address && <span className="font-mono text-xs">{s.mac_address}</span>}
               </DetailField>
-              <DetailField label="Connection date">{longDate(s.connection_date ?? s.installation_date)}</DetailField>
+              <DetailField label="Installation date">{longDate(s.connection_date ?? s.installation_date)}</DetailField>
               <DetailField label="Registered">{longDate(s.created_at)}</DetailField>
             </dl>
           </section>

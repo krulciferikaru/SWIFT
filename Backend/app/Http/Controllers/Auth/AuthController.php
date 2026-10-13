@@ -197,7 +197,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your account is not available. Contact a secretary or an administrator.'], 403);
         }
 
-        // "Keep me signed in" lasts longer; otherwise the sign-in ends after a working day.
+        // "Keep me signed in" lasts longer; otherwise the sign-in ends after an hour.
         $remember = filter_var($requestData['remember'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $expiresAt = $remember
             ? now()->addDays(config('sanctum.remember_token_days'))

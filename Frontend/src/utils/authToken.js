@@ -1,7 +1,7 @@
 // Where the sign-in token is kept.
 //  - "Keep me signed in" ticked: localStorage, so it survives closing the browser.
 //  - Not ticked: sessionStorage, so it is gone when the browser or tab is closed.
-// The server also expires every token (a working day, or 30 days when kept), so a token
+// The server also expires every token (1 hour, or 7 days when kept), so a token
 // left behind on a shared computer does not stay valid forever.
 
 const KEY = 'token'

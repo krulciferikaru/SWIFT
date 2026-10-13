@@ -8,7 +8,7 @@ Everything on this page was added in response to the evaluators' feedback or the
 |---|---|
 | **Sign-in page** | A split layout: a plain blue panel with the system's full name (Subscriber and Web-based Information and Financial Tracking System), the branch and the company's contact details, and a roomy form. On a phone the panel becomes a short header. "Can't sign in?" opens a short help list. The register page uses the same layout. |
 | **Wrong passwords** | A wrong password shows a message without reloading the page. After **5 wrong passwords inside 15 minutes** for one account, sign-in for it pauses and the page counts down. From 2 attempts left it warns. See [Offline behaviour and errors](offline-and-errors.md). |
-| **Keep me signed in** | Ticking it keeps the sign-in for **30 days** on that device; otherwise the sign-in ends when the browser closes or after **12 hours**. Expired sign-ins are cleaned out daily. |
+| **Keep me signed in** | Ticking it keeps the sign-in for **7 days** on that device; otherwise the sign-in ends when the browser closes or after **1 hour**. Expired sign-ins are cleaned out daily. |
 | **Show / Hide password** | A visible button with the word, on sign-in, register and the confirmation window. |
 | **Confirm your password** | Changing permissions, resetting a password, and deleting from the Archive for good ask an admin (or secretary) to retype their own password. It stays confirmed for **10 minutes**. |
 | **Mobile number verification** | After registering, a person confirms their number with a 6-digit text code (10 minutes, 5 tries, one code a minute). Changing the number clears it. Staff see a green **Verified** tag. SMS is disabled on the evaluation site, so codes only arrive on production. |

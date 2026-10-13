@@ -4,7 +4,7 @@
 
 Every figure on the Payments page, the subscriber's own dashboard, the reports and the SMS messages comes from one calculation (`BillingService`).
 
-1. **Billing starts the month after the connection date.** The month the subscriber was connected (the installation month) is not billed, because the installation fee is separate. A subscriber connected on 12 March is first billed for April.
+1. **Billing starts the month after the installation date.** The month the subscriber was connected (the installation month) is not billed, because the installation fee is separate. A subscriber connected on 12 March is first billed for April.
 2. **Each billing month costs the monthly rate of the plan** the subscriber is on.
 3. **All payments are added together and applied to the oldest month first.** A month can be paid in full, partly paid, or unpaid. Any partial amount carries over to the next payment.
 4. **Balance** = (number of billed months x monthly rate) minus everything paid. It never shows below zero.

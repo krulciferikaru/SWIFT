@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import usersApi from '../api/users'
 import { capitalizeWords } from '../utils/text'
 import { TableSkeleton } from '../components/Skeletons.jsx'
@@ -60,6 +60,11 @@ export default function Users() {
   const [users, setUsers] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Only the very first load swaps the page for skeletons. Later fetches (typing in
+  // the search box, changing the role filter) keep the controls mounted; otherwise
+  // the search box is replaced on every keystroke and loses focus.
+  const [initialLoad, setInitialLoad] = useState(true)
+  const requestId = useRef(0)
   const [error, setError] = useState('')
 
   const [search, setSearch] = useState('')
@@ -83,6 +88,7 @@ export default function Users() {
   const { toast, showToast } = useToast()
 
   const fetchUsers = useCallback(async () => {
+    const thisRequest = ++requestId.current
     setLoading(true)
     setError('')
     try {
@@ -91,13 +97,18 @@ export default function Users() {
       if (roleFilter !== 'All') params.role = roleFilter
 
       const res = await usersApi.getAll(params)
+      if (thisRequest !== requestId.current) return // a newer search replaced this one
       const responseData = res.data.data
       setUsers(responseData.data ?? [])
       setMeta(responseData)
     } catch (err) {
+      if (thisRequest !== requestId.current) return
       setError(err.response?.data?.message || 'Failed to load users.')
     } finally {
-      setLoading(false)
+      if (thisRequest === requestId.current) {
+        setLoading(false)
+        setInitialLoad(false)
+      }
     }
   }, [search, roleFilter, page])
 
@@ -199,7 +210,7 @@ export default function Users() {
       <Toast toast={toast} />
 
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-        {loading ? (
+        {initialLoad ? (
           <div className="space-y-2">
             <h1 className="sr-only">Manage Roles</h1>
             <Skeleton className="h-8 w-40" />
@@ -222,7 +233,7 @@ export default function Users() {
         </div>
       </div>
 
-      {loading ? (
+      {initialLoad ? (
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <Skeleton className="h-9 flex-1" />
           <Skeleton className="h-9 w-full sm:w-40" />
@@ -254,8 +265,12 @@ export default function Users() {
         <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div data-tour="users-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {loading ? (
+      <div
+        data-tour="users-table"
+        aria-busy={loading}
+        className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-opacity ${loading && !initialLoad ? 'opacity-60' : ''}`}
+      >
+        {initialLoad ? (
           <TableSkeleton rows={6} columns={[
             { label: 'Name' }, { label: 'Email' }, { label: 'Role', kind: 'badge' },
             { label: 'Account Status' }, { label: 'Actions', kind: 'actions' },
