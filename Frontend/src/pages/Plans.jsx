@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
+import ReviewDialog from '../components/ReviewDialog.jsx'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -102,8 +103,24 @@ export default function Plans() {
     setForm({ ...form, [field]: value })
   }
 
-  const handleSubmit = async (e) => {
+  // Changing a plan's monthly rate changes what its subscribers are billed, so it is reviewed first.
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const editingPlan = editingId ? plans.find((p) => p.plan_id === editingId) : null
+  const rateChanged =
+    !!editingPlan && Number(editingPlan.monthly_rate) !== Number(form.monthly_rate)
+  const peso = (value) =>
+    `₱${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+
+  const handleSubmit = (e) => {
     e.preventDefault()
+    if (rateChanged) {
+      setReviewOpen(true)
+      return
+    }
+    savePlan()
+  }
+
+  const savePlan = async () => {
     setSaving(true)
     setFormErrors({})
 
@@ -125,6 +142,7 @@ export default function Plans() {
       }
     } finally {
       setSaving(false)
+      setReviewOpen(false)
     }
   }
 
@@ -378,6 +396,22 @@ export default function Plans() {
           </div>
         </form>
       </Modal>
+
+      <ReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        title="Change this plan's monthly rate?"
+        description="The new rate is what subscribers on this plan are billed from now on."
+        rows={[
+          { label: 'Plan', value: form.plan_name },
+          { label: 'Current rate', value: editingPlan ? peso(editingPlan.monthly_rate) : '' },
+          { label: 'New rate', value: peso(form.monthly_rate), emphasis: true },
+        ]}
+        confirmLabel="Change rate"
+        busyLabel="Saving..."
+        busy={saving}
+        onConfirm={savePlan}
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
         <AlertDialogContent>

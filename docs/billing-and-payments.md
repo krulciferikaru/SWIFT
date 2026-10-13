@@ -33,7 +33,7 @@ A subscriber's monthly due day is the **day of the month they were connected**. 
 
 ## Recording a payment
 
-Only admins and secretaries record payments (Payments page, search the subscriber, then Record Payment). A payment needs:
+Only admins and secretaries record payments (Payments page, search the subscriber, then Record Payment). Before anything is saved, a **review window** repeats the subscriber, the amount (in large type), the date, the OR number, the method and any notes, and warns when the amount is more than two months above what the subscriber owes. The payment is saved only after the person confirms; they can go back and edit instead. A payment needs:
 
 | Field | Rule |
 |---|---|
