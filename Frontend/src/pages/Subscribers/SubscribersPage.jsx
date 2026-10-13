@@ -178,6 +178,9 @@ export default function SubscribersPage() {
   const [detailsTarget, setDetailsTarget] = useState(null);
   // The subscriber about to be archived: staff confirm first.
   const [archiveTarget, setArchiveTarget] = useState(null);
+  // Whether the Add / Edit form has unsaved changes: closing it only asks when it does.
+  const [addDirty, setAddDirty] = useState(false);
+  const [editDirty, setEditDirty] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
@@ -811,7 +814,7 @@ export default function SubscribersPage() {
         title="Add Subscriber"
         description="Fill in the subscriber's details below."
         size="lg"
-        confirmClose
+        confirmClose={addDirty}
         footer={(requestClose) => (
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={requestClose}>
@@ -829,6 +832,7 @@ export default function SubscribersPage() {
       >
         <SubscriberForm
           formId="add-subscriber-form"
+          onDirtyChange={setAddDirty}
           onSubmit={handleAdd}
           onCancel={() => setShowAdd(false)}
           loading={formLoading}
@@ -855,7 +859,7 @@ export default function SubscribersPage() {
         title="Edit Subscriber"
         description="Update the subscriber's details below."
         size="lg"
-        confirmClose
+        confirmClose={editDirty}
         footer={(requestClose) => (
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={requestClose}>
@@ -874,6 +878,7 @@ export default function SubscribersPage() {
         {editTarget && (
           <SubscriberForm
             formId="edit-subscriber-form"
+            onDirtyChange={setEditDirty}
             initial={{
               plan_id: editTarget.plan_id ?? "",
               name: editTarget.name ?? "",

@@ -48,6 +48,8 @@ export default function Plans() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
+  // What the form held when it was opened, to tell whether anything was changed.
+  const [formBaseline, setFormBaseline] = useState(emptyForm)
   // The plan about to be archived: staff confirm first.
   const [archiveTarget, setArchiveTarget] = useState(null)
   const [archiving, setArchiving] = useState(false)
@@ -84,6 +86,7 @@ export default function Plans() {
   const openAddModal = () => {
     setEditingId(null)
     setForm(emptyForm)
+    setFormBaseline(emptyForm)
     setTouched({})
     setFormErrors({})
     setShowModal(true)
@@ -91,13 +94,15 @@ export default function Plans() {
 
   const openEditModal = (plan) => {
     setEditingId(plan.plan_id)
-    setForm({
+    const opened = {
       plan_name: plan.plan_name,
       monthly_rate: plan.monthly_rate,
       description: plan.description || '',
       speed_mbps: plan.speed_mbps || '',
       status: plan.status,
-    })
+    }
+    setForm(opened)
+    setFormBaseline(opened)
     setFormErrors({})
     setTouched({})
     setShowModal(true)
@@ -347,7 +352,7 @@ export default function Plans() {
         title={editingId ? 'Edit Plan' : 'Add Plan'}
         description={editingId ? "Update this plan's details." : 'Set up a new service plan.'}
         size="md"
-        confirmClose
+        confirmClose={JSON.stringify(form) !== JSON.stringify(formBaseline)}
         footer={(requestClose) => (
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={requestClose}>

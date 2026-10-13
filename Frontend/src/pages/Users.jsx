@@ -402,7 +402,7 @@ export default function Users() {
         title="Add Staff Account"
         description="Creates a dedicated Secretary account. The role cannot be changed after creation."
         size="md"
-        confirmClose
+        confirmClose={JSON.stringify(staffForm) !== JSON.stringify(EMPTY_STAFF_FORM)}
         footer={(requestClose) => (
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={requestClose}>

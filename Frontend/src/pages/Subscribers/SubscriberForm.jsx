@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import planApi from "../../api/plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,8 +43,17 @@ export default function SubscriberForm({
   onCancel,
   loading,
   formId = "subscriber-form",
+  // Called with true when something has been typed or changed, false when it matches how the form opened.
+  onDirtyChange,
 }) {
   const [form, setForm] = useState(initial ?? EMPTY_FORM);
+  const openedAs = useRef(initial ?? EMPTY_FORM);
+  const dirty = JSON.stringify(form) !== JSON.stringify(openedAs.current);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty]);
   const [plans, setPlans] = useState([]);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
