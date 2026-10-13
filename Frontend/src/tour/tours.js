@@ -344,7 +344,7 @@ export const TOURS = {
         selector: t('payments-form'),
         title: 'Record a payment',
         description:
-          'Enter the amount, OR number, date and method. A live preview shows which months the payment covers. Click Record Payment to save.',
+          'Enter the amount, OR number, date and method. A live preview shows which months the payment covers. Click Record Payment and a window repeats what you typed, with the amount in large type. Check it, then confirm; payments cannot be changed afterwards.',
         side: 'left',
       },
       {

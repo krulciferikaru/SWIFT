@@ -121,7 +121,7 @@ const SECTIONS = [
           <li>Search for the subscriber by name, contact number, or MAC address.</li>
           <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Payment History</strong>. Each payment has a <em>Receipt</em> button: it opens a receipt you can print for the subscriber.</li>
           <li>Fill in the <strong>Record Payment</strong> form: amount, OR (official receipt) number, date, and payment method (Cash, GCash, or Others). As you type an amount, it shows you a live preview of which month(s) that payment will cover.</li>
-          <li>Click <strong>Record Payment</strong> to save it.</li>
+          <li>Click <strong>Record Payment</strong>. A window shows the subscriber, the amount in large type, the date, the OR number and the method. Check them, then press <em>Record payment</em> to save, or <em>Go back and edit</em> to fix a mistake. A payment can't be edited or deleted once it is saved, so this is the moment to catch a wrong digit. If the amount is far above what the subscriber owes, the window warns you.</li>
         </ol>
         <p>If a subscriber was disconnected for non-payment and has now fully paid off their balance, a <strong>Reconnect Subscriber</strong> button appears — use it only after you've physically reconnected their service, not before.</p>
       </>

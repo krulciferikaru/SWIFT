@@ -36,6 +36,7 @@ import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
 import { PaymentSample } from "../components/TourSamples.jsx";
 import Toast from "../components/Toast.jsx";
+import ReviewDialog from "../components/ReviewDialog.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -53,6 +54,9 @@ const EMPTY_FORM = {
   payment_method: "Cash",
   notes: "",
 };
+
+const peso = (value) =>
+  `₱${Number(value ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
 const currentMonthLabel = () =>
   new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -186,9 +190,26 @@ export default function Payments() {
     [billing, form.amount],
   );
 
-  const handleSubmit = async (e) => {
+  // Pressing Record Payment opens a review first; the payment is only saved on Confirm.
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const handleSubmit = (e) => {
     e.preventDefault();
     setErrors({});
+    setReviewOpen(true);
+  };
+
+  const reviewWarning = (() => {
+    const amount = Number(form.amount);
+    const balance = Number(billing?.balance ?? 0);
+    const rate = Number(billing?.monthly_rate ?? 0);
+    // More than two months beyond what is owed is more likely a typing slip than an advance payment.
+    if (amount > 0 && rate > 0 && amount - balance > rate * 2) {
+      return `This is ${peso(amount - balance)} more than the amount owed (${peso(balance)}) and would be kept as advance credit. Check for an extra digit before confirming.`;
+    }
+    return "";
+  })();
+
+  const recordPayment = async () => {
     setSaving(true);
     try {
       const res = await paymentsApi.create(selected.subscriber_id, form);
@@ -210,6 +231,7 @@ export default function Payments() {
       }
     } finally {
       setSaving(false);
+      setReviewOpen(false);
     }
   };
 
@@ -578,6 +600,31 @@ export default function Payments() {
           )}
         </>
       )}
+
+      <ReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        title="Check this payment before recording it"
+        description="Payments cannot be edited or deleted afterwards, so make sure everything below is right."
+        rows={[
+          { label: "Subscriber", value: selected?.name },
+          { label: "Amount", value: peso(form.amount), emphasis: true },
+          {
+            label: "Payment date",
+            value: form.payment_date
+              ? new Date(`${form.payment_date}T00:00:00`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+              : "",
+          },
+          { label: "OR number", value: form.or_number },
+          { label: "Method", value: form.payment_method },
+          ...(form.notes ? [{ label: "Notes", value: form.notes }] : []),
+        ]}
+        warning={reviewWarning}
+        confirmLabel="Record payment"
+        busyLabel="Recording..."
+        busy={saving}
+        onConfirm={recordPayment}
+      />
 
       <AlertDialog
         open={showReconnectConfirm}
