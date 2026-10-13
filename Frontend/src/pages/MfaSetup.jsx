@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import QRCode from 'qrcode'
-import { ShieldCheck } from 'lucide-react'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
@@ -70,10 +69,7 @@ export default function MfaSetup() {
   return (
     <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-10 dark:bg-gray-900">
       <div className="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950 sm:p-8">
-        <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <ShieldCheck className="size-6" aria-hidden="true" />
-        </span>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Set up two-step sign-in</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Set up two-step sign-in</h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Administrators can see and change everything in SWIFT, so signing in needs a second proof as well as the password: a 6-digit code from an app on your
           phone. It takes about two minutes, and you only do it once.
@@ -110,7 +106,7 @@ export default function MfaSetup() {
               <p className="font-semibold text-gray-900 dark:text-gray-100">3. Type the code the app shows</p>
               <form onSubmit={confirm} noValidate className="mt-3 space-y-3">
                 <FormField id="mfa-setup-code" label="6-digit code" error={error}>
-                  <CodeInput value={code} onChange={(v) => { setCode(v); setError('') }} disabled={!setup} className="max-w-sm" />
+                  <CodeInput value={code} onChange={(v) => { setCode(v); setError('') }} disabled={!setup} />
                 </FormField>
                 <Button type="submit" disabled={busy || !setup || code.trim().length < 6}>{busy ? 'Checking...' : 'Turn on two-step sign-in'}</Button>
               </form>

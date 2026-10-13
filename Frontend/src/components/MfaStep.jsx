@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
 import api from '../api/axios'
 import { errorMessage } from '../utils/errors'
 import FormField from './FormField.jsx'
@@ -66,10 +65,7 @@ export default function MfaStep({ challenge, onDone, onBack }) {
 
   return (
     <div>
-      <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <ShieldCheck className="size-6" aria-hidden="true" />
-      </span>
-      <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Two-step sign-in</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Two-step sign-in</h1>
       <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
         {recovery
           ? 'Type one of your recovery codes. Each one works only once.'

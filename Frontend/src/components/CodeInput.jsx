@@ -86,7 +86,7 @@ export default function CodeInput({
   }
 
   return (
-    <div role="group" aria-label={`${length}-digit code`} aria-describedby={describedBy} className={`flex gap-2 ${className}`}>
+    <div role="group" aria-label={`${length}-digit code`} aria-describedby={describedBy} className={`flex justify-center gap-2 ${className}`}>
       {digits.map((digit, i) => (
         <input
           key={i}
