@@ -53,6 +53,36 @@ class Subscriber extends Model
         ];
     }
 
+    /**
+     * Keeps the service-status history. A line is added when a subscriber becomes a subscriber
+     * (added by staff, or approved) and every time the status really changes after that.
+     * Applicants waiting for approval have no history yet: their status means nothing until then.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (Subscriber $subscriber) {
+            if ($subscriber->account_status === 'active') {
+                \App\Services\StatusHistoryService::record($subscriber, null, 'created');
+            }
+        });
+
+        static::updated(function (Subscriber $subscriber) {
+            if ($subscriber->account_status !== 'active') {
+                return;
+            }
+
+            if ($subscriber->wasChanged('account_status') && $subscriber->getOriginal('account_status') !== 'active') {
+                \App\Services\StatusHistoryService::record($subscriber, null, 'approved');
+            } elseif ($subscriber->wasChanged('status')) {
+                \App\Services\StatusHistoryService::record(
+                    $subscriber,
+                    $subscriber->getOriginal('status'),
+                    \App\Services\StatusHistoryService::currentSource(),
+                );
+            }
+        });
+    }
+
     // -----------------------------------------------------------------------
     // Relationships
     // -----------------------------------------------------------------------

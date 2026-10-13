@@ -23,6 +23,16 @@ Every figure on the Payments page, the subscriber's own dashboard, the reports a
 - **A Disconnected subscriber is never reconnected automatically**, even after paying. Staff do it by hand with **Reconnect Subscriber** on the Payments page, which appears once the balance is paid, and only after the service has really been reconnected.
 - Staff can also set a status by hand on the Subscribers page. That sends the subscriber an SMS.
 
+### Status history
+
+Every time a subscriber's service status changes, a line is kept: what it became, what it was, **when**, and whether **staff** set it, the system worked it out **automatically** from the payments, or it came from approving or adding the subscriber. Lines are only ever added, never changed.
+
+- **Staff** see it in the subscriber's details window (*Service history*), with who made each change.
+- **The subscriber** sees their own on their page (*Service History*), without staff names, because they have a right to it.
+- The history shows the **installation date** and how long the current status has lasted.
+- **It starts on the day it was introduced.** For people who were already subscribers, the first line says "this is where the history begins"; earlier changes were not recorded and cannot be recovered.
+- An applicant waiting for approval has no history yet; their first line is added when they are approved.
+
 ### What the subscriber sees
 
 The top of the subscriber's account page says it in plain words: **active** (nothing owed, any advance credit, next bill date), **payment needed** (how much is owed, the number of unpaid months, and that 3 unpaid months means disconnection) or **disconnected** (pay the balance, then contact the company to be reconnected). The same page shows the amount owed, the monthly bill, the month-by-month breakdown, the payment history and the company's contact details and how to pay.

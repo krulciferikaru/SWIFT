@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import PhoneVerification from "../components/PhoneVerification.jsx";
 import PaymentHistory from "../components/PaymentHistory.jsx";
 import DashboardActivity from "../components/DashboardActivity.jsx";
+import StatusTimeline from "../components/StatusTimeline.jsx";
 import AccountStatusBanner from "../components/AccountStatusBanner.jsx";
 import { CardListSkeleton, LoadingStatus, StatCardsSkeleton } from "../components/Skeletons.jsx";
 import CompanyContact from "../components/CompanyContact.jsx";
@@ -290,6 +291,15 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <PaymentHistory payments={myPayments} subscriber={mySubscriber} />
+          </CardContent>
+        </Card>
+
+        <Card data-tour="me-history">
+          <CardHeader>
+            <CardTitle className="text-base">Service History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StatusTimeline />
           </CardContent>
         </Card>
 

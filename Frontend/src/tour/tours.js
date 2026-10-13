@@ -158,6 +158,13 @@ export const TOURS = {
         side: 'top',
       },
       {
+        selector: t('me-history'),
+        title: 'Your service history',
+        description: 'When your service was installed and every time its status changed (Active, Unpaid or Disconnected), newest first. You have a right to see this.',
+        side: 'top',
+        roles: ['subscriber'],
+      },
+      {
         selector: t('me-payments'),
         title: 'Payment history',
         description:
