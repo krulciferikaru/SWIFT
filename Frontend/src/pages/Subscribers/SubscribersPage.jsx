@@ -64,7 +64,9 @@ const VIEW_DEFAULTS = { q: "", status: "All", plan: "All", from: "", to: "", pag
 const peso = (value) => `₱${Number(value ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
 export default function SubscribersPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  // A field collector is not shown email or MAC addresses (the server does not send them either).
+  const showPrivate = user?.role !== "collector";
   // The search, filters, sort and page live in the address (for example ?status=Unpaid&sort=plan),
   // so the dashboard cards can link to a filtered list, and refresh / Back keep the view.
   const [view, setView] = useQueryState(VIEW_DEFAULTS);
@@ -435,7 +437,7 @@ export default function SubscribersPage() {
               data-tour="subs-search"
               aria-label="Search subscribers"
               type="text"
-              placeholder="Search by name, mobile number, address, MAC…"
+              placeholder={showPrivate ? "Search by name, mobile number, address, MAC…" : "Search by name, mobile number or address…"}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1"
@@ -553,8 +555,8 @@ export default function SubscribersPage() {
         >
           {initialLoading ? (
             <TableSkeleton rows={9} columns={[
-              ...(canRemind ? [{ label: "" }] : []), { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Mobile" },
-              { label: "MAC Address" }, { label: "Installed" }, { label: "Service status", kind: "badge" }, { label: "Balance" }, { label: "Actions", kind: "actions" },
+              ...(canRemind ? [{ label: "" }] : []), { label: "Name" }, { label: "Plan" }, ...(showPrivate ? [{ label: "Email" }] : []), { label: "Mobile" },
+              ...(showPrivate ? [{ label: "MAC Address" }] : []), { label: "Installed" }, { label: "Service status", kind: "badge" }, { label: "Balance" }, { label: "Actions", kind: "actions" },
             ]} />
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
@@ -587,9 +589,9 @@ export default function SubscribersPage() {
                   )}
                   <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
                   <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>
-                  <TableHead>Email</TableHead>
+                  {showPrivate && <TableHead>Email</TableHead>}
                   <TableHead>Mobile</TableHead>
-                  <TableHead>MAC Address</TableHead>
+                  {showPrivate && <TableHead>MAC Address</TableHead>}
                   <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>
                   <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Service status</SortableHead>
                   <TableHead>Balance</TableHead>
@@ -629,18 +631,22 @@ export default function SubscribersPage() {
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {sub.plan?.plan_name ?? "—"}
                     </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.email || "—"}
-                    </TableCell>
+                    {showPrivate && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {sub.email || "—"}
+                      </TableCell>
+                    )}
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       <div>
                                               {sub.contact || sub.contact_number || "—"}
                                               <div><VerifiedBadge verified={sub.contact_verified} /></div>
                                             </div>
                     </TableCell>
-                    <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
-                      {sub.mac_address || "—"}
-                    </TableCell>
+                    {showPrivate && (
+                      <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
+                        {sub.mac_address || "—"}
+                      </TableCell>
+                    )}
                     <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
                       {sub.connection_date ? spelledDate(String(sub.connection_date).slice(0, 10)) : "—"}
                     </TableCell>

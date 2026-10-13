@@ -11,7 +11,7 @@ import paymentsApi from '../../api/payments'
 import StatusTimeline from '../../components/StatusTimeline.jsx'
 
 export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, onArchive, onPayments }) {
-  const { can } = useAuth()
+  const { can, user } = useAuth()
   const [billing, setBilling] = useState(null)
   const [billingState, setBillingState] = useState('idle') // idle | loading | error
 
@@ -116,11 +116,13 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
                   </span>
                 )}
               </DetailField>
-              <DetailField label="Email">{s.email}</DetailField>
+              {user?.role !== 'collector' && <DetailField label="Email">{s.email}</DetailField>}
               <DetailField label="Address" className="sm:col-span-2">{s.address}</DetailField>
-              <DetailField label="MAC address">
-                {s.mac_address && <span className="font-mono text-xs">{s.mac_address}</span>}
-              </DetailField>
+              {user?.role !== 'collector' && (
+                <DetailField label="MAC address">
+                  {s.mac_address && <span className="font-mono text-xs">{s.mac_address}</span>}
+                </DetailField>
+              )}
               <DetailField label="Installation date">{longDate(s.connection_date ?? s.installation_date)}</DetailField>
               <DetailField label="Registered">{longDate(s.created_at)}</DetailField>
             </dl>

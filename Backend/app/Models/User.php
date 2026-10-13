@@ -74,6 +74,7 @@ class User extends Authenticatable
             'admin' => [...$grantable, ...config('permissions.admin_only')],
             // null means "never customised": a secretary gets everything grantable.
             'secretary' => array_values(array_intersect($this->permissions ?? $grantable, $grantable)),
+            'collector' => config('permissions.collector'),
             default => [],
         };
     }
@@ -127,6 +128,11 @@ class User extends Authenticatable
     public function isSecretary(): bool
     {
         return $this->role === 'secretary';
+    }
+
+    public function isCollector(): bool
+    {
+        return $this->role === 'collector';
     }
 
     public function isSubscriber(): bool

@@ -40,6 +40,9 @@ class SubscriberController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        // A field collector doesn't get email or MAC addresses: not in the list, and not through search.
+        $private = ! $request->user()->isCollector();
+
         $query = Subscriber::with(['plan', 'deletion', 'user:id,subscriber_id,contact_number,contact_verified_at'])
             ->select([
                 'subscriber_id',
@@ -47,8 +50,7 @@ class SubscriberController extends Controller
                 'name',
                 'address',
                 'contact_number',
-                'email',
-                'mac_address',
+                ...($private ? ['email', 'mac_address'] : []),
                 'connection_date',
                 'status',
                 'created_at',
@@ -63,7 +65,7 @@ class SubscriberController extends Controller
 
         // Search filter
         if ($request->filled('search')) {
-            $query->search($request->search);
+            $query->search($request->search, $private);
         }
 
         // Status filter
@@ -153,7 +155,7 @@ class SubscriberController extends Controller
      *
      * Returns a single subscriber with their plan and recent payment history.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $subscriber = Subscriber::with([
             'plan',
@@ -161,6 +163,10 @@ class SubscriberController extends Controller
             'user:id,subscriber_id,contact_number,contact_verified_at',
             'payments' => fn($q) => $q->latest('payment_date')->limit(12),
         ])->findOrFail($id);
+
+        if ($request->user()->isCollector()) {
+            $subscriber->makeHidden(['email', 'mac_address']);
+        }
 
         return response()->json([
             'success' => true,
