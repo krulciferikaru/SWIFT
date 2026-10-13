@@ -10,6 +10,7 @@ use App\Http\Controllers\PlanController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordConfirmationController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\SubscriberApprovalController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
@@ -27,6 +28,11 @@ Route::get('/health', fn() => response()->json([
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
+// Forgot password: a code by text message to a verified mobile number.
+// Nobody else can reset a password for someone: people do it themselves.
+Route::post('/password/forgot', [PasswordResetController::class, 'forgot'])->middleware('throttle:password-forgot');
+Route::post('/password/reset', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
+
 // How to reach the company. Public so the sign-in page can show it.
 Route::get('/company-info', [CompanyInfoController::class, 'show'])->middleware('throttle:reports');
 
@@ -40,6 +46,11 @@ Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
 
     // Type your password again before a sensitive action (valid for 10 minutes).
     Route::post('/me/confirm-password', [PasswordConfirmationController::class, 'store'])
+        ->middleware('throttle:confirm-password');
+
+    // A staff member adds or changes their own mobile number (they are verified afterwards,
+    // in the same way as a subscriber's). It is what lets them use Forgot password.
+    Route::patch('/me/mobile-number', [PhoneVerificationController::class, 'update'])
         ->middleware('throttle:confirm-password');
 
     Route::post('/me/phone/send-code', [PhoneVerificationController::class, 'send'])
@@ -142,8 +153,6 @@ Route::middleware(['auth:sanctum', 'session.slide'])->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
-        Route::patch('/users/{user}/password', [UserController::class, 'resetPassword'])
-            ->middleware('password.confirmed');
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
             ->middleware('password.confirmed');

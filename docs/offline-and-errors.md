@@ -52,7 +52,7 @@ It holds no subscriber data and is not shared.
 
 ## "Confirm your password"
 
-Changing a secretary's permissions, resetting a password and permanently deleting from the Archive ask the person to type their own password again. A window opens, the action carries on by itself once the password is right, and it stays confirmed for **10 minutes** for that sign-in. Cancelling changes nothing.
+Changing a secretary's permissions, and permanently deleting from the Archive ask the person to type their own password again. A window opens, the action carries on by itself once the password is right, and it stays confirmed for **10 minutes** for that sign-in. Cancelling changes nothing.
 
 ## Limits that can appear as errors
 

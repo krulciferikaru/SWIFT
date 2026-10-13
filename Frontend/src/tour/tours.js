@@ -442,14 +442,7 @@ export const TOURS = {
         selector: t('users-status'),
         title: 'Account status',
         description:
-          'Set an account to Pending, Active or Inactive. An Inactive account cannot log in. You cannot change your own status.',
-        side: 'left',
-      },
-      {
-        selector: t('users-reset'),
-        title: 'Reset Password',
-        description:
-          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here. You will be asked to type your own password first, as a safety step.',
+          'Set an account to Pending, Active or Inactive. An Inactive account cannot log in. You cannot change your own status. Nobody here can reset another person\'s password: everyone uses Forgot password on the sign-in page.',
         side: 'left',
       },
     ],

@@ -10,6 +10,9 @@ return [
     // network address, so spreading guesses over many addresses does not get around it.
     // Retyping your own password before a sensitive action.
     'confirm_password' => (int) env('RATE_LIMIT_CONFIRM_PASSWORD_PER_MIN', 5),
+    // "Forgot password": asking for codes and trying them, per network address (each number is also capped separately).
+    'password_forgot' => (int) env('RATE_LIMIT_PASSWORD_FORGOT_PER_10MIN', 5),
+    'password_reset' => (int) env('RATE_LIMIT_PASSWORD_RESET_PER_10MIN', 10),
     'login_max_failures' => (int) env('LOGIN_MAX_FAILURES', 5),
     'login_lockout_minutes' => (int) env('LOGIN_LOCKOUT_MINUTES', 15),
     // Texting a verification code costs an SMS each time.

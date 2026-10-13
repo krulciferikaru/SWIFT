@@ -5,6 +5,7 @@ import { ApprovalsProvider } from "./context/ApprovalContext";
 import SubscribersPage from "./pages/Subscribers/SubscribersPage";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 import PasswordConfirmHost from "./components/PasswordConfirmHost.jsx";
 import Approvals from "./pages/Approvals.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               <Route
                 path="/dashboard"
