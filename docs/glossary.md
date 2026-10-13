@@ -10,6 +10,7 @@ The same word always means the same thing on every screen. Where two words could
 | **Availability** (of a plan) | **Offered**: the plan can be given to subscribers. **Not offered**: it is still billed for subscribers already on it, but cannot be given to new ones. This is different from archiving a plan. |
 | **Service history** | The list of every time a subscriber's service status changed, with the date and whether staff or the system made the change. Subscribers can see their own. |
 | **Installation date** | The day service was installed. The first bill is for the month *after* it. |
+| **Plan change** | Moving a subscriber to a different plan. It applies from a month (next month by default); months already billed keep the plan and price they had. |
 | **Balance** | What the subscriber owes now, in pesos. |
 | **Months behind** | How many months are not fully paid. |
 | **Advance credit** | Money paid beyond what is owed so far; it covers future months. |

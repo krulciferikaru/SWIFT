@@ -180,10 +180,36 @@ class SubscriberController extends Controller
         $previousStatus = $subscriber->status;
         $before = $subscriber->getOriginal();
 
-        $subscriber->update($request->validated());
+        $data = $request->validated();
+        $effective = $data['plan_effective_from'] ?? null;
+        unset($data['plan_effective_from']);
+
+        // A change of plan starts from a month, never earlier than the first month billed and never
+        // later than next month: months already billed are not re-priced.
+        $planChanging = isset($data['plan_id']) && (int) $data['plan_id'] !== (int) $subscriber->plan_id;
+        if ($planChanging && $effective) {
+            $from = \Carbon\Carbon::parse($effective)->startOfMonth();
+            $earliest = $subscriber->connection_date ? $subscriber->connection_date->copy()->startOfMonth()->addMonth() : null;
+            $latest = \Carbon\Carbon::now()->startOfMonth()->addMonth(); // next month
+            if (($earliest && $from->lt($earliest)) || $from->gt($latest)) {
+                return response()->json([
+                    'message' => 'The plan change cannot start before the first month billed, or more than a month ahead.',
+                    'errors' => ['plan_effective_from' => ['The plan change cannot start before the first month billed, or more than a month ahead.']],
+                ], 422);
+            }
+        }
+        $subscriber->planEffectiveFrom = $planChanging ? $effective : null;
+
+        $subscriber->update($data);
         $subscriber->load('plan');
 
-        Audit::log('subscriber.updated', $subscriber, null, Audit::diff($before, $subscriber));
+        // A different plan can change how far behind they are.
+        if ($planChanging) {
+            $this->billing->recalculateStatus($subscriber->fresh());
+            $subscriber->refresh()->load('plan');
+        }
+
+        Audit::log('subscriber.updated', $subscriber, null, array_merge(Audit::diff($before, $subscriber), $planChanging ? ['plan_effective_from' => $effective ?: \App\Services\RateHistoryService::defaultEffectiveFrom()->toDateString()] : []));
 
         $this->notifyStatusChange($subscriber, $previousStatus);
 

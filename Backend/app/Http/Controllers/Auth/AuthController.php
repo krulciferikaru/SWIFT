@@ -108,7 +108,9 @@ class AuthController extends Controller
             'email' => $requestData['email'],
             'password' => Hash::make($requestData['password']),
             'account_status' => 'pending',
-            'status' => 'Unpaid',
+            // Their status means nothing until they are approved, when it is worked out from their plan and
+            // installation date. Until then Active, not Unpaid: nothing has been billed.
+            'status' => 'Active',
             ...$agreement,
         ]);
 

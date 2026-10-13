@@ -31,6 +31,21 @@ class Plan extends Model
         ];
     }
 
+    /**
+     * Remembers what a plan cost and from when, so changing the price never re-prices a month
+     * that has already been billed (see RateHistoryService).
+     */
+    protected static function booted(): void
+    {
+        static::created(fn (Plan $plan) => app(\App\Services\RateHistoryService::class)->recordPlanCreated($plan));
+
+        static::updated(function (Plan $plan) {
+            if ($plan->wasChanged('monthly_rate')) {
+                app(\App\Services\RateHistoryService::class)->recordPlanRateChange($plan);
+            }
+        });
+    }
+
     // -----------------------------------------------------------------------
     // Relationships
     // -----------------------------------------------------------------------

@@ -652,6 +652,8 @@ export default function SubscribersPage() {
                             {sub.months_behind} {sub.months_behind === 1 ? "month" : "months"} behind
                           </span>
                         </span>
+                      ) : !sub.plan || !sub.connection_date ? (
+                        <span className="text-gray-500 dark:text-gray-400">Not set up yet</span>
                       ) : sub.advance_credit > 0 ? (
                         <span className="text-green-700 dark:text-green-400">
                           {peso(sub.advance_credit)} credit

@@ -11,6 +11,18 @@ Every figure on the Payments page, the subscriber's own dashboard, the reports a
 5. **Advance credit** = what the subscriber has paid beyond what is owed so far. It is used automatically for the following months, so a subscriber who pays two or three months ahead simply shows credit until those months arrive.
 6. **Months behind** = the number of billed months that are not paid in full. A partly paid month counts as behind.
 
+### Changing a plan, or a plan's price
+
+**A month that has been billed is never re-priced.** Each month is billed at the plan, and the price of that plan, that applied *in that month*. So moving a subscriber from a ₱800 plan to a ₱1,300 plan, or raising a plan's price, changes what is billed **from then on**, not the months already billed.
+
+- **When a change starts.** By default a change made this month starts **next month**: this month's bill stays as it was. The company can choose that it starts this month instead (the `PLAN_CHANGE_EFFECTIVE` setting: `next_month` or `current_month`). Either way, earlier months are untouched.
+- **Staff can choose the month** when they change a subscriber's plan (Edit subscriber): *The new plan applies from* offers next month (the usual choice), this month, and, **only to correct a mistake**, earlier months back to the first month billed. It cannot start before the first month billed or more than a month ahead.
+- **A plan's price change** (Service Plans, Edit) works the same way and asks for confirmation first; it starts next month by default.
+- After a plan change the subscriber's **status is worked out again**.
+- The Billing Breakdown on the Payments page shows each month at the price it was billed at.
+- **Limit:** plan and price changes made *before* this was introduced were not recorded, so existing months are priced as they are today. If one of them is wrong, edit the subscriber's plan and choose an earlier month in *The new plan applies from* to put it right.
+- Which plan a subscriber was on, and what each plan cost, are remembered from now on in `subscriber_plan_history` and `plan_rate_history`.
+
 ### Status
 
 | Months behind | Status |

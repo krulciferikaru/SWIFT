@@ -18,6 +18,8 @@ class UpdateSubscriberRequest extends FormRequest
 
         return [
             'plan_id' => ['sometimes', 'integer', 'exists:plan,plan_id'],
+            // The month a change of plan starts from. Months already billed keep the plan they had.
+            'plan_effective_from' => ['nullable', 'date_format:Y-m-d'],
             'name' => ['sometimes', 'string', 'max:255'],
             'address' => ['sometimes', 'string', 'max:255'],
             'contact_number' => ['sometimes', 'required', 'string', 'max:20'],

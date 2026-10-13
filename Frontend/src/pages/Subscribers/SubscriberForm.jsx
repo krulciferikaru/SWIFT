@@ -15,6 +15,9 @@ import TourButton from "../../components/TourButton.jsx";
 import { errorMessage } from "../../utils/errors";
 import { capitalizeWords, BARANGAYS, spelledDate } from "../../utils/text";
 import FormField, { RequiredNote } from "../../components/FormField.jsx";
+
+const monthLabel = (d) => d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+const isoMonth = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 import { required, emailAddress } from "../../utils/validators";
 
 const EMPTY_FORM = {
@@ -85,6 +88,29 @@ export default function SubscriberForm({
 
   // A field is only checked once the person has left it, or tried to save.
   const [touched, setTouched] = useState({});
+
+  // Editing: when the plan is changed, which month the new plan starts from. Months already billed
+  // keep the plan and price they had; the usual choice is next month.
+  const planChanged = Boolean(initial?.plan_id) && String(form.plan_id) !== String(initial.plan_id);
+  const nextMonth = (() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  })();
+  const [planFrom, setPlanFrom] = useState(isoMonth(nextMonth));
+  const planFromOptions = (() => {
+    const out = [];
+    const installed = form.connection_date ? new Date(`${String(form.connection_date).slice(0, 10)}T00:00:00`) : null;
+    // The first month billed is the one after the installation month; offer back to there, newest first.
+    let first = installed && !Number.isNaN(installed.getTime()) ? new Date(installed.getFullYear(), installed.getMonth() + 1, 1) : new Date(nextMonth.getFullYear(), nextMonth.getMonth() - 1, 1);
+    for (let d = new Date(nextMonth); d >= first && out.length < 36; d = new Date(d.getFullYear(), d.getMonth() - 1, 1)) {
+      const tag =
+        d.getTime() === nextMonth.getTime() ? " (next month, the usual choice)"
+        : d.getTime() === new Date(nextMonth.getFullYear(), nextMonth.getMonth() - 1, 1).getTime() ? " (this month)"
+        : " (a month already billed: only to correct a mistake)";
+      out.push({ value: isoMonth(d), label: monthLabel(d) + tag });
+    }
+    return out;
+  })();
   const localErrors = {
     name: required("Name")(form.name),
     contact_number: required("Mobile number")(form.contact_number),
@@ -112,6 +138,7 @@ export default function SubscriberForm({
       await onSubmit({
         ...form,
         plan_id: form.plan_id ? Number(form.plan_id) : "",
+        ...(planChanged ? { plan_effective_from: planFrom } : {}),
       });
     } catch (err) {
       if (err.response?.status === 422) {
@@ -192,6 +219,26 @@ export default function SubscriberForm({
               <p className="text-red-500 text-xs">{errors.plan_id[0]}</p>
             )}
           </div>
+
+          {planChanged && (
+            <FormField
+              id="plan_effective_from"
+              label="The new plan applies from"
+              className="sm:col-span-2"
+              hint="Months already billed keep the plan and price they had, so this does not change what was billed before. Choose an earlier month only to correct a plan that was recorded wrongly."
+              error={errors.plan_effective_from?.[0]}
+            >
+              <select
+                value={planFrom}
+                onChange={(e) => setPlanFrom(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm dark:bg-gray-950"
+              >
+                {planFromOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </FormField>
+          )}
 
           <div data-tour="sub-status" className="space-y-1.5">
             <Label>Service status</Label>
