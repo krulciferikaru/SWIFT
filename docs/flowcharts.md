@@ -122,11 +122,11 @@ flowchart TD
 
 ## 8. A sensitive action asks for the password again
 
-Changing permissions, resetting a password and permanently deleting from the Archive.
+Changing permissions and permanently deleting from the Archive.
 
 ```mermaid
 flowchart TD
-  A["Admin presses Save, Reset Password<br/>or Delete on a sensitive action"] --> B{"Allowed to do this?<br/>(permission check)"}
+  A["Admin presses Save on permissions<br/>or Delete in the Archive"] --> B{"Allowed to do this?<br/>(permission check)"}
   B -- "No" --> C["Refused. No password is asked for"]
   B -- "Yes" --> D{"Password confirmed in the last<br/>10 minutes on this sign-in?"}
   D -- "Yes" --> E["The action is carried out"]
@@ -149,4 +149,20 @@ flowchart TD
   D -- "No" --> F["Message. Ask for a new code"]
   F --> B
   E --> G["If the number is changed later,<br/>the verification is cleared"]
+```
+
+## Forgot password
+
+Nobody else can reset a password, so this is the only way back in. The page says the same thing whether or not the number belongs to an account.
+
+```mermaid
+flowchart TD
+  A["Person opens Forgot password?<br/>and types their mobile number"] --> B["Page: 'If that number belongs to an account<br/>with a verified mobile number, we sent a code'"]
+  B --> C{"Active account with a<br/>verified number?<br/>(not shown to the person)"}
+  C -- "No" --> D["Nothing is sent"]
+  C -- "Yes" --> E["6-digit code texted<br/>(one a minute, three every 10 minutes per number)"]
+  E --> F["Person types the code and a new password"]
+  F --> G{"Right code, within 10 minutes,<br/>fewer than 5 wrong tries?"}
+  G -- "No" --> H["'That code is not correct or has expired'<br/>Ask for a new one"]
+  G -- "Yes" --> I["Password changed. Signed out everywhere.<br/>A 'your password was changed' text is sent"]
 ```

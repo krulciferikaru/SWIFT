@@ -29,7 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { useOnReconnect } from '../hooks/useOnline'
-import { UserPlus, KeyRound, SlidersHorizontal, ShieldCheck } from 'lucide-react'
+import { UserPlus, SlidersHorizontal, ShieldCheck, Info } from 'lucide-react'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
@@ -38,7 +38,7 @@ import { useQueryState } from '../hooks/useQueryState'
 import SortableHead, { nextSort } from '../components/SortableHead.jsx'
 import Pager from '../components/Pager.jsx'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
-import { required, emailAddress, minLength, matches, firstError } from '../utils/validators'
+import { required, emailAddress, mobileNumber, minLength, matches, firstError } from '../utils/validators'
 import EmptyState from '../components/EmptyState.jsx'
 
 // What the address holds. Newest accounts first until a column is chosen.
@@ -60,6 +60,7 @@ const ROLE_STYLES = {
 const EMPTY_STAFF_FORM = {
   name: '',
   email: '',
+  contact_number: '',
   password: '',
   password_confirmation: '',
   role: 'secretary',
@@ -109,10 +110,6 @@ export default function Users() {
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
   const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
-  const [resetTarget, setResetTarget] = useState(null) // user being reset
-  const [resetForm, setResetForm] = useState({ password: '', password_confirmation: '' })
-  const [resetErrors, setResetErrors] = useState({})
-  const [resetting, setResetting] = useState(false)
 
   const { toast, showToast } = useToast()
 
@@ -180,6 +177,7 @@ export default function Users() {
   const staffChecks = {
     name: required('Full name')(staffForm.name),
     email: firstError(staffForm.email, required('Email'), emailAddress),
+    contact_number: mobileNumber(staffForm.contact_number),
     password: firstError(staffForm.password, required('Password'), minLength('Password', 8)),
     password_confirmation: firstError(
       staffForm.password_confirmation,
@@ -194,8 +192,8 @@ export default function Users() {
     e.preventDefault()
     const firstBad = Object.keys(staffChecks).find((name) => staffChecks[name])
     if (firstBad) {
-      setTouched({ name: true, email: true, password: true, password_confirmation: true })
-      document.getElementById({ name: 'staff-name', email: 'staff-email', password: 'staff-password', password_confirmation: 'staff-password-confirm' }[firstBad])?.focus()
+      setTouched({ name: true, email: true, contact_number: true, password: true, password_confirmation: true })
+      document.getElementById({ name: 'staff-name', email: 'staff-email', contact_number: 'staff-mobile', password: 'staff-password', password_confirmation: 'staff-password-confirm' }[firstBad])?.focus()
       return
     }
     setStaffErrors({})
@@ -229,31 +227,6 @@ export default function Users() {
     }
   }
 
-  const openResetModal = (user) => {
-    setResetTarget(user)
-    setResetForm({ password: '', password_confirmation: '' })
-    setResetErrors({})
-  }
-
-  const submitReset = async (e) => {
-    e.preventDefault()
-    setResetErrors({})
-    setResetting(true)
-    try {
-      await usersApi.resetPassword(resetTarget.id, resetForm)
-      showToast(`${resetTarget.name}'s password was reset.`)
-      setResetTarget(null)
-    } catch (err) {
-      if (err.response?.status === 422) {
-        setResetErrors(err.response.data.errors ?? {})
-      } else {
-        showToast(err.response?.data?.message || 'Failed to reset password.', 'error')
-      }
-    } finally {
-      setResetting(false)
-    }
-  }
-
   return (
     <div>
       <Toast toast={toast} />
@@ -283,6 +256,14 @@ export default function Users() {
           </Button>
         </div>
       </div>
+
+      <p className="mb-4 flex items-start gap-2 rounded-md bg-blue-50 p-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+        <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span>
+          Nobody here can see or reset another person's password. Everyone recovers their own with <strong>Forgot password</strong> on the
+          sign-in page, using a code texted to their verified mobile number. Staff add and verify theirs in Settings.
+        </span>
+      </p>
 
       {initialLoad ? (
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -396,19 +377,6 @@ export default function Users() {
                           Permissions
                         </Button>
                       )}
-                      {!isSelf && (
-                        <Button
-                          data-tour="users-reset"
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
-                          onClick={() => openResetModal(user)}
-                          aria-label={`Reset password for ${user.name}`}
-                        >
-                          <KeyRound className="size-3.5" />
-                          Reset Password
-                        </Button>
-                      )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -460,6 +428,16 @@ export default function Users() {
             <Input type="email" name="email" value={staffForm.email} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="off" />
           </FormField>
 
+          <FormField
+            id="staff-mobile"
+            label="Mobile number"
+            optional
+            hint="Lets this person reset their own password by text. They can also add it later in Settings."
+            error={staffError('contact_number')}
+          >
+            <Input type="tel" name="contact_number" value={staffForm.contact_number} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="off" placeholder="0917 123 4567" />
+          </FormField>
+
           <div data-tour="staff-role" className="space-y-1.5">
             <Label>Role<span className="text-red-500 ml-0.5">*</span></Label>
             <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })} disabled>
@@ -480,51 +458,6 @@ export default function Users() {
           <FormField id="staff-password-confirm" label="Confirm Password" required error={staffError('password_confirmation')}>
             <Input type="password" name="password_confirmation" value={staffForm.password_confirmation} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="new-password" />
           </FormField>
-        </form>
-      </Modal>
-
-      <Modal
-        isOpen={!!resetTarget}
-        onClose={() => setResetTarget(null)}
-        title="Reset Password"
-        description={resetTarget ? `Set a new password for ${resetTarget.name} (${resetTarget.email}). They will need to use it on their next login.` : ''}
-        size="md"
-        confirmClose
-        footer={(requestClose) => (
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={requestClose}>
-              Cancel
-            </Button>
-            <Button type="submit" form="reset-password-form" disabled={resetting}>
-              {resetting ? 'Resetting...' : 'Reset Password'}
-            </Button>
-          </div>
-        )}
-      >
-        <form id="reset-password-form" onSubmit={submitReset} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="reset-password">New Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="reset-password"
-              type="password"
-              value={resetForm.password}
-              onChange={(e) => setResetForm({ ...resetForm, password: e.target.value })}
-              required
-              className={resetErrors.password ? 'border-red-400' : ''}
-            />
-            {resetErrors.password && <p className="text-red-500 text-xs">{resetErrors.password[0]}</p>}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="reset-password-confirm">Confirm New Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="reset-password-confirm"
-              type="password"
-              value={resetForm.password_confirmation}
-              onChange={(e) => setResetForm({ ...resetForm, password_confirmation: e.target.value })}
-              required
-            />
-          </div>
         </form>
       </Modal>
 

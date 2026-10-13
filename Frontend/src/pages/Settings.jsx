@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx'
+import StaffMobileNumber from '../components/StaffMobileNumber.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
 import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
 import PaymentMethodsManager from '../components/PaymentMethodsManager.jsx'
@@ -16,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight } from 'lucide-react'
+import { Sun, Moon, Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight, FileText } from 'lucide-react'
 import TourButton from "../components/TourButton.jsx";
 import { runTour } from '../tour/useTour'
 import { useShowTourButtons, setShowTourButtons } from '../tour/tourState'
@@ -128,6 +129,18 @@ export default function Settings() {
           title="Guide"
           description="How every page works, with step-by-step tours."
         />
+        <SettingsLink
+          to="/privacy"
+          icon={FileText}
+          title="Privacy Policy"
+          description="How your information is collected, used, kept and deleted."
+        />
+        <SettingsLink
+          to="/terms"
+          icon={FileText}
+          title="Terms of Service"
+          description="The rules for using SWIFT."
+        />
       </div>
 
       <Card data-tour="settings-appearance">
@@ -224,13 +237,18 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {user?.contact_number && (
+      {(user?.contact_number || user?.role !== 'subscriber') && (
         <Card data-tour="settings-phone">
           <CardHeader>
             <CardTitle className="text-base">Mobile number</CardTitle>
-            <CardDescription>Verifying your number confirms that reminders and notices reach you.</CardDescription>
+            <CardDescription>
+              {user?.role === 'subscriber'
+                ? 'Verifying your number confirms that reminders and notices reach you, and lets you reset your own password.'
+                : 'Add your mobile number and verify it with a texted code. It is how you get back in if you forget your password.'}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {user?.role !== 'subscriber' && <StaffMobileNumber />}
             <PhoneVerification />
           </CardContent>
         </Card>

@@ -1,4 +1,7 @@
+import { Link } from 'react-router-dom'
 import CompanyContact from './CompanyContact.jsx'
+
+const legalLink = 'underline underline-offset-2 hover:no-underline'
 
 /**
  * The frame around the sign-in and register pages: a brand panel on the left on wide screens
@@ -31,7 +34,11 @@ export default function AuthLayout({ children, wide = false }) {
 
         <div className="space-y-4">
           <CompanyContact variant="panel" />
-          <p className="text-sm text-blue-100">© {new Date().getFullYear()} Jubal Brothers Cable TV Corp.</p>
+          <p className="text-sm text-blue-100">
+            © {new Date().getFullYear()} Jubal Brothers Cable TV Corp. ·{' '}
+            <Link to="/privacy" className={legalLink}>Privacy Policy</Link> ·{' '}
+            <Link to="/terms" className={legalLink}>Terms</Link>
+          </p>
         </div>
       </aside>
 
@@ -54,6 +61,10 @@ export default function AuthLayout({ children, wide = false }) {
 
           <div className="lg:hidden">
             <CompanyContact variant="inline" />
+            <p className="mt-4 text-center text-xs text-gray-600 dark:text-gray-400">
+              <Link to="/privacy" className={legalLink}>Privacy Policy</Link> ·{' '}
+              <Link to="/terms" className={legalLink}>Terms of Service</Link>
+            </p>
           </div>
         </div>
       </main>
