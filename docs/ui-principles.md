@@ -36,3 +36,9 @@ These are built once, in the shared `CardAction` component, and used for the das
 - **Dates are spelled out.** Under every date box, the chosen date appears in words ("October 14, 2026"), because browsers show month/day/year or day/month/year depending on their language settings.
 - The server still checks everything again; the checks in the browser only save a round trip.
 
+## Tables
+
+- **Sortable columns say so.** A heading that can be sorted shows a faint up-down arrow; the sorted one shows an arrow for its direction, and screen readers hear "ascending" or "descending". Click to sort, click again to reverse, a third click returns to the usual order.
+- **A table shows the number people ask about.** The Subscribers list carries a Balance column, because "who owes, and how much" is the first question when collecting.
+- **The view survives a refresh.** Search, filters, sort and page are kept in the web address, so refreshing or pressing Back does not lose them and a link opens the same view.
+- **Paging is the same everywhere.** Every list ends with how many are shown, a choice of rows per page and numbered pages (shared `Pager`). Long lists are never loaded as one endless page.

@@ -34,9 +34,16 @@ import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
 import BackToSettings from '../components/BackToSettings.jsx'
+import { useQueryState } from '../hooks/useQueryState'
+import SortableHead, { nextSort } from '../components/SortableHead.jsx'
+import Pager from '../components/Pager.jsx'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
 import { required, emailAddress, minLength, matches, firstError } from '../utils/validators'
 import EmptyState from '../components/EmptyState.jsx'
+
+// What the address holds. Newest accounts first until a column is chosen.
+const VIEW_DEFAULTS = { q: '', role: 'All', page: 1, per: 15, sort: '', dir: 'asc' }
+const USER_SORT_DEFAULT = { sort: '', dir: 'asc' }
 
 const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
 const STATUS_STYLES = {
@@ -71,9 +78,26 @@ export default function Users() {
   const requestId = useRef(0)
   const [error, setError] = useState('')
 
-  const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState('All')
-  const [page, setPage] = useState(1)
+  const [view, setView] = useQueryState(VIEW_DEFAULTS)
+  const search = view.q
+  const roleFilter = ROLE_FILTERS.includes(view.role) ? view.role : 'All'
+  const page = view.page
+  const perPage = view.per
+  const sort = view.sort
+  const dir = view.dir
+  const setRoleFilter = (value) => setView({ role: value, page: 1 })
+  const setPage = (value) => setView({ page: Math.max(value, 1) })
+  const changeSort = (column) => setView(nextSort({ sort, dir }, column, USER_SORT_DEFAULT))
+  // What is typed in the box; it reaches the address after a short pause.
+  const [searchText, setSearchText] = useState(view.q)
+  const latestSearch = useRef(search)
+  latestSearch.current = search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (searchText !== latestSearch.current) setView({ q: searchText, page: 1 })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchText, setView])
 
   const [actionLoading, setActionLoading] = useState(null)
 
@@ -97,7 +121,11 @@ export default function Users() {
     setLoading(true)
     setError('')
     try {
-      const params = { page, per_page: 15 }
+      const params = { page, per_page: perPage }
+      if (sort) {
+        params.sort = sort
+        params.direction = dir
+      }
       if (search) params.search = search
       if (roleFilter !== 'All') params.role = roleFilter
 
@@ -115,17 +143,13 @@ export default function Users() {
         setInitialLoad(false)
       }
     }
-  }, [search, roleFilter, page])
+  }, [search, roleFilter, page, perPage, sort, dir])
 
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
 
   useOnReconnect(fetchUsers)
-
-  useEffect(() => {
-    setPage(1)
-  }, [search, roleFilter])
 
   const handleStatusChange = async (user, newStatus) => {
     if (newStatus === user.account_status) return
@@ -271,8 +295,8 @@ export default function Users() {
             type="text"
             placeholder="Search by name or email…"
             aria-label="Search accounts"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
             className="flex-1"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -307,16 +331,16 @@ export default function Users() {
             icon={ShieldCheck}
             title="No accounts match"
             description="Try a different name or email, or another role."
-            onClearFilters={search || roleFilter !== 'All' ? () => { setSearch(''); setRoleFilter('All') } : undefined}
+            onClearFilters={search || roleFilter !== 'All' ? () => { setSearchText(''); setView({ q: '', role: 'All', page: 1 }) } : undefined}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Account Status</TableHead>
+                <SortableHead column="role" sort={sort} dir={dir} onSort={changeSort}>Role</SortableHead>
+                <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Account Status</SortableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
@@ -395,20 +419,14 @@ export default function Users() {
         )}
       </div>
 
-      {meta && meta.last_page > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
-          <span>Showing {meta.from}–{meta.to} of {meta.total} users</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1}>
-              Previous
-            </Button>
-            <span className="px-3 py-1">Page {page} of {meta.last_page}</span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))} disabled={page === meta.last_page}>
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pager
+        meta={meta}
+        page={page}
+        onPage={setPage}
+        perPage={perPage}
+        onPerPage={(n) => setView({ per: n, page: 1 })}
+        noun="accounts"
+      />
 
       <Modal
         isOpen={showCreate}

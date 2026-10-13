@@ -202,6 +202,12 @@ export const TOURS = {
         side: 'bottom',
       },
       {
+        selector: t('subs-table'),
+        title: 'Sorting and balances',
+        description: 'Click Name, Plan, Installed or Status to sort; click again to reverse, and a third time to go back to the usual order. The Balance column shows what each person owes and how many months behind they are. At the bottom you can pick how many rows to show and move between pages. The search, filters, sort and page are kept in the web address, so refreshing or pressing Back brings you to the same view.',
+        side: 'top',
+      },
+      {
         selector: t('subs-export'),
         title: 'Export CSV',
         description: 'Download the current list as a spreadsheet. You get a preview first.',

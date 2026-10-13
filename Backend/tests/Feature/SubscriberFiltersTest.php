@@ -57,6 +57,56 @@ class SubscriberFiltersTest extends TestCase
         $this->assertSame(['Dino'], $this->names('installed_to=2025-12-31'));
     }
 
+    /** @return list<string> names in the order the server returned them */
+    private function orderedNames(string $query): array
+    {
+        return collect($this->getJson('/api/subscribers?'.$query)->assertOk()->json('data.data'))->pluck('name')->all();
+    }
+
+    public function test_the_list_can_be_sorted_by_the_columns_on_offer(): void
+    {
+        $basic = Plan::create(['plan_name' => 'Basic', 'monthly_rate' => 500, 'speed_mbps' => 10, 'status' => 'Active']);
+        $fast = Plan::create(['plan_name' => 'Fast', 'monthly_rate' => 900, 'speed_mbps' => 50, 'status' => 'Active']);
+        $this->sub('Ana', 'Unpaid', $fast->plan_id, '2026-01-10');
+        $this->sub('Ben', 'Active', $basic->plan_id, '2026-03-05');
+        $this->sub('Cara', 'Disconnected', $basic->plan_id, '2025-06-20');
+        Sanctum::actingAs($this->admin());
+
+        $this->assertSame(['Ana', 'Ben', 'Cara'], $this->orderedNames(''));                          // name by default
+        $this->assertSame(['Cara', 'Ben', 'Ana'], $this->orderedNames('sort=name&direction=desc'));
+        $this->assertSame(['Cara', 'Ana', 'Ben'], $this->orderedNames('sort=installed&direction=asc'));
+        $this->assertSame(['Ben', 'Ana', 'Cara'], $this->orderedNames('sort=installed&direction=desc'));
+        $this->assertSame(['Ben', 'Cara', 'Ana'], $this->orderedNames('sort=plan&direction=asc'));     // Basic, Basic, Fast (ties by name)
+        $this->assertSame(['Ana', 'Ben', 'Cara'], $this->orderedNames('sort=plan&direction=desc'));
+        $this->assertSame(['Ben', 'Cara', 'Ana'], $this->orderedNames('sort=status&direction=asc'));   // Active, Disconnected, Unpaid
+        $this->assertSame(['Ana', 'Ben', 'Cara'], $this->orderedNames('sort=password&direction=desc')); // unknown columns are ignored
+    }
+
+    public function test_the_page_size_is_capped(): void
+    {
+        $this->sub('Ana', 'Active', null, '2026-01-10');
+        Sanctum::actingAs($this->admin());
+
+        $this->assertSame(100, $this->getJson('/api/subscribers?per_page=5000')->json('data.per_page'));
+        $this->assertSame(1, $this->getJson('/api/subscribers?per_page=0')->json('data.per_page'));
+    }
+
+    public function test_balances_are_added_on_request(): void
+    {
+        $plan = Plan::create(['plan_name' => 'Basic', 'monthly_rate' => 500, 'speed_mbps' => 10, 'status' => 'Active']);
+        $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 14)->setTime(12, 0));
+        // Installed in July: billed for August, September and October = 1500.
+        $this->sub('Ana', 'Unpaid', $plan->plan_id, '2026-07-10');
+        Sanctum::actingAs($this->admin());
+
+        $plain = $this->getJson('/api/subscribers')->assertOk()->json('data.data.0');
+        $this->assertArrayNotHasKey('balance', $plain);
+
+        $row = $this->getJson('/api/subscribers?with_balance=1')->assertOk()->json('data.data.0');
+        $this->assertEquals(1500.0, $row['balance']);
+        $this->assertSame(3, $row['months_behind']);
+    }
+
     public function test_the_installation_range_must_make_sense(): void
     {
         Sanctum::actingAs($this->admin());

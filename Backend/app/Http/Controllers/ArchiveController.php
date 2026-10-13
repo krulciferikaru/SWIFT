@@ -18,9 +18,18 @@ class ArchiveController extends Controller
             $query->search($request->string('search')->toString());
         }
 
+        $columns = ['name' => 'name', 'archived' => 'deleted_at', 'installed' => 'connection_date'];
+        $sort = (string) $request->input('sort');
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+        if (isset($columns[$sort])) {
+            $query->orderBy($columns[$sort], $direction)->orderBy('name');
+        } else {
+            $query->orderByDesc('deleted_at'); // most recently archived first
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $query->orderByDesc('deleted_at')->paginate($request->integer('per_page', 15)),
+            'data' => $query->paginate(min(max($request->integer('per_page', 15), 1), 100)),
         ]);
     }
 

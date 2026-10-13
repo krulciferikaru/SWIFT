@@ -7,7 +7,7 @@ import subscriberApi from '../api/subscribers'
  * Handles fetching subscribers (paginated + filtered) and the summary stats.
  * Consumers control search/status/page; this hook just reacts to them.
  */
-export function useSubscribers({ search, status, page, planId = 'All', installedFrom = '', installedTo = '' }) {
+export function useSubscribers({ search, status, page, perPage = 15, sort = 'name', direction = 'asc', planId = 'All', installedFrom = '', installedTo = '' }) {
   const [subscribers, setSubscribers] = useState([])
   const [meta, setMeta] = useState(null)
   const [summary, setSummary] = useState(null)
@@ -19,7 +19,7 @@ export function useSubscribers({ search, status, page, planId = 'All', installed
     setError(null)
     try {
       const cacheBuster = Date.now()
-      const params = { page, per_page: 15, _: cacheBuster }
+      const params = { page, per_page: perPage, sort, direction, with_balance: 1, _: cacheBuster }
       if (search) params.search = search
       if (status !== 'All') params.status = status
       if (planId !== 'All') params.plan_id = planId
@@ -44,7 +44,7 @@ export function useSubscribers({ search, status, page, planId = 'All', installed
     } finally {
       setLoading(false)
     }
-  }, [search, status, page, planId, installedFrom, installedTo])
+  }, [search, status, page, perPage, sort, direction, planId, installedFrom, installedTo])
 
   const fetchSummary = useCallback(async () => {
     try {

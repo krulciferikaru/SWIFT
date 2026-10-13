@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import auditLogsApi from '../api/auditLogs'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label'
 import TourButton from '../components/TourButton.jsx'
 import { TableSkeleton } from '../components/Skeletons.jsx'
 import DateHint from '../components/DateHint.jsx'
+import { useQueryState } from '../hooks/useQueryState'
+import Pager from '../components/Pager.jsx'
 import EmptyState from '../components/EmptyState.jsx'
 import { ScrollText } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
@@ -123,13 +125,23 @@ function Changes({ changes }) {
   )
 }
 
+// What the address holds, so a filtered view survives a refresh.
+const VIEW_DEFAULTS = { q: '', cat: '', from: '', to: '', page: 1, per: 25 }
+
 export default function AuditTrail() {
-  const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [category, setCategory] = useState('')
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
-  const [page, setPage] = useState(1)
+  const [view, setView] = useQueryState(VIEW_DEFAULTS)
+  const debouncedSearch = view.q
+  const category = view.cat
+  const from = view.from
+  const to = view.to
+  const page = view.page
+  const perPage = view.per
+  const setCategory = (value) => setView({ cat: value, page: 1 })
+  const setFrom = (value) => setView({ from: value, page: 1 })
+  const setTo = (value) => setView({ to: value, page: 1 })
+  const setPage = (value) => setView({ page: Math.max(value, 1) })
+  // What is typed in the search box; it reaches the address after a short pause.
+  const [search, setSearch] = useState(view.q)
   const [logs, setLogs] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -137,13 +149,14 @@ export default function AuditTrail() {
   const [initialLoad, setInitialLoad] = useState(true)
   const [error, setError] = useState('')
 
+  const latestQuery = useRef(debouncedSearch)
+  latestQuery.current = debouncedSearch
   useEffect(() => {
     const t = setTimeout(() => {
-      setDebouncedSearch(search)
-      setPage(1)
+      if (search !== latestQuery.current) setView({ q: search, page: 1 })
     }, 350)
     return () => clearTimeout(t)
-  }, [search])
+  }, [search, setView])
 
   const fetchLogs = useCallback(async () => {
     setLoading(true)
@@ -151,7 +164,7 @@ export default function AuditTrail() {
     try {
       const res = await auditLogsApi.getAll({
         page,
-        per_page: 25,
+        per_page: perPage,
         search: debouncedSearch || undefined,
         action: category || undefined,
         from: from || undefined,
@@ -165,7 +178,7 @@ export default function AuditTrail() {
       setLoading(false)
       setInitialLoad(false)
     }
-  }, [page, debouncedSearch, category, from, to])
+  }, [page, perPage, debouncedSearch, category, from, to])
 
   useEffect(() => {
     fetchLogs()
@@ -173,10 +186,7 @@ export default function AuditTrail() {
 
   useOnReconnect(fetchLogs)
 
-  const resetPage = (setter) => (e) => {
-    setter(e.target.value)
-    setPage(1)
-  }
+  const resetPage = (setter) => (e) => setter(e.target.value)
 
   const selectClass =
     'h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-sm text-gray-900 dark:text-gray-100'
@@ -242,7 +252,7 @@ export default function AuditTrail() {
             icon={ScrollText}
             title={search || category || from || to ? 'No activity matches these filters' : 'No activity recorded yet'}
             description={search || category || from || to ? 'Try a wider date range or a different search.' : 'Sign-ins, edits, payments and other actions will be listed here as they happen.'}
-            onClearFilters={search || category || from || to ? () => { setSearch(''); setDebouncedSearch(''); setCategory(''); setFrom(''); setTo(''); setPage(1) } : undefined}
+            onClearFilters={search || category || from || to ? () => { setSearch(''); setView({ q: '', cat: '', from: '', to: '', page: 1 }) } : undefined}
           />
         ) : (
           <Table>
@@ -273,20 +283,15 @@ export default function AuditTrail() {
         )}
       </div>
 
-      {meta && meta.last_page > 1 && (
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>Showing {meta.from}–{meta.to} of {meta.total}</span>
-          <div className="flex gap-2 items-center">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1}>
-              Previous
-            </Button>
-            <span className="px-3">Page {page} of {meta.last_page}</span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))} disabled={page === meta.last_page}>
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pager
+        meta={meta}
+        page={page}
+        onPage={setPage}
+        perPage={perPage}
+        onPerPage={(n) => setView({ per: n, page: 1 })}
+        noun="entries"
+        sizes={[25, 50, 100]}
+      />
     </div>
   )
 }
