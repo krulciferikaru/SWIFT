@@ -10,7 +10,7 @@ Ideas raised during the evaluations that are **not built yet**, or that were bui
 | **Privacy Policy and Terms of Service** | The system holds personal data (names, mobile numbers, addresses, payment records), so a privacy notice under the Data Privacy Act is expected before real subscribers use it. The wording has to come from, or be reviewed by, the company, so it was not written into the system. The sign-in and register pages are where it would be linked, with an "I agree" box at registration. |
 | **Secure cookies instead of a stored token** | The sign-in token is kept in the browser. Cookies are safer but need the website and the server on the **same domain** (for example `app.example.com` and `api.example.com`), or the website to forward API calls itself. Today the website (Vercel) and the server (Railway) are on different domains. The risk is reduced meanwhile: tokens now expire (an hour after last use, or 7 days when "Keep me signed in" is ticked) and are removed on logout. |
 | **Full multi-factor authentication for admins** | Asking an admin to retype their password before sensitive actions is built. A second factor, such as an authenticator app, is a larger piece of work. |
-| **Email verification at registration** | Suggested by evaluators. A mobile-number code was built instead, since the contact number is how subscribers sign in. Email is optional today, and the system has no email service. |
+| **Email verification at registration** | Suggested by evaluators. A mobile-number code was built instead, since the mobile number is how subscribers sign in. Email is optional today, and the system has no email service. |
 
 ## Not started
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
+import archiveApi from '../api/archive'
 import { TableSkeleton } from '../components/Skeletons.jsx'
 import { Archive, ChevronRight, MousePointerClick, Pencil, Wifi } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
@@ -50,9 +51,7 @@ export default function Plans() {
   const [form, setForm] = useState(emptyForm)
   const [formErrors, setFormErrors] = useState({})
   const [saving, setSaving] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState(null)
   const [detailsPlan, setDetailsPlan] = useState(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const { toast, showToast } = useToast()
   const { can } = useAuth()
@@ -170,18 +169,26 @@ export default function Plans() {
     }
   }
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return
-    setDeleteLoading(true)
+  // Archiving can be undone, so it happens straight away and the message offers an Undo button.
+  const undoArchive = async (plan) => {
     try {
-      await api.delete(`/plans/${deleteTarget.plan_id}`)
-      setPlans((prev) => prev.filter((p) => p.plan_id !== deleteTarget.plan_id))
-      showToast(`"${deleteTarget.plan_name}" was archived.`)
+      await archiveApi.restorePlan(plan.plan_id)
+      showToast(`"${plan.plan_name}" was restored.`)
+      fetchPlans()
+    } catch (err) {
+      showToast(errorMessage(err, 'Could not undo. You can restore the plan from the Archive page.'), 'error')
+    }
+  }
+
+  const archivePlan = async (plan) => {
+    try {
+      await api.delete(`/plans/${plan.plan_id}`)
+      setPlans((prev) => prev.filter((p) => p.plan_id !== plan.plan_id))
+      showToast(`"${plan.plan_name}" was archived. It is no longer offered for new subscribers; those already on it are still billed.`, 'success', {
+        action: { label: 'Undo', onClick: () => undoArchive(plan) },
+      })
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to archive plan.', 'error')
-    } finally {
-      setDeleteLoading(false)
-      setDeleteTarget(null)
     }
   }
 
@@ -208,7 +215,7 @@ export default function Plans() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <TableSkeleton rows={5} columns={[
             { label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' },
-            { label: 'Status', kind: 'badge' }, { label: 'Actions', kind: 'actions' },
+            { label: 'Availability', kind: 'badge' }, { label: 'Actions', kind: 'actions' },
           ]} />
         </div>
       </div>
@@ -257,7 +264,7 @@ export default function Plans() {
                 <TableHead>Rate</TableHead>
                 <TableHead>Speed (Mbps)</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Availability</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -289,7 +296,7 @@ export default function Plans() {
                         ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'}
                     >
-                      {plan.status}
+                      {plan.status === 'Active' ? 'Offered' : 'Not offered'}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -301,7 +308,7 @@ export default function Plans() {
                         </Button>
                       )}
                       {canArchive && (
-                        <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setDeleteTarget(plan)} aria-label={`Archive ${plan.plan_name}`}>
+                        <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => archivePlan(plan)} aria-label={`Archive ${plan.plan_name}`}>
                           <Archive className="size-3.5" aria-hidden="true" />
                           Archive
                         </Button>
@@ -326,7 +333,7 @@ export default function Plans() {
         }}
         onArchive={(p) => {
           setDetailsPlan(null)
-          setDeleteTarget(p)
+          archivePlan(p)
         }}
       />
 
@@ -384,14 +391,14 @@ export default function Plans() {
           </div>
 
           <div data-tour="plan-status" className="space-y-1.5">
-            <Label>Status</Label>
+            <Label>Availability</Label>
             <Select value={form.status} onValueChange={setFieldValue('status')}>
-              <SelectTrigger className="w-full" aria-label="Plan status">
+              <SelectTrigger className="w-full" aria-label="Plan availability">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Active">Offered to new subscribers</SelectItem>
+                <SelectItem value="Inactive">Not offered</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -414,28 +421,6 @@ export default function Plans() {
         onConfirm={savePlan}
       />
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive this plan?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget && (
-                <><strong>"{deleteTarget.plan_name}"</strong> will no longer be offered for new subscribers. Subscribers already on this plan keep it and are still billed normally. You can restore it from the Archive page.</>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              disabled={deleteLoading}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteLoading ? 'Archiving...' : 'Archive Plan'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

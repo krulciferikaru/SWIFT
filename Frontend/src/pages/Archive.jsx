@@ -155,7 +155,7 @@ export default function ArchivePage() {
           onChange={(e) => {
             setView({ q: e.target.value, page: 1 })
           }}
-          placeholder="Search by name, contact number, address, MAC…"
+          placeholder="Search by name, mobile number, address, MAC…"
           aria-label="Search archived subscribers"
           className="mb-4 max-w-md"
         />
@@ -169,7 +169,7 @@ export default function ArchivePage() {
         {loading ? (
           <TableSkeleton rows={5} columns={
             isSubscribers
-              ? [{ label: 'Name' }, { label: 'Plan' }, { label: 'Contact Number' }, { label: 'Address' }, { label: 'Archived On' }, { label: 'Actions', kind: 'actions' }]
+              ? [{ label: 'Name' }, { label: 'Plan' }, { label: 'Mobile Number' }, { label: 'Address' }, { label: 'Archived On' }, { label: 'Actions', kind: 'actions' }]
               : [{ label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' }, { label: 'Archived On' }, { label: 'Actions', kind: 'actions' }]
           } />
         ) : items.length === 0 ? (
@@ -196,7 +196,7 @@ export default function ArchivePage() {
                   <>
                     <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
                     <TableHead>Plan</TableHead>
-                    <TableHead>Contact Number</TableHead>
+                    <TableHead>Mobile Number</TableHead>
                     <TableHead>Address</TableHead>
                   </>
                 ) : (

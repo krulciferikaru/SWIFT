@@ -40,8 +40,8 @@ All SMS go through PhilSMS. If no token is configured (as on evaluation), nothin
 Notes:
 
 - The automatic status job changes a status **silently**. A subscriber only receives a status SMS when staff change the status manually.
-- Account claims (someone registering with the contact number of an existing subscriber) do not send an SMS when approved or rejected.
-- SMS to subscribers are only sent to accounts that have a contact number. Unverified numbers still receive notices; verification only proves the number belongs to the person.
+- Account claims (someone registering with the mobile number of an existing subscriber) do not send an SMS when approved or rejected.
+- SMS to subscribers are only sent to accounts that have a mobile number. Unverified numbers still receive notices; verification only proves the number belongs to the person.
 - Verification codes are limited (one a minute, three every 10 minutes per person) because each one costs a message, and a code stops working after 5 wrong tries.
 
 ## Known limits

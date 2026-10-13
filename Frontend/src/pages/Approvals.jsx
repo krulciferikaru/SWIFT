@@ -406,7 +406,7 @@ export default function Approvals() {
           data-tour="approvals-search"
           aria-label="Search approvals"
           type="text"
-          placeholder="Search by name, contact number, or email…"
+          placeholder="Search by name, mobile number, or email…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="mb-4 max-w-sm"
@@ -421,9 +421,9 @@ export default function Approvals() {
 
       {tab === "claims" && claimsSubTab === "pending" && list.length > 0 && (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded text-sm text-amber-800 dark:text-amber-400">
-          These are new login registrations using a contact number that matches an
+          These are new login registrations using a mobile number that matches an
           existing subscriber record. Verify the person's identity (name,
-          contact number, address on file) before approving — approving links
+          mobile number, address on file) before approving — approving links
           this login to the existing subscriber's account.
         </div>
       )}
@@ -432,12 +432,12 @@ export default function Approvals() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {tab === "claims" ? (
             <TableSkeleton rows={4} columns={[
-              { label: "Requested Name" }, { label: "Contact Number" }, { label: "Existing Subscriber on File" },
+              { label: "Requested Name" }, { label: "Mobile Number" }, { label: "Existing Subscriber on File" },
               { label: "Requested On" }, { label: "Actions", kind: "actions" },
             ]} />
           ) : (
             <TableSkeleton rows={4} columns={[
-              { label: "Name" }, { label: "Email" }, { label: "Contact Number" }, { label: "Status", kind: "badge" },
+              { label: "Name" }, { label: "Email" }, { label: "Mobile Number" }, { label: "Status", kind: "badge" },
               { label: "Registered On" }, { label: "Actions", kind: "actions" },
             ]} />
           )}
@@ -460,7 +460,7 @@ export default function Approvals() {
             <TableHeader>
               <TableRow>
                 <TableHead>Requested Name</TableHead>
-                <TableHead>Contact Number</TableHead>
+                <TableHead>Mobile Number</TableHead>
                 <TableHead>Existing Subscriber on File</TableHead>
                 <TableHead>Requested On</TableHead>
                 <TableHead>Actions</TableHead>
@@ -543,7 +543,7 @@ export default function Approvals() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Contact Number</TableHead>
+                <TableHead>Mobile Number</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Registered On</TableHead>
                 <TableHead>Actions</TableHead>

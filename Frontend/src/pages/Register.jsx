@@ -43,7 +43,7 @@ export default function Register() {
   const localErrors = {
     first_name: required('First name')(form.first_name),
     last_name: required('Last name')(form.last_name),
-    contact_number: firstError(form.contact_number, required('Contact number'), mobileNumber),
+    contact_number: firstError(form.contact_number, required('Mobile number'), mobileNumber),
     email: emailAddress(form.email),
     address: required('Barangay')(form.address),
     password: firstError(form.password, required('Password'), minLength('Password', 8)),
@@ -139,7 +139,7 @@ export default function Register() {
 
             <FormField
               id="contact_number"
-              label="Contact Number"
+              label="Mobile Number"
               required
               hint="You will use this number to log in."
               error={fieldError('contact_number')}

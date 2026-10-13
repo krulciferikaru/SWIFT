@@ -346,7 +346,7 @@ class ReportController extends Controller
     private function buildSubscribersXlsxRows($subscribers): array
     {
         $rows = [
-            ['Subscriber ID', 'Name', 'Plan', 'Address', 'Contact Number', 'Email', 'MAC Address', 'Installation Date', 'Status', 'Created At'],
+            ['Subscriber ID', 'Name', 'Plan', 'Address', 'Mobile Number', 'Email', 'MAC Address', 'Installation Date', 'Status', 'Created At'],
         ];
 
         foreach ($subscribers as $subscriber) {
