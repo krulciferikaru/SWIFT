@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Barangay;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscriber;
@@ -58,8 +59,13 @@ class MockupDataSeeder extends Seeder
         'Ramos', 'Torres', 'Navarro', 'Domingo', 'Manalo', 'Pascual', 'Soriano', 'Valdez', 'Corpuz', 'Macaraeg', 'Dizon', 'Tolentino',
         'Cabrera', 'Salvador', 'Lacson', 'Gonzales', 'Rivera', 'Flores', 'Agustin', 'De Guzman'];
 
-    private const BARANGAYS = ['Atate', 'Aulo', 'Bagong Buhay', 'Bagong Sikat', 'Caimito', 'Doña Josefa', 'Ganaderia', 'Imelda Valley',
-        'Langka', 'Maligaya', 'Manacnac', 'Marcos Village', 'Militar', 'Malate', 'Santolan', 'Singalat', 'Sapang Buho', 'Santo Niño'];
+    /**
+     * The barangays an address is chosen from. The five the system starts with come first; the others
+     * are added to the list on this machine so the Barangays card in Settings has something to scroll
+     * (the company's real list is its own to enter). An address is saved as "<name>, Palayan City".
+     */
+    private const BARANGAYS = ['Malete', 'Santolan', 'Caballero', 'Ganaderia', 'Caimito', 'Atate', 'Aulo', 'Bagong Buhay', 'Bagong Sikat',
+        'Doña Josefa', 'Imelda Valley', 'Langka', 'Maligaya', 'Manacnac', 'Marcos Village', 'Militar', 'Singalat', 'Sapang Buho', 'Santo Niño'];
 
     private const METHODS = ['Cash', 'Cash', 'Cash', 'Cash', 'GCash', 'GCash', 'Others'];
 
@@ -75,6 +81,7 @@ class MockupDataSeeder extends Seeder
         $this->today = Carbon::now('Asia/Manila')->startOfDay();
 
         $this->clearEarlierRun();
+        $this->makeBarangays();
         $this->makePlans();
         $this->makeStaff();
 
@@ -135,6 +142,14 @@ class MockupDataSeeder extends Seeder
         }
         User::where('email', 'like', 'mockup.%'.self::DOMAIN)->delete();
         User::where('email', 'subscriber@swift.test')->delete();
+    }
+
+    /** Makes sure every barangay used for an address is on the list (keeps the original five in order). */
+    private function makeBarangays(): void
+    {
+        foreach (self::BARANGAYS as $i => $name) {
+            Barangay::firstOrCreate(['name' => $name], ['is_active' => true, 'sort_order' => $i + 1]);
+        }
     }
 
     private function makePlans(): void
@@ -206,7 +221,7 @@ class MockupDataSeeder extends Seeder
 
         return [
             'name' => "$first $last",
-            'address' => (1 + ($n * 13) % 90).' '.self::BARANGAYS[$n % count(self::BARANGAYS)].', Palayan City',
+            'address' => Barangay::address(self::BARANGAYS[$n % count(self::BARANGAYS)]),
             'contact_number' => sprintf('0917%07d', 2000000 + $n * 37),
             'email' => $slug.self::DOMAIN,
             'mac_address' => sprintf('AC:84:C6:%02X:%02X:%02X', 16 + $n, ($n * 29) % 256, ($n * 53) % 256),

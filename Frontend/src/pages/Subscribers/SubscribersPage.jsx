@@ -96,10 +96,13 @@ export default function SubscribersPage() {
   const [hiddenColumns, setHiddenColumns] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(columnsKey));
-      return Array.isArray(saved) ? saved : [];
+      if (Array.isArray(saved)) return saved;
     } catch {
-      return [];
+      /* no saved choice */
     }
+    // Nothing chosen yet: on a laptop-sized screen the two longest columns start hidden so the table
+    // fits. A wide monitor shows everything. "Show all" in the Columns menu brings them back.
+    return window.innerWidth < 1536 ? ["email", "mac"] : [];
   });
   const columnChoices = COLUMN_CHOICES.filter((c) => !c.private || showPrivate);
   const shows = (key) => columnChoices.some((c) => c.key === key) && !hiddenColumns.includes(key);
@@ -682,7 +685,7 @@ export default function SubscribersPage() {
               />
             )
           ) : (
-            <Table>
+            <Table className="md:[&_td]:px-1.5 md:[&_th]:px-1.5">
               <TableHeader>
                 <TableRow>
                   {canRemind && (
@@ -699,7 +702,7 @@ export default function SubscribersPage() {
                   {shows("installed") && <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>}
                   {shows("status") && <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Service status</SortableHead>}
                   {shows("balance") && <TableHead>Balance</TableHead>}
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="md:sticky md:right-0 md:z-10 md:bg-white dark:md:bg-gray-800 md:shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -739,7 +742,7 @@ export default function SubscribersPage() {
                     )}
                     {shows("email") && (
                       <TableCell className="text-gray-600 dark:text-gray-400">
-                        {sub.email || "—"}
+                        <span className="block max-w-52 truncate" title={sub.email || undefined}>{sub.email || "—"}</span>
                       </TableCell>
                     )}
                     {shows("mobile") && (
@@ -762,7 +765,7 @@ export default function SubscribersPage() {
                     )}
                     {shows("installed") && (
                       <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                        {sub.connection_date ? spelledDate(String(sub.connection_date).slice(0, 10)) : "—"}
+                        {sub.connection_date ? spelledDate(String(sub.connection_date).slice(0, 10), true) : "—"}
                       </TableCell>
                     )}
                     {shows("status") && (
@@ -790,18 +793,19 @@ export default function SubscribersPage() {
                       )}
                     </TableCell>
                     )}
-                    <TableCell>
-                      <div data-tour="subs-actions" className="flex flex-wrap gap-2">
+                    <TableCell className="md:sticky md:right-0 md:z-10 md:bg-white dark:md:bg-gray-800 md:shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]">
+                      <div data-tour="subs-actions" className="flex flex-wrap gap-1.5 md:flex-nowrap">
                         {can("subscribers.manage") && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setEditTarget(sub)}
                           aria-label={`Edit ${sub.name}`}
+                          title="Edit"
                           className="gap-1.5"
                         >
                           <Pencil className="size-3.5" aria-hidden="true" />
-                          Edit
+                          <span className="hidden max-md:inline 2xl:inline">Edit</span>
                         </Button>
                         )}
                         {can("subscribers.archive") && (
@@ -810,10 +814,11 @@ export default function SubscribersPage() {
                           size="sm"
                           onClick={() => setArchiveTarget(sub)}
                           aria-label={`Archive ${sub.name}`}
+                          title="Archive"
                           className="gap-1.5"
                         >
                           <Archive className="size-3.5" aria-hidden="true" />
-                          Archive
+                          <span className="hidden max-md:inline 2xl:inline">Archive</span>
                         </Button>
                         )}
                         {can("payments.view", "payments.record") && (
@@ -821,6 +826,7 @@ export default function SubscribersPage() {
                           variant="outline"
                           size="sm"
                           aria-label={`Payments for ${sub.name}`}
+                          title="Payments"
                           onClick={() =>
                             navigate("/payments", {
                               state: { subscriber: sub },
@@ -829,7 +835,7 @@ export default function SubscribersPage() {
                           className="gap-1.5 border-green-700/40 text-green-700 hover:bg-green-50 dark:border-green-400/40 dark:text-green-400 dark:hover:bg-green-950"
                         >
                           <CreditCard className="size-3.5" aria-hidden="true" />
-                          Payments
+                          <span className="hidden max-md:inline 2xl:inline">Payments</span>
                         </Button>
                         )}
                       </div>
