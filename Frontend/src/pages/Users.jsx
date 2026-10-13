@@ -268,8 +268,8 @@ export default function Users() {
 
       {initialLoad ? (
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <Skeleton className="h-9 flex-1" />
-          <Skeleton className="h-9 w-full sm:w-40" />
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 w-full sm:w-40" />
         </div>
       ) : (
         <div data-tour="users-filters" className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -409,7 +409,8 @@ export default function Users() {
             <Button type="button" variant="outline" onClick={requestClose}>
               Cancel
             </Button>
-            <Button type="submit" form="staff-create-form" disabled={creating}>
+            <Button type="submit" form="staff-create-form" disabled={creating} className="gap-2">
+              <UserPlus className="size-4" aria-hidden="true" />
               {creating ? 'Creating...' : 'Create Account'}
             </Button>
           </div>

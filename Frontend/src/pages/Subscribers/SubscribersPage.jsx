@@ -7,7 +7,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import CardAction from "../../components/CardAction.jsx";
 import DateHint from "../../components/DateHint.jsx";
 import EmptyState from "../../components/EmptyState.jsx";
@@ -37,7 +37,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
 import { spelledDate } from "../../utils/text";
-import { Archive, BellRing, ChevronRight, CreditCard, FilterX, MousePointerClick, Pencil, Users2 } from "lucide-react";
+import { Archive, BellRing, ChevronRight, CreditCard, Download, FileDown, FilterX, MousePointerClick, Pencil, Save, UserPlus, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -351,7 +351,7 @@ export default function SubscribersPage() {
         </div>
 
         {summary ? (
-          <div data-tour="subs-summary" className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div data-tour="subs-summary" className="grid grid-cols-2 gap-4 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": can("approvals.manage") ? 5 : 4 }}>
             {[
               {
                 label: "Total",
@@ -378,7 +378,10 @@ export default function SubscribersPage() {
                 value: summary.disconnected,
                 color: "text-red-600 dark:text-red-400",
               },
-            ].map((card) => {
+            ]
+              // The Pending card leads to the Approvals page, so only people who can approve see it.
+              .filter((card) => card.label !== "Pending" || can("approvals.manage"))
+              .map((card) => {
               const body = (
                 <CardContent>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -410,15 +413,14 @@ export default function SubscribersPage() {
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2"
-              >
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-7 w-10" />
-              </div>
+          <div className="grid grid-cols-2 gap-4 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": can("approvals.manage") ? 5 : 4 }}>
+            {Array.from({ length: can("approvals.manage") ? 5 : 4 }).map((_, i) => (
+              <Card key={i} className={can("approvals.manage") ? "min-h-[141px]" : "min-h-[125px]"}>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-7 w-10" />
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
@@ -426,10 +428,10 @@ export default function SubscribersPage() {
         {/* Toolbar */}
         {initialLoading ? (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <Skeleton className="h-9 flex-1" />
-            <Skeleton className="h-9 w-full sm:w-40" />
-            <Skeleton className="h-9 w-full sm:w-32" />
-            <Skeleton className="h-9 w-full sm:w-36" />
+            <Skeleton className="h-8 flex-1" />
+            <Skeleton className="h-8 w-full sm:w-40" />
+            {can("reports.view") && <Skeleton className="h-8 w-full sm:w-32" />}
+            {can("subscribers.manage") && <Skeleton className="h-8 w-full sm:w-36" />}
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -456,32 +458,47 @@ export default function SubscribersPage() {
               </SelectContent>
             </Select>
 
-            <Button
-              data-tour="subs-export"
-              onClick={() => setShowPreview(true)}
-              className="bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
-            >
-              Export CSV
-            </Button>
+            {can("reports.view") && (
+              <Button
+                data-tour="subs-export"
+                onClick={() => setShowPreview(true)}
+                className="gap-2 bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
+              >
+                <FileDown className="size-4" aria-hidden="true" />
+                Export CSV
+              </Button>
+            )}
 
             {can("subscribers.manage") && (
               <Button
                 data-tour="subs-add"
                 onClick={() => setShowAdd(true)}
-                className="whitespace-nowrap"
+                className="gap-2 whitespace-nowrap"
               >
+                <UserPlus className="size-4" aria-hidden="true" />
                 Add Subscriber
               </Button>
             )}
           </div>
         )}
 
+        {initialLoading && (
+          <div className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="min-h-14 space-y-1 sm:flex-1">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ))}
+          </div>
+        )}
+
         {!initialLoading && (
           <div data-tour="subs-filters" className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-            <div className="space-y-1">
+            <div className="space-y-1 sm:flex-1">
               <label htmlFor="subs-plan" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Plan</label>
               <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger id="subs-plan" aria-label="Filter by plan" className="w-full sm:w-52">
+                <SelectTrigger id="subs-plan" aria-label="Filter by plan" className="w-full">
                   <SelectValue>
                     {planId === "All"
                       ? "All plans"
@@ -498,14 +515,14 @@ export default function SubscribersPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 sm:flex-1">
               <label htmlFor="subs-from" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed from</label>
-              <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full sm:w-40" />
+              <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full" />
               <DateHint value={installedFrom} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 sm:flex-1">
               <label htmlFor="subs-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed to</label>
-              <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full sm:w-40" />
+              <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full" />
               <DateHint value={installedTo} />
             </div>
             {(hasExtraFilters || search || status !== "All") && (
@@ -522,6 +539,12 @@ export default function SubscribersPage() {
           <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
           Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
         </p>
+
+        {canRemind && initialLoading && (
+          <div className="-mt-1 mb-3 flex h-7 items-center">
+            <Skeleton className="h-7 w-72 max-w-full" />
+          </div>
+        )}
 
         {canRemind && !initialLoading && subscribers.length > 0 && (
           <div data-tour="subs-remind" className="-mt-1 mb-3 flex flex-wrap items-center gap-3 text-sm">
@@ -796,8 +819,9 @@ export default function SubscribersPage() {
               </Button>
               <Button
                 onClick={handleExportReport}
-                className="bg-green-700 text-white hover:bg-green-800"
+                className="gap-2 bg-green-700 text-white hover:bg-green-800"
               >
+                <Download className="size-4" aria-hidden="true" />
                 Download CSV
               </Button>
             </div>
@@ -830,7 +854,9 @@ export default function SubscribersPage() {
               type="submit"
               form="add-subscriber-form"
               disabled={formLoading}
+              className="gap-2"
             >
+              <Save className="size-4" aria-hidden="true" />
               {formLoading ? "Saving..." : "Save Subscriber"}
             </Button>
           </div>
@@ -875,7 +901,9 @@ export default function SubscribersPage() {
               type="submit"
               form="edit-subscriber-form"
               disabled={formLoading}
+              className="gap-2"
             >
+              <Save className="size-4" aria-hidden="true" />
               {formLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>

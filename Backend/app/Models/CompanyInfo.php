@@ -8,7 +8,7 @@ class CompanyInfo extends Model
 {
     protected $table = 'company_info';
 
-    public const FIELDS = ['phone', 'mobile', 'email', 'address', 'office_hours', 'how_to_pay'];
+    public const FIELDS = ['mobile', 'email', 'address', 'office_hours', 'how_to_pay'];
 
     protected $fillable = self::FIELDS;
 

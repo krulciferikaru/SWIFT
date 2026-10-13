@@ -7,7 +7,8 @@ import { CheckCircle2, CircleAlert } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import PasswordField from '../components/PasswordField.jsx'
 import api from '../api/axios'
-import { capitalizeWords, BARANGAYS } from '../utils/text'
+import { capitalizeWords } from '../utils/text'
+import { useBarangays } from '../hooks/useBarangays'
 import { Input } from '@/components/ui/input'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
 import { required, mobileNumber, emailAddress, minLength, matches, firstError } from '../utils/validators'
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import AuthLayout from '../components/AuthLayout.jsx'
 
 export default function Register() {
+  const { barangays: BARANGAYS } = useBarangays()
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -171,7 +173,7 @@ export default function Register() {
                 onBlur={handleBlur}
                 className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm dark:bg-gray-950"
               >
-                <option value="">Select your barangay</option>
+                <option value="" disabled hidden>Select your barangay</option>
                 {BARANGAYS.map((b) => (
                   <option key={b} value={b}>
                     {b}

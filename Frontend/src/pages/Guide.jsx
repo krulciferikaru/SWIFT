@@ -54,7 +54,7 @@ const SECTIONS = [
     icon: Users2,
     title: 'Subscribers',
     summary: 'The full list of cable TV/internet subscribers.',
-    roles: ['admin', 'secretary'],
+    roles: ['admin', 'secretary', 'collector'],
     body: (
       <>
         <p>This is the master list of everyone signed up for service. At the top you'll see totals for Total, Pending, Active, Unpaid, and Disconnected.</p>
@@ -116,7 +116,7 @@ const SECTIONS = [
     icon: Wallet,
     title: 'Payments',
     summary: 'Record a subscriber\'s payment and see their balance.',
-    roles: ['admin', 'secretary'],
+    roles: ['admin', 'secretary', 'collector'],
     body: (
       <>
         <p>This is where you'll spend the most time day-to-day.</p>
@@ -214,7 +214,7 @@ const SECTIONS = [
       role === 'subscriber'
         ? 'Appearance, tour options, and logout behavior.'
         : 'Appearance, tour options, logout behavior, and SMS tools.',
-    roles: ['admin', 'secretary', 'subscriber'],
+    roles: ['admin', 'secretary', 'collector', 'subscriber'],
     body: (role) => (
       <>
         <p>These preferences are saved on the device and browser you are using.</p>
@@ -295,6 +295,15 @@ function useSearchHighlight(containerId, terms, watch) {
   }, [containerId, terms.join(' '), watch])
 }
 
+// How the guide is organised: a heading for each area of the system, with its sections under it.
+const GROUPS = [
+  { title: 'Overview', description: 'Your home screen.', ids: ['dashboard'] },
+  { title: 'Customers', description: 'Subscribers, registrations and service plans.', ids: ['subscribers', 'approvals', 'plans'] },
+  { title: 'Billing', description: 'Recording payments and reading the reports.', ids: ['payments', 'reports'] },
+  { title: 'Administration', description: 'The archive, staff accounts and the audit trail.', ids: ['archive', 'users', 'audit'] },
+  { title: 'Settings', description: 'Your preferences and your own account.', ids: ['settings'] },
+]
+
 export default function Guide() {
   const { user } = useAuth()
   const role = user?.role
@@ -303,6 +312,15 @@ export default function Guide() {
   const available = useMemo(() => sectionsForRole(role), [role])
   const sections = available.filter((s) => terms.every((t) => s.haystack.includes(t)))
   const searching = terms.length > 0
+
+  // Sections are shown under headings, in this order. Anything not listed goes under "More".
+  const groups = (() => {
+    const placed = new Set(GROUPS.flatMap((g) => g.ids))
+    const list = GROUPS.map((g) => ({ ...g, items: sections.filter((s) => g.ids.includes(s.id)) }))
+    const rest = sections.filter((s) => !placed.has(s.id))
+    if (rest.length) list.push({ title: 'More', items: rest })
+    return list.filter((g) => g.items.length > 0)
+  })()
 
   useSearchHighlight('guide-results', sections.length ? terms : [], sections.map((s) => s.id).join(','))
 
@@ -344,10 +362,42 @@ export default function Guide() {
     }
   }, [])
 
+  const renderSection = (s) => {
+    const Icon = s.icon
+    return (
+      <Card key={s.id} id={s.id} className="scroll-mt-4 print:break-inside-avoid print:border print:border-gray-300 print:shadow-none print:ring-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Icon className="size-4 text-primary" />
+            {s.title}
+            {s.roles && !s.roles.includes('subscriber') && (
+              <Badge variant="outline" className="ml-1 text-[10px] font-normal capitalize">
+                {s.roles.join(' / ')}
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>{s.summary}</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+          {s.body}
+          {s.tour && TOUR_PAGES[s.tour] && (
+            <Link
+              to={`${TOUR_PAGES[s.tour]}?tour=1`}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5 print:hidden')}
+            >
+              <PlayCircle className="size-4" />
+              Show me
+            </Link>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
   const printedOn = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="hidden print:block border-b border-gray-300 pb-4">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
           Jubal Brothers Cable TV Corporation · Palayan Branch
@@ -444,7 +494,7 @@ export default function Guide() {
         ))}
       </div>
 
-      <div id="guide-results" className="space-y-4">
+      <div id="guide-results" className="space-y-8">
         {sections.length === 0 && (
           <Card>
             <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
@@ -457,37 +507,17 @@ export default function Guide() {
             </CardContent>
           </Card>
         )}
-        {sections.map((s) => {
-          const Icon = s.icon
-          return (
-            <Card key={s.id} id={s.id} className="scroll-mt-4 print:break-inside-avoid print:border print:border-gray-300 print:shadow-none print:ring-0">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Icon className="size-4 text-primary" />
-                  {s.title}
-                  {s.roles && !s.roles.includes('subscriber') && (
-                    <Badge variant="outline" className="ml-1 text-[10px] font-normal capitalize">
-                      {s.roles.join(' / ')}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription>{s.summary}</CardDescription>
-              </CardHeader>
-              <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
-                {s.body}
-                {s.tour && TOUR_PAGES[s.tour] && (
-                  <Link
-                    to={`${TOUR_PAGES[s.tour]}?tour=1`}
-                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5 print:hidden')}
-                  >
-                    <PlayCircle className="size-4" />
-                    Show me
-                  </Link>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+        {groups.map((g) => (
+          <section key={g.title} className="space-y-4 print:break-inside-avoid-page">
+            <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400 print:text-gray-800">{g.title}</h2>
+              {g.description && <p className="text-xs text-gray-500 dark:text-gray-400">{g.description}</p>}
+            </div>
+            <div className={`gap-4 print:columns-1 [&>*]:mb-4 [&>*]:break-inside-avoid ${g.items.length > 1 ? 'columns-1 xl:columns-2' : ''}`}>
+              {g.items.map(renderSection)}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   )

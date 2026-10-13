@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import api from '../api/axios'
 
-export const COMPANY_FIELDS = ['phone', 'mobile', 'email', 'address', 'office_hours', 'how_to_pay']
+export const COMPANY_FIELDS = ['mobile', 'email', 'address', 'office_hours', 'how_to_pay']
 
 // One copy shared by every component that shows the company's contact details.
 let cached = null

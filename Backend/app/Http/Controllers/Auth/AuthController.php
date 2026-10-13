@@ -15,14 +15,6 @@ use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
-    public const BARANGAYS = [
-        'Malete, Palayan City',
-        'Santolan, Palayan City',
-        'Caballero, Palayan City',
-        'Ganaderia, Palayan City',
-        'Caimito, Palayan City',
-    ];
-
     // Public self-registration for subscribers only
     public function register(Request $request)
     {
@@ -60,7 +52,7 @@ class AuthController extends Controller
             'contact_number' => $contactRule,
             'email' => $emailRule,
             'password' => 'required|string|min:8|confirmed',
-            'address' => ['required', 'string', Rule::in(self::BARANGAYS)],
+            'address' => ['required', 'string', Rule::in(\App\Models\Barangay::activeAddresses())],
             'accept_terms' => ['accepted'],
         ], [
             'accept_terms.accepted' => 'You need to agree to the Terms of Service and Privacy Policy to register.',

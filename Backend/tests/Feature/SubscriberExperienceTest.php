@@ -78,20 +78,20 @@ class SubscriberExperienceTest extends TestCase
     {
         $this->getJson('/api/company-info')
             ->assertOk()
-            ->assertJsonPath('data.phone', null)
+            ->assertJsonPath('data.mobile', null)
             ->assertJsonPath('data.how_to_pay', null);
     }
 
     public function test_only_an_admin_can_change_company_info_and_it_is_logged(): void
     {
         Sanctum::actingAs($this->user('secretary'));
-        $this->putJson('/api/company-info', ['phone' => '123'])->assertForbidden();
+        $this->putJson('/api/company-info', ['mobile' => '123'])->assertForbidden();
 
         Sanctum::actingAs($this->user('admin'));
         $this->putJson('/api/company-info', [
-            'phone' => '  (044) 111-2222 ', 'email' => 'help@example.test', 'how_to_pay' => 'Pay your collector or visit the office.',
+            'mobile' => '  0917 111 2222 ', 'email' => 'help@example.test', 'how_to_pay' => 'Pay your collector or visit the office.',
             'address' => '',
-        ])->assertOk()->assertJsonPath('data.phone', '(044) 111-2222')->assertJsonPath('data.address', null);
+        ])->assertOk()->assertJsonPath('data.mobile', '0917 111 2222')->assertJsonPath('data.address', null);
 
         $this->assertSame('help@example.test', CompanyInfo::current()->email);
         $this->assertDatabaseHas('audit_logs', ['action' => 'company.updated']);

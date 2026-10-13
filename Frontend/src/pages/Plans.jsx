@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import archiveApi from '../api/archive'
 import { TableSkeleton } from '../components/Skeletons.jsx'
-import { Archive, ChevronRight, MousePointerClick, Pencil, Wifi } from 'lucide-react'
+import { Archive, ChevronRight, MousePointerClick, Pencil, Plus, Save, Wifi } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
@@ -209,18 +209,19 @@ export default function Plans() {
             <>
               <h1 className="sr-only">Service Plans</h1>
               <Skeleton className="h-8 w-40" />
-              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-8 w-28" />
             </>
           ) : (
             <>
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
               <div className="flex gap-2">
                 <TourButton tour="plans" />
-                {canManage && <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>}
+                {canManage && <Button data-tour="plans-add" onClick={openAddModal} className="gap-2"><Plus className="size-4" aria-hidden="true" />Add Plan</Button>}
               </div>
             </>
           )}
         </div>
+        <Skeleton className="mb-2 h-5 w-[34rem] max-w-full" />
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <TableSkeleton rows={5} columns={[
             { label: 'Name' }, { label: 'Rate' }, { label: 'Speed (Mbps)' }, { label: 'Description' },
@@ -239,7 +240,7 @@ export default function Plans() {
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Service Plans</h1>
         <div className="flex gap-2">
                 <TourButton tour="plans" />
-                {canManage && <Button data-tour="plans-add" onClick={openAddModal}>Add Plan</Button>}
+                {canManage && <Button data-tour="plans-add" onClick={openAddModal} className="gap-2"><Plus className="size-4" aria-hidden="true" />Add Plan</Button>}
               </div>
       </div>
 
@@ -358,7 +359,8 @@ export default function Plans() {
             <Button type="button" variant="outline" onClick={requestClose}>
               Cancel
             </Button>
-            <Button type="submit" form="plan-form" disabled={saving}>
+            <Button type="submit" form="plan-form" disabled={saving} className="gap-2">
+              <Save className="size-4" aria-hidden="true" />
               {saving ? 'Saving...' : 'Save'}
             </Button>
           </div>

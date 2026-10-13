@@ -299,7 +299,7 @@ export default function Approvals() {
         <>
           <h1 className="sr-only">Pending Approvals</h1>
           <Skeleton className="h-8 w-40 mb-4" />
-          <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2">
+          <div className="flex h-10 items-end gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
             <Skeleton className="h-9 w-20" />
             <Skeleton className="h-9 w-20" />
             <Skeleton className="h-9 w-32" />
@@ -393,7 +393,7 @@ export default function Approvals() {
       )}
 
       {initialLoading ? (
-        <Skeleton className="h-9 w-full max-w-sm mb-4" />
+        <Skeleton className="h-8 w-full max-w-sm mb-4" />
       ) : (
         <Input
           data-tour="approvals-search"

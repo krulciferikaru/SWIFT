@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { ArrowLeft, TriangleAlert } from 'lucide-react'
 import { LEGAL_DRAFT, LEGAL_UPDATED, LEGAL_VERSION } from './meta'
 
@@ -9,15 +10,29 @@ import { LEGAL_DRAFT, LEGAL_UPDATED, LEGAL_VERSION } from './meta'
  * reviewed the wording.
  */
 export default function LegalLayout({ title, intro, sections, children }) {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+
   useEffect(() => {
     document.title = `${title} · SWIFT`
   }, [title])
+
+  // Back goes to the page you came from (Settings, the sign-in page, Register). Opened directly,
+  // there is nothing behind it, so it goes to Settings when signed in and to the sign-in page when not.
+  // It never points a signed-in person at /login, which only bounces them to the dashboard.
+  const fallback = user ? '/settings' : '/login'
+  const goBack = (e) => {
+    e.preventDefault()
+    if (location.key !== 'default') navigate(-1)
+    else navigate(fallback)
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <header className="border-b border-gray-200 dark:border-gray-800">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-6 py-4">
-          <Link to="/login" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+          <Link to={fallback} onClick={goBack} className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
             <ArrowLeft className="size-4" aria-hidden="true" />
             Back
           </Link>
@@ -61,7 +76,7 @@ export default function LegalLayout({ title, intro, sections, children }) {
         <footer className="mt-14 flex flex-wrap gap-x-6 gap-y-2 border-t border-gray-200 pt-6 text-sm dark:border-gray-800">
           <Link to="/privacy" className="text-primary hover:underline dark:text-blue-300">Privacy Policy</Link>
           <Link to="/terms" className="text-primary hover:underline dark:text-blue-300">Terms of Service</Link>
-          <Link to="/login" className="text-primary hover:underline dark:text-blue-300">Sign in</Link>
+          {!user && <Link to="/login" className="text-primary hover:underline dark:text-blue-300">Sign in</Link>}
         </footer>
       </main>
     </div>

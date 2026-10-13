@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BarangayController;
 use App\Http\Controllers\CompanyInfoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentMethodController;
@@ -39,6 +40,8 @@ Route::post('/password/reset', [PasswordResetController::class, 'reset'])->middl
 
 // How to reach the company. Public so the sign-in page can show it.
 Route::get('/company-info', [CompanyInfoController::class, 'show'])->middleware('throttle:reports');
+// The barangays an address can be chosen from (the registration form needs them before sign-in).
+Route::get('/barangays', [BarangayController::class, 'index'])->middleware('throttle:reports');
 
 /*
  * Staff routes are guarded by permission (config/permissions.php), not by role name, so an
@@ -177,6 +180,11 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
             ->middleware('password.confirmed');
+
+        Route::get('/barangays/manage', [BarangayController::class, 'manage']);
+        Route::post('/barangays', [BarangayController::class, 'store']);
+        Route::put('/barangays/{barangay}', [BarangayController::class, 'update']);
+        Route::delete('/barangays/{barangay}', [BarangayController::class, 'destroy']);
 
         Route::post('/payment-methods', [PaymentMethodController::class, 'store']);
         Route::put('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
