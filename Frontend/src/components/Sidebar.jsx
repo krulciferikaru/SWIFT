@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import ThemeSwitch from "./ThemeSwitch.jsx";
 import { useApprovals } from "../context/ApprovalContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -314,26 +315,34 @@ export default function Sidebar({ open: pinned, onToggle }) {
       <div
         className={`${!open ? "px-2 py-3" : "p-4"} space-y-3 flex flex-col ${!open ? "items-center" : ""}`}
       >
-        <Button
-          variant="outline"
-          size="icon"
-          data-tour="theme-toggle"
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          onClick={toggleTheme}
-          onMouseEnter={(e) =>
-            showTooltip(
-              e,
-              theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
-            )
-          }
-          onMouseLeave={hideTooltip}
-        >
-          {theme === "dark" ? (
-            <Sun className="size-4" />
-          ) : (
-            <Moon className="size-4" />
-          )}
-        </Button>
+        {open ? (
+          <div data-tour="theme-toggle" className="w-full space-y-1.5">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Theme</p>
+            <ThemeSwitch />
+          </div>
+        ) : (
+          // Collapsed: no room for both options, so one icon that switches to the other theme.
+          <Button
+            variant="outline"
+            size="icon"
+            data-tour="theme-toggle"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={toggleTheme}
+            onMouseEnter={(e) =>
+              showTooltip(
+                e,
+                theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+              )
+            }
+            onMouseLeave={hideTooltip}
+          >
+            {theme === "dark" ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
+          </Button>
+        )}
 
         <div className="border-t border-gray-200 dark:border-gray-800 w-full" />
 
@@ -504,18 +513,10 @@ export default function Sidebar({ open: pinned, onToggle }) {
 
           <div className="my-2 border-t border-gray-200 dark:border-gray-800" />
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-          >
-            {theme === "dark" ? (
-              <Sun className="size-4" />
-            ) : (
-              <Moon className="size-4" />
-            )}
-            {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          </button>
+          <div className="space-y-1.5 px-3 py-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Theme</p>
+            <ThemeSwitch />
+          </div>
 
           {user && (
             <div className="px-3 py-2 text-xs">

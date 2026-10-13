@@ -7,6 +7,7 @@ import SecurityCard from '../components/SecurityCard.jsx'
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx'
 import StaffMobileNumber from '../components/StaffMobileNumber.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
+import ThemeSwitch from '../components/ThemeSwitch.jsx'
 import CompanyInfoForm from '../components/CompanyInfoForm.jsx'
 import PaymentMethodsManager from '../components/PaymentMethodsManager.jsx'
 import BarangaysManager from '../components/BarangaysManager.jsx'
@@ -19,7 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight, FileText } from 'lucide-react'
+import { Send, BellRing, PlayCircle, ShieldCheck, HelpCircle, ChevronRight, FileText } from 'lucide-react'
 import TourButton from "../components/TourButton.jsx";
 import ReviewDialog from '../components/ReviewDialog.jsx'
 import { runTour } from '../tour/useTour'
@@ -47,7 +48,7 @@ function SettingsLink({ to, icon: Icon, title, description }) {
 }
 
 export default function Settings() {
-  const { theme, toggleTheme } = useTheme()
+  const { theme } = useTheme()
   const { user, can } = useAuth()
   const [confirmLogout, setConfirmLogout] = useState(true)
   const showTourButtons = useShowTourButtons()
@@ -168,25 +169,14 @@ export default function Settings() {
           <CardDescription>Customize how SWIFT looks on your device.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {theme === 'dark' ? (
-                <Moon className="size-5 text-gray-500 dark:text-gray-400" />
-              ) : (
-                <Sun className="size-5 text-gray-500 dark:text-gray-400" />
-              )}
-              <div>
-                <Label htmlFor="theme-toggle" className="cursor-pointer">Dark Mode</Label>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {theme === 'dark' ? 'Currently using dark mode' : 'Currently using light mode'}
-                </p>
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Theme</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {theme === 'dark' ? 'Currently using dark mode' : 'Currently using light mode'}
+              </p>
             </div>
-            <Switch
-              id="theme-toggle"
-              checked={theme === 'dark'}
-              onCheckedChange={toggleTheme}
-            />
+            <ThemeSwitch className="w-48" />
           </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 dark:border-gray-700 pt-5">
