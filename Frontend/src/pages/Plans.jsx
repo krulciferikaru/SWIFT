@@ -437,7 +437,7 @@ export default function Plans() {
         open={reviewOpen}
         onOpenChange={setReviewOpen}
         title="Change this plan's monthly rate?"
-        description="The new rate is what subscribers on this plan are billed from now on."
+        description="The new rate applies from next month. Months already billed keep the price they had, so nothing already billed changes."
         rows={[
           { label: 'Plan', value: form.plan_name },
           { label: 'Current rate', value: editingPlan ? peso(editingPlan.monthly_rate) : '' },

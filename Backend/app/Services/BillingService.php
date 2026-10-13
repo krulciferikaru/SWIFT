@@ -28,7 +28,7 @@ class BillingService
      */
     public function getBreakdown(Subscriber $subscriber, CarbonInterface|string|null $asOf = null): array
     {
-        $rate = (float) ($subscriber->plan->monthly_rate ?? 0);
+        $schedule = app(RateHistoryService::class)->scheduleFor($subscriber);
 
         // The installation month is not billed (the installation fee is separate);
         // the subscription starts the month after the installation date.
@@ -41,7 +41,8 @@ class BillingService
         while ($cursor->lte($now)) {
             $months[] = [
                 'label' => $cursor->format('F Y'),
-                'due' => $rate,
+                // What this month cost when it was billed: a later change of plan or price never touches it.
+                'due' => $schedule->rateAt($cursor),
                 'applied' => 0.0,
                 'status' => 'unpaid',
             ];
@@ -78,7 +79,9 @@ class BillingService
         }
         unset($month);
 
-        $totalOwed = round($rate * count($months), 2);
+        $totalOwed = round(array_sum(array_column($months, 'due')), 2);
+        // The price now, for "monthly bill" displays.
+        $rate = $schedule->rateAt($now);
         $totalPaid = round((float) $payments->sum('amount'), 2);
         $balance = round($totalOwed - $totalPaid, 2);
         $monthsBehind = count(array_filter($months, fn ($m) => $m['status'] !== 'paid'));

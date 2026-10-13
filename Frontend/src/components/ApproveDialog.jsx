@@ -121,7 +121,8 @@ export default function ApproveDialog({ subscriber, onClose, onApproved }) {
             onBlur={() => setTouched((t) => ({ ...t, plan_id: true }))}
             className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm dark:bg-gray-950"
           >
-            <option value="">Select a plan</option>
+            {/* Shown until a plan is chosen, but not offered as a choice in the list. */}
+            <option value="" disabled hidden>Select a plan</option>
             {plans.map((p) => (
               <option key={p.plan_id} value={p.plan_id}>{p.plan_name} — {peso(p.monthly_rate)}</option>
             ))}

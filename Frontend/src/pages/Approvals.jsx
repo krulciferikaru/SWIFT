@@ -6,6 +6,7 @@ import { Check, ClipboardCheck, RotateCcw, X } from "lucide-react";
 import EmptyState from "../components/EmptyState.jsx";
 import Pager from "../components/Pager.jsx";
 import ApproveDialog from "../components/ApproveDialog.jsx";
+import ConfirmAction from "../components/ConfirmAction.jsx";
 import { useOnReconnect } from "../hooks/useOnline";
 import subscriberApi from "../api/subscribers";
 import {
@@ -56,6 +57,8 @@ export default function Approvals() {
   const [actionLoading, setActionLoading] = useState(null);
   // The applicant being approved: a plan and an installation date are chosen first.
   const [approveTarget, setApproveTarget] = useState(null);
+  // The rejected claim about to be approved again: staff confirm first.
+  const [reapproveClaimTarget, setReapproveClaimTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectClaimTarget, setRejectClaimTarget] = useState(null);
   const { refreshPendingCount, refreshClaimsCount } = useApprovals();
@@ -510,7 +513,7 @@ export default function Approvals() {
                       ) : (
                         <Button
                           size="sm"
-                          onClick={() => handleReapproveClaim(claimUser)}
+                          onClick={() => setReapproveClaimTarget(claimUser)}
                           aria-label={`Re-approve ${claimUser.name}`}
                           disabled={actionLoading === claimUser.id}
                           className="gap-1.5 bg-green-700 text-white hover:bg-green-800"
@@ -599,6 +602,28 @@ export default function Approvals() {
           </Table>
         </div>
       )}
+
+      <ConfirmAction
+        open={!!reapproveClaimTarget}
+        onOpenChange={(open) => { if (!open) setReapproveClaimTarget(null); }}
+        title="Approve this account claim again?"
+        description={
+          reapproveClaimTarget && (
+            <>
+              You rejected <strong>{reapproveClaimTarget.name}</strong>&apos;s claim earlier. Approving it now links their login to the existing
+              subscriber record and lets them sign in. Only do this if you have checked that they really are that subscriber.
+            </>
+          )
+        }
+        confirmLabel="Approve claim"
+        busyLabel="Approving..."
+        busy={actionLoading === reapproveClaimTarget?.id}
+        onConfirm={async () => {
+          const target = reapproveClaimTarget;
+          await handleReapproveClaim(target);
+          setReapproveClaimTarget(null);
+        }}
+      />
 
       <ApproveDialog subscriber={approveTarget} onClose={() => setApproveTarget(null)} onApproved={handleApproved} />
 

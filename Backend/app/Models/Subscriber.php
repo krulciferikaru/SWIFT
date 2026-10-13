@@ -58,8 +58,29 @@ class Subscriber extends Model
      * (added by staff, or approved) and every time the status really changes after that.
      * Applicants waiting for approval have no history yet: their status means nothing until then.
      */
+    /**
+     * Set by the code that changes a subscriber's plan when staff choose the month the change
+     * starts from (a date in that month). Left empty, the company's default applies.
+     */
+    public ?string $planEffectiveFrom = null;
+
     protected static function booted(): void
     {
+        // Which plan they are on, month by month (see RateHistoryService).
+        static::created(function (Subscriber $subscriber) {
+            if ($subscriber->plan_id) {
+                app(\App\Services\RateHistoryService::class)->recordSubscriberPlan($subscriber);
+            }
+        });
+        static::updated(function (Subscriber $subscriber) {
+            if ($subscriber->wasChanged('plan_id') && $subscriber->plan_id) {
+                app(\App\Services\RateHistoryService::class)->recordSubscriberPlan(
+                    $subscriber,
+                    $subscriber->planEffectiveFrom ? \Carbon\Carbon::parse($subscriber->planEffectiveFrom)->startOfMonth() : null,
+                );
+            }
+        });
+
         static::created(function (Subscriber $subscriber) {
             if ($subscriber->account_status === 'active') {
                 \App\Services\StatusHistoryService::record($subscriber, null, 'created');
