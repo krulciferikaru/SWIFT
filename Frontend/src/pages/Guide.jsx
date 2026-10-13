@@ -222,6 +222,7 @@ const SECTIONS = [
         <p>These preferences are saved on the device and browser you are using.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Guide</strong>{role === 'admin' && <> and <strong>Manage Roles</strong></>} — the links at the top open {role === 'admin' ? 'them' : 'it'}. Use <em>Back to Settings</em> to return.</li>
+          {role === 'admin' && <li><strong>Two-step sign-in</strong> — shows that your authenticator app is set up and how many recovery codes you have left. <em>Get new recovery codes</em> replaces them (it asks for a current code from the app). Keep the codes somewhere safe: they are how you get back in if you lose your phone.</li>}
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
           <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>

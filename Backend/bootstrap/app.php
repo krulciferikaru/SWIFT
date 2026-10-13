@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'password.confirmed' => \App\Http\Middleware\CheckPasswordConfirmed::class,
             'session.slide' => \App\Http\Middleware\SlideSession::class,
+            'mfa.enrolled' => \App\Http\Middleware\EnsureMfaEnrolled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

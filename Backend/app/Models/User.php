@@ -26,9 +26,12 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'mfa_secret',
+        'mfa_recovery_codes',
+        'mfa_last_step',
     ];
 
-    protected $appends = ['effective_permissions', 'contact_verified'];
+    protected $appends = ['effective_permissions', 'contact_verified', 'mfa_enabled', 'mfa_setup_required'];
 
     public function setNameAttribute(?string $value): void
     {
@@ -42,7 +45,22 @@ class User extends Authenticatable
             'password' => 'hashed',
             'permissions' => 'array',
             'contact_verified_at' => 'datetime',
+            'mfa_secret' => 'encrypted',
+            'mfa_enabled_at' => 'datetime',
+            'mfa_recovery_codes' => 'array',
         ];
+    }
+
+    /** Whether the authenticator-app second step is on for this account. */
+    public function getMfaEnabledAttribute(): bool
+    {
+        return $this->mfa_enabled_at !== null;
+    }
+
+    /** An administrator who must set up the authenticator app before doing anything else. */
+    public function getMfaSetupRequiredAttribute(): bool
+    {
+        return $this->role === 'admin' && config('mfa.enforce_for_admins') && $this->mfa_enabled_at === null;
     }
 
     /** Every permission key this user holds right now. */

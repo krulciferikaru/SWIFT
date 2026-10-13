@@ -506,6 +506,13 @@ export const TOURS = {
         roles: ['admin'],
       },
       {
+        selector: t('settings-security'),
+        title: 'Two-step sign-in',
+        description: 'Administrators sign in with a code from an authenticator app as well as the password. Here you can see that it is on and replace your recovery codes. Keep those codes safe: they are how you get back in if you lose your phone.',
+        side: 'top',
+        roles: ['admin'],
+      },
+      {
         selector: t('settings-phone'),
         title: 'Verify your mobile number',
         description:

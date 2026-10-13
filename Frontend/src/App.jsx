@@ -18,6 +18,7 @@ import Settings from "./pages/Settings.jsx";
 import Guide from "./pages/Guide.jsx";
 import ArchivePage from "./pages/Archive.jsx";
 import AuditTrail from "./pages/AuditTrail.jsx";
+import MfaSetup from "./pages/MfaSetup.jsx";
 
 export default function App() {
   return (
@@ -29,6 +30,14 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/security/mfa"
+                element={
+                  <ProtectedRoute allowMfaSetup>
+                    <MfaSetup />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/register" element={<Register />} />
 
               <Route
