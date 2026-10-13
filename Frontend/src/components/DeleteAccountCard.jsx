@@ -58,7 +58,7 @@ export default function DeleteAccountCard() {
     try {
       await api.post('/me/delete-account', { password, reason: reason || undefined, detail: detail.trim() || undefined })
       try {
-        sessionStorage.setItem('swift.notice', 'Your account was deleted. Your login and contact details have been removed.')
+        sessionStorage.setItem('swift.notice', 'Your account was deleted. Your SWIFT account has been deleted.')
       } catch {
         // the sign-in page just will not say it
       }
@@ -76,7 +76,7 @@ export default function DeleteAccountCard() {
         <CardHeader>
           <CardTitle className="text-base text-red-700 dark:text-red-400">Delete my account</CardTitle>
           <CardDescription>
-            Remove your login and contact details from SWIFT. Your billing records are kept, as the Privacy Policy explains.
+            Delete your SWIFT login. The company keeps its record of you, marked as having deleted their account, as the Privacy Policy explains.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -123,14 +123,14 @@ export default function DeleteAccountCard() {
             <div>
               <p className="mb-1.5 font-semibold text-gray-900 dark:text-gray-100">What will be deleted</p>
               <ul className="list-disc space-y-1 pl-5 text-gray-700 dark:text-gray-300">
-                <li>Your login. You will be signed out and cannot sign in again.</li>
-                <li>Your mobile number, email and equipment (MAC) address.</li>
+                <li>Your login (your SWIFT account). You will be signed out and cannot sign in again.</li>
               </ul>
             </div>
             <div>
               <p className="mb-1.5 font-semibold text-gray-900 dark:text-gray-100">What is kept</p>
               <ul className="list-disc space-y-1 pl-5 text-gray-700 dark:text-gray-300">
-                <li>Your name, address, plan and installation date, and every payment recorded for you. These are the company&apos;s financial records, and its books depend on them. They are kept for the period in the Privacy Policy, then anonymised or destroyed.</li>
+                <li>Your record with the company: your name, address, mobile number, plan, installation date and every payment recorded for you. It is the company&apos;s own record, and its books depend on it. It is marked with a note that you deleted your account.</li>
+                <li>We will not send you any more text messages.</li>
               </ul>
             </div>
             {owed > 0 && (

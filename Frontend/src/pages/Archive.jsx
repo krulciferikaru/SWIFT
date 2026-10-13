@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Archive as ArchiveIcon, RotateCcw, Trash2 } from 'lucide-react'
 import EmptyState from '../components/EmptyState.jsx'
+import ConfirmAction from '../components/ConfirmAction.jsx'
 import { useQueryState } from '../hooks/useQueryState'
 import SortableHead, { nextSort } from '../components/SortableHead.jsx'
 import Pager from '../components/Pager.jsx'
@@ -61,6 +62,9 @@ export default function ArchivePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
+  // The record about to be restored: staff confirm first.
+  const [restoreTarget, setRestoreTarget] = useState(null)
+  const [restoring, setRestoring] = useState(false)
   const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
 
@@ -258,7 +262,7 @@ export default function ArchivePage() {
                   <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(item.deleted_at)}</TableCell>
                   <TableCell>
                     <div data-tour="archive-row-actions" className="flex gap-2">
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => restore(item)} aria-label={`Restore ${item.name || item.plan_name}`}>
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setRestoreTarget(item)} aria-label={`Restore ${item.name || item.plan_name}`}>
                         <RotateCcw className="size-3.5" aria-hidden="true" />
                         Restore
                       </Button>
@@ -282,6 +286,30 @@ export default function ArchivePage() {
         perPage={perPage}
         onPerPage={(n) => setView({ per: n, page: 1 })}
         noun="archived subscribers"
+      />
+
+      <ConfirmAction
+        open={!!restoreTarget}
+        onOpenChange={(open) => { if (!open) setRestoreTarget(null) }}
+        title={isSubscribers ? 'Restore this subscriber?' : 'Restore this plan?'}
+        description={
+          restoreTarget && (
+            isSubscribers ? (
+              <><strong>"{nameOf(restoreTarget)}"</strong> will appear in the subscriber list again, and their login (if they have one) works again.</>
+            ) : (
+              <><strong>"{nameOf(restoreTarget)}"</strong> will be offered to new subscribers again.</>
+            )
+          )
+        }
+        confirmLabel="Restore"
+        busyLabel="Restoring..."
+        busy={restoring}
+        onConfirm={async () => {
+          setRestoring(true)
+          await restore(restoreTarget)
+          setRestoring(false)
+          setRestoreTarget(null)
+        }}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>

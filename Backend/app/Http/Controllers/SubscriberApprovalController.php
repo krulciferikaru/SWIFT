@@ -144,6 +144,12 @@ class SubscriberApprovalController extends Controller
     {
         $user->update(['account_status' => 'active']);
 
+        // They deleted their account earlier and are back: the "deleted their account" note no longer
+        // applies (the audit trail keeps the history), and texts to them can resume.
+        if ($user->subscriber_id) {
+            \App\Models\AccountDeletion::where('subscriber_id', $user->subscriber_id)->delete();
+        }
+
         Audit::log('claim.approved', $user);
 
         return response()->json([

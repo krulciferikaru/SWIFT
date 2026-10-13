@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\DB;
 /**
  * A subscriber deleting their own account (their right under the Data Privacy Act).
  *
- * What goes: the login, the mobile number, the email, the equipment (MAC) address, and the
- * password. What stays: the billing record (name, address, plan, installation date, service
- * status and every payment), archived, because those are the company's financial records and
- * their integrity depends on them. They are kept for the retention period in the Privacy Policy.
- * Anything still owed stays owed.
+ * What goes: the login (the user account), and with it the ability to sign in. What stays: the
+ * subscriber's record, exactly as it was (name, address, mobile number, plan, installation date,
+ * service status and every payment), because it is the company's own record and the integrity of
+ * its books depends on it. The record gets a note that the person deleted their account, so staff
+ * can see that this subscriber is no longer using SWIFT. Anything still owed stays owed.
+ *
+ * No more text messages are sent to someone who deleted their account (see PhilSmsService).
  */
 class AccountDeletionService
 {
@@ -39,20 +41,12 @@ class AccountDeletionService
             // Pending verification and reset codes go with the login (they are tied to it).
             $user->tokens()->delete();
 
-            if ($subscriber) {
-                $subscriber->forceFill([
-                    'contact_number' => null,
-                    'email' => null,
-                    'mac_address' => null,
-                    'password' => null,
-                ])->save();
-                $subscriber->delete(); // archived: out of the lists, nobody can sign in
-            }
-
-            $user->delete();
+            // The subscriber's record is left alone. Only the login is deleted. (Deleting a user normally
+            // archives their subscriber record too, so that model event is skipped here.)
+            User::withoutEvents(fn () => $user->delete());
         });
 
-        // Best effort, after the fact. The number is no longer on file, so it is kept from before.
+        // Best effort, after the fact: the one text they get, so they know it was done (and can say if it was not them).
         if ($number) {
             $this->sms->send(PhilSmsService::normalizeNumber($number),
                 'Your SWIFT account was deleted at your request. If this was not you, contact the office right away. - Jubal Brothers Cable TV Corp - Palayan Branch');

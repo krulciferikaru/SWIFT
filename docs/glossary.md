@@ -17,6 +17,6 @@ The same word always means the same thing on every screen. Where two words could
 | **Cancelled payment** | A payment that was entered wrongly and then cancelled by an administrator. It stays in the history (struck through, with the reason) but does not count. It is never deleted or edited. |
 | **Payment receipt** | A printable summary made by the system for a recorded payment. It is not a BIR-registered official receipt. |
 | **Archive** | Hides a subscriber or plan without deleting anything. It can be undone straight after, or restored later from the Archive page. |
-| **Delete my account** | What a subscriber does to remove themselves: the login and contact details are deleted, the billing record stays (archived) for the retention period. Different from *Delete permanently*, which staff do to an archived record. |
+| **Delete my account** | What a subscriber does to delete their SWIFT login. Only the login goes: the company keeps its record of them (marked *Deleted their account*), and sends no more texts. Different from *Delete permanently*, which staff do to an archived record. |
 | **Delete permanently** | Removes an archived subscriber and their payments for good. It asks for the person's password and cannot be undone. |
 | **Verified** | The mobile number was confirmed by a texted code. |

@@ -96,6 +96,13 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
             )}
           </div>
 
+          {s.deletion && (
+            <p role="note" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              <strong>Deleted their SWIFT account</strong> on {longDate(s.deletion.created_at)}. They have no login and are not sent text messages.
+              The company&apos;s record of them is kept as it is.
+            </p>
+          )}
+
           <section aria-labelledby="sub-contact-heading">
             <h3 id="sub-contact-heading" className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               Contact and connection

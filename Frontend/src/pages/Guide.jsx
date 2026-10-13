@@ -64,7 +64,7 @@ const SECTIONS = [
           <li><strong>Service status</strong> — the dropdown, or the cards at the top, narrow the list to only Active, Unpaid, or Disconnected subscribers. (This is the service status; it follows payments. It is not the same as an account being approved or deactivated, which is the <em>Account status</em> in Manage Roles.)</li>
           <li><strong>Add Subscriber</strong> — opens a form to manually register a new subscriber (name, plan, contact info, etc.).</li>
           <li><strong>Edit</strong> (per row) — update a subscriber's details, like their assigned plan or mobile number.</li>
-          <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. It happens straight away, and the message at the top has an <em>Undo</em> button for a few seconds. Nothing is lost; you can also restore them anytime from the Archive page.</li>
+          <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. It asks you to confirm first, and the message afterwards has an <em>Undo</em> button for a few seconds. Nothing is lost; you can also restore them anytime from the Archive page.</li>
           <li><strong>Payments</strong> (per row) — jumps straight to that subscriber's billing page (see the Payments section below).</li>
           <li><strong>Export CSV</strong> — downloads the current filtered list as a spreadsheet file.</li>
           <li><strong>Tick boxes</strong> (if you may send texts) — tick the people to remind, or press <em>Select everyone who owes on this page</em>, then <em>Send payment reminder</em>. A window shows how many people will be texted. Texts cannot be recalled, and anyone who owes nothing is skipped.</li>
@@ -104,7 +104,7 @@ const SECTIONS = [
           <li><strong>Name</strong> — click a plan's name to see its full details, with Edit and Archive buttons.</li>
           <li><strong>Add Plan</strong> — create a new plan with a name, monthly rate, speed, and description.</li>
           <li><strong>Edit</strong> — change a plan's price or details. This affects future billing, not past payments.</li>
-          <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. It happens straight away, with an <em>Undo</em> button in the message; you can also restore it from the Archive page.</li>
+          <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. It asks you to confirm first, and the message afterwards has an <em>Undo</em> button; you can also restore it from the Archive page.</li>
           <li><strong>Availability</strong> — <em>Offered</em> plans can be given to subscribers. Set a plan to <em>Not offered</em> to stop giving it out without archiving it.</li>
         </ul>
       </>
