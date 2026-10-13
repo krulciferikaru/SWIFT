@@ -147,4 +147,14 @@ class SessionsTest extends TestCase
         $this->assertSame(1, $other->tokens()->count()); // theirs untouched
         $this->assertDatabaseHas('audit_logs', ['action' => 'auth.session_ended']);
     }
+
+    public function test_a_missing_record_gets_a_plain_message_not_the_internal_model_name(): void
+    {
+        Sanctum::actingAs($this->user('secretary', 'sec@s.test'));
+
+        $res = $this->getJson('/api/subscribers/999999/billing')->assertNotFound();
+
+        $this->assertSame('That could not be found. It may have been removed.', $res->json('message'));
+        $this->assertStringNotContainsString('App', $res->getContent());
+    }
 }
