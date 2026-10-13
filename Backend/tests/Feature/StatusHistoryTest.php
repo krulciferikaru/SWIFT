@@ -67,7 +67,8 @@ class StatusHistoryTest extends TestCase
         Sanctum::actingAs($this->user('secretary'));
         $this->patchJson("/api/subscribers/{$sub->subscriber_id}/approve")->assertOk();
 
-        $this->assertSame([[null, 'Unpaid', 'approved']], $this->lines($sub));
+        // Approving works the status out from the plan and date (installed in July, nothing paid: three months owed).
+        $this->assertSame([[null, 'Disconnected', 'approved']], $this->lines($sub));
     }
 
     public function test_a_change_made_by_staff_is_recorded_with_who(): void
