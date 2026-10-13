@@ -226,4 +226,26 @@ class MfaForEveryoneTest extends TestCase
 
         $this->withToken($token)->postJson('/api/me/mfa/setup')->assertOk();
     }
+
+    public function test_with_a_stolen_phone_a_recovery_code_can_move_it_to_a_new_one_and_ends_other_sessions(): void
+    {
+        $admin = $this->user('admin', 'boss@mfa.test');
+        [$oldSecret, $codes] = $this->enrol($admin);
+        $thiefSession = $admin->createToken('thief')->plainTextToken;
+        $mine = $admin->createToken('mine')->plainTextToken;
+
+        $this->withToken($mine)->postJson('/api/me/confirm-password', ['password' => 'pass-12345'])->assertOk();
+
+        // No code from the (stolen) phone, only a recovery code.
+        $new = $this->withToken($mine)->postJson('/api/me/mfa/replace', ['code' => $codes[0]])->assertOk()->json();
+        $this->withToken($mine)->postJson('/api/me/mfa/replace/confirm', ['code' => Totp::code($new['secret'])])->assertOk();
+
+        // The stolen phone no longer works, the recovery code is used up, and the other session is gone.
+        $this->travel(31)->seconds();
+        $first = $this->login('boss@mfa.test')->json('mfa_token');
+        $this->postJson('/api/login/mfa', ['mfa_token' => $first, 'code' => Totp::code($oldSecret)])->assertStatus(422);
+        $this->assertSame(0, $admin->tokens()->where('name', 'thief')->count());
+        $this->assertSame(1, $admin->tokens()->where('name', 'mine')->count());
+        $this->assertFalse(app(MfaService::class)->check($admin->fresh(), $codes[0]) === 'recovery');
+    }
 }

@@ -9,6 +9,7 @@ import FormField from './FormField.jsx'
 import RecoveryCodes from './RecoveryCodes.jsx'
 import AuthenticatorQr from './AuthenticatorQr.jsx'
 import CodeInput from './CodeInput.jsx'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -33,6 +34,8 @@ export default function SecurityCard() {
   const [busy, setBusy] = useState(false)
   const [codes, setCodes] = useState(null)
   const [newSetup, setNewSetup] = useState(null)
+  // A recovery code instead of the app's code: for a phone that is lost or stolen.
+  const [recovery, setRecovery] = useState(false)
 
   const load = () => api.get('/me/mfa').then((res) => setStatus(res.data)).catch(() => setStatus(null))
   useEffect(() => {
@@ -46,6 +49,7 @@ export default function SecurityCard() {
     setError('')
     setCodes(null)
     setNewSetup(null)
+    setRecovery(false)
   }
 
   const close = () => {
@@ -54,6 +58,7 @@ export default function SecurityCard() {
     setError('')
     setCodes(null)
     setNewSetup(null)
+    setRecovery(false)
     load()
   }
 
@@ -94,6 +99,7 @@ export default function SecurityCard() {
           setNewSetup(data)
           setStep('scan')
           setCode('')
+          setRecovery(false)
         },
         'Could not start moving to a new phone.',
       )
@@ -149,6 +155,9 @@ export default function SecurityCard() {
           : 'Your new phone is set up. The old one no longer works.',
   }
   const finished = dialog === 'codes' ? !!codes : step === 'done'
+  // The old app's code is what these ask for, so a recovery code can stand in for it; the new phone's own first code cannot.
+  const canUseRecovery = dialog === 'codes' || dialog === 'off' || (dialog === 'phone' && step === 'code')
+  const typedEnough = recovery && canUseRecovery ? code.trim().length >= 8 : code.trim().length >= 6
   const submitLabel = dialog === 'codes' ? 'Get new codes' : dialog === 'off' ? 'Turn off' : step === 'code' ? 'Continue' : 'Finish'
 
   return (
@@ -202,7 +211,7 @@ export default function SecurityCard() {
             {dialog === 'off' && !finished ? (
               // Switching protection off: the risky button is the plain one, the safe way out the filled one.
               <>
-                <Button type="submit" form="security-form" variant="outline" disabled={busy || code.trim().length < 6} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
+                <Button type="submit" form="security-form" variant="outline" disabled={busy || !typedEnough} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
                   {busy ? 'Checking...' : submitLabel}
                 </Button>
                 <Button type="button" onClick={close}>Cancel</Button>
@@ -211,7 +220,7 @@ export default function SecurityCard() {
               <>
                 <Button type="button" variant="outline" onClick={close}>{finished ? 'Done' : 'Cancel'}</Button>
                 {!finished && (
-                  <Button type="submit" form="security-form" disabled={busy || code.trim().length < 6}>
+                  <Button type="submit" form="security-form" disabled={busy || !typedEnough}>
                     {busy ? 'Checking...' : submitLabel}
                   </Button>
                 )}
@@ -228,9 +237,35 @@ export default function SecurityCard() {
         ) : (
           <form id="security-form" onSubmit={submit} noValidate className="space-y-4">
             {dialog === 'phone' && step === 'scan' && <AuthenticatorQr setup={newSetup} />}
-            <FormField id="security-code" label={dialog === 'phone' && step === 'scan' ? 'Code from the new phone' : '6-digit code'} error={error}>
-              <CodeInput key={`${dialog}-${step}`} value={code} onChange={(v) => { setCode(v); setError('') }} autoFocus />
+            <FormField
+              id="security-code"
+              label={dialog === 'phone' && step === 'scan' ? 'Code from the new phone' : recovery && canUseRecovery ? 'Recovery code' : '6-digit code'}
+              error={error}
+            >
+              {recovery && canUseRecovery ? (
+                <Input
+                  key="recovery"
+                  value={code}
+                  onChange={(e) => { setCode(e.target.value); setError('') }}
+                  autoComplete="off"
+                  autoFocus
+                  maxLength={12}
+                  placeholder="XXXX-XXXX"
+                  className="h-11 text-center font-mono text-lg tracking-[0.3em]"
+                />
+              ) : (
+                <CodeInput key={`${dialog}-${step}`} value={code} onChange={(v) => { setCode(v); setError('') }} autoFocus />
+              )}
             </FormField>
+            {canUseRecovery && (
+              <button
+                type="button"
+                onClick={() => { setRecovery((r) => !r); setCode(''); setError('') }}
+                className="text-sm font-medium text-primary hover:underline dark:text-blue-300"
+              >
+                {recovery ? 'Use the code from my authenticator app' : 'My phone is lost or stolen: use a recovery code'}
+              </button>
+            )}
           </form>
         )}
       </Modal>

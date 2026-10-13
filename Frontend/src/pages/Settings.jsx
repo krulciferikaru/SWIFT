@@ -361,6 +361,7 @@ export default function Settings() {
 
       <ReviewDialog
         open={confirmSms}
+        sensitive
         onOpenChange={setConfirmSms}
         title="Send this text message?"
         description="Check the number and the message before it goes out."
@@ -377,6 +378,7 @@ export default function Settings() {
 
       <ReviewDialog
         open={confirmReminders}
+        sensitive
         onOpenChange={setConfirmReminders}
         title="Send payment reminders to everyone who is Unpaid?"
         description="Each Unpaid subscriber gets a text with the amount they owe."

@@ -26,6 +26,9 @@ export default function ReviewDialog({
   confirmLabel = 'Confirm',
   busyLabel = 'Saving...',
   busy = false,
+  // For something that cannot be taken back (a text message): the plain button is the one that does it,
+  // the filled one is the way out, so the noticeable button is never the risky one.
+  sensitive = false,
   onConfirm,
 }) {
   return (
@@ -64,10 +67,21 @@ export default function ReviewDialog({
         )}
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Go back and edit</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={busy}>
-            {busy ? busyLabel : confirmLabel}
-          </AlertDialogAction>
+          {sensitive ? (
+            <>
+              <AlertDialogAction variant="outline" onClick={onConfirm} disabled={busy} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
+                {busy ? busyLabel : confirmLabel}
+              </AlertDialogAction>
+              <AlertDialogCancel variant="default" disabled={busy}>Go back and edit</AlertDialogCancel>
+            </>
+          ) : (
+            <>
+              <AlertDialogCancel disabled={busy}>Go back and edit</AlertDialogCancel>
+              <AlertDialogAction onClick={onConfirm} disabled={busy}>
+                {busy ? busyLabel : confirmLabel}
+              </AlertDialogAction>
+            </>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

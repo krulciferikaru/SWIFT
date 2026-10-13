@@ -8,6 +8,7 @@ use App\Services\Audit;
 use App\Services\MfaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Setting up and looking after the authenticator app someone signs in with.
@@ -82,8 +83,8 @@ class MfaController extends Controller
         $validated = $request->validate(['code' => ['required', 'string', 'max:20']]);
         $user = $request->user();
 
-        // A code from the app, not a recovery code: this is how the codes are replaced, not used up.
-        if (! $user->mfa_enabled_at || $this->mfa->check($user, $validated['code']) !== 'totp') {
+        // A code from the app, or a recovery code (the way in when the phone is lost or stolen).
+        if (! $user->mfa_enabled_at || $this->mfa->check($user, $validated['code']) === null) {
             return $this->wrongCode();
         }
 
@@ -95,15 +96,16 @@ class MfaController extends Controller
     /**
      * POST /api/me/mfa/replace  { code } (asks for the password): start moving it to a new phone.
      *
-     * Needs a current code from the old app. The old app keeps working until the new one has been
-     * proven, so stopping half way leaves nothing broken.
+     * Needs a current code from the old app, or one of the recovery codes when that phone is lost or
+     * stolen. The old app keeps working until the new one has been proven, so stopping half way leaves
+     * nothing broken. (A recovery code used here is used up either way.)
      */
     public function replaceStart(Request $request): JsonResponse
     {
         $validated = $request->validate(['code' => ['required', 'string', 'max:20']]);
         $user = $request->user();
 
-        if (! $user->mfa_enabled_at || $this->mfa->check($user, $validated['code']) !== 'totp') {
+        if (! $user->mfa_enabled_at || $this->mfa->check($user, $validated['code']) === null) {
             return $this->wrongCode();
         }
 
@@ -123,6 +125,11 @@ class MfaController extends Controller
                 'errors' => ['code' => ['That code is not right, or the new phone was not set up in time.']],
             ], 422);
         }
+
+        // The old phone is no longer trusted, so every other sign-in is ended (if it was stolen, so is any
+        // session someone opened with it). This one, on the new phone's owner's screen, stays.
+        $current = $user->currentAccessToken();
+        $user->tokens()->when($current instanceof PersonalAccessToken, fn ($q) => $q->where('id', '!=', $current->id))->delete();
 
         Audit::log('auth.mfa_replaced', $user, null, [], $user);
 
