@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import planChangeApi from '../api/planChanges'
 import Modal from './Modal'
+import ConfirmAction from './ConfirmAction'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [askCancel, setAskCancel] = useState(false)
   const [sure, setSure] = useState(false) // asked to confirm before the waiting time is over
 
   if (!subscriber) return null
@@ -56,7 +58,7 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
             >
               {pending.ready ? 'Confirm the change' : sure ? 'Yes, it was already carried out' : 'Confirm now'}
             </Button>
-            <Button disabled={busy} onClick={() => run(() => planChangeApi.cancel(pending.id), 'Could not cancel the change.')}>
+            <Button disabled={busy} onClick={() => setAskCancel(true)}>
               Cancel the change
             </Button>
           </>
@@ -117,6 +119,16 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
         )}
         {error && <p role="alert" className="text-red-600 dark:text-red-400">{error}</p>}
       </div>
+      <ConfirmAction
+        open={askCancel}
+        onOpenChange={setAskCancel}
+        title="Cancel this plan change?"
+        description={pending ? <>The request to move <strong>{subscriber.name}</strong> from {pending.from_plan} to <strong>{pending.to_plan}</strong> will be cancelled. Their plan stays as it is.</> : null}
+        confirmLabel="Cancel the change"
+        busy={busy}
+        destructive
+        onConfirm={() => run(() => planChangeApi.cancel(pending.id), 'Could not cancel the change.')}
+      />
     </Modal>
   )
 }
