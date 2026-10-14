@@ -21,6 +21,7 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [sure, setSure] = useState(false) // asked to confirm before the waiting time is over
 
   if (!subscriber) return null
   const options = plans.filter((p) => p.status === 'Active' && p.plan_id !== subscriber.plan_id)
@@ -51,8 +52,11 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
             <Button variant="outline" disabled={busy} onClick={() => run(() => planChangeApi.cancel(pending.id), 'Could not cancel the change.')}>
               Cancel the change
             </Button>
-            <Button disabled={busy || !pending.ready} onClick={() => run(() => planChangeApi.complete(pending.id), 'Could not confirm the change.')}>
-              {pending.ready ? 'Confirm the change' : 'Not ready yet'}
+            <Button
+              disabled={busy}
+              onClick={() => (pending.ready || sure ? run(() => planChangeApi.complete(pending.id, !pending.ready), 'Could not confirm the change.') : setSure(true))}
+            >
+              {pending.ready ? 'Confirm the change' : sure ? 'Yes, it was already carried out' : 'Confirm now'}
             </Button>
           </>
         ) : (
@@ -78,6 +82,11 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
               Requested {when(pending.requested_at)}. It can be confirmed from {when(pending.earliest_at)}, once the change has been carried out.
               {pending.expected_from && <> If confirmed today, the new price starts with the bill for {monthName(pending.expected_from)}.</>}
             </p>
+            {!pending.ready && (
+              <p className={sure ? 'font-medium text-amber-700 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'}>
+                The usual wait is not over yet. If the change has already been carried out, you can confirm it now{sure ? ': is it really done?' : '.'}
+              </p>
+            )}
             {pending.reason && <p className="text-gray-600 dark:text-gray-400">Reason: {pending.reason}</p>}
           </>
         ) : (

@@ -41,7 +41,7 @@ class PlanChangeController extends Controller
     /** POST /api/plan-changes/{id}/complete */
     public function complete(Request $request, int $id): JsonResponse
     {
-        $change = $this->changes->complete(PlanChangeRequest::findOrFail($id), $request->user());
+        $change = $this->changes->complete(PlanChangeRequest::findOrFail($id), $request->user(), $request->boolean("early"));
 
         return response()->json([
             'success' => true,

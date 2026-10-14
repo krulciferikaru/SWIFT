@@ -131,6 +131,22 @@ class PlanChangeBillingTest extends TestCase
         $this->assertSame(800.0, $this->dues($sub)['November 2026']);
     }
 
+    public function test_staff_can_confirm_early_when_the_change_has_already_been_carried_out(): void
+    {
+        $basic = $this->plan('Basic', 800);
+        $big = $this->plan('Big', 1300);
+        $sub = $this->subscriber($basic);
+        $change = PlanChangeRequest::findOrFail($this->request($sub, $big)->json('data.id'));
+
+        // Without saying it is done, the waiting time still applies.
+        $this->confirm($change)->assertStatus(422);
+
+        Sanctum::actingAs($this->staff());
+        $this->postJson("/api/plan-changes/{$change->id}/complete", ['early' => true])->assertOk();
+        $this->assertSame($big->plan_id, $sub->fresh()->plan_id);
+        $this->assertSame('completed', $change->fresh()->status);
+    }
+
     public function test_confirmed_before_the_statement_date_the_new_price_starts_next_month(): void
     {
         $basic = $this->plan('Basic', 800);

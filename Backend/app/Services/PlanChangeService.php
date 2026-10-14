@@ -68,15 +68,17 @@ class PlanChangeService
     }
 
     /** @throws ValidationException when it cannot be confirmed yet */
-    public function complete(PlanChangeRequest $change, User $by): PlanChangeRequest
+    /** The waiting time is the usual time it takes; $early lets staff confirm sooner when the change has already been carried out. */
+    public function complete(PlanChangeRequest $change, User $by, bool $early = false): PlanChangeRequest
     {
         if ($change->status !== 'pending') {
             throw ValidationException::withMessages(['plan_change' => ['This plan change is already '.$change->status.'.']]);
         }
-        if (! $change->isReady()) {
+        if (! $change->isReady() && ! $early) {
             throw ValidationException::withMessages(['plan_change' => ['It can be confirmed from '.$change->earliest_at->timezone('Asia/Manila')->format('F j, Y g:i A').', once the waiting time has passed.']]);
         }
 
+        $wasEarly = ! $change->isReady();
         $subscriber = Subscriber::findOrFail($change->subscriber_id);
         $to = Plan::withTrashed()->findOrFail($change->to_plan_id);
         $effective = BillingCycle::firstMonthOnNextStatement(Carbon::now('Asia/Manila'));
@@ -96,6 +98,7 @@ class PlanChangeService
 
         Audit::log('plan_change.completed', $subscriber, null, [
             'from' => $change->fromPlan?->plan_name, 'to' => $to->plan_name, 'effective_from' => $effective->toDateString(),
+            'confirmed_early' => $wasEarly,
         ]);
 
         $this->sms->sendToSubscriber($subscriber, sprintf(
