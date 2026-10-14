@@ -47,16 +47,17 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
       title={pending ? 'Plan change pending' : 'Change plan'}
       description={subscriber.name}
       footer={
-        pending ? (
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">{pending ? (
           <>
-            <Button variant="outline" disabled={busy} onClick={() => run(() => planChangeApi.cancel(pending.id), 'Could not cancel the change.')}>
-              Cancel the change
-            </Button>
             <Button
+              variant="outline"
               disabled={busy}
               onClick={() => (pending.ready || sure ? run(() => planChangeApi.complete(pending.id, !pending.ready), 'Could not confirm the change.') : setSure(true))}
             >
               {pending.ready ? 'Confirm the change' : sure ? 'Yes, it was already carried out' : 'Confirm now'}
+            </Button>
+            <Button disabled={busy} onClick={() => run(() => planChangeApi.cancel(pending.id), 'Could not cancel the change.')}>
+              Cancel the change
             </Button>
           </>
         ) : (
@@ -69,7 +70,7 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
               Request change
             </Button>
           </>
-        )
+        )}</div>
       }
     >
       <div className="space-y-4 text-sm">
@@ -98,7 +99,9 @@ export default function ChangePlanDialog({ subscriber, plans, onClose, onDone })
             <div className="space-y-1.5">
               <Label>New plan</Label>
               <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger aria-label="New plan" className="w-full"><SelectValue placeholder="Select a plan" /></SelectTrigger>
+                <SelectTrigger aria-label="New plan" className="w-full"><SelectValue placeholder="Select a plan">
+                    {options.find((p) => String(p.plan_id) === planId) ? `${options.find((p) => String(p.plan_id) === planId).plan_name} — ${peso(options.find((p) => String(p.plan_id) === planId).monthly_rate)}` : null}
+                  </SelectValue></SelectTrigger>
                 <SelectContent>
                   {options.map((p) => (
                     <SelectItem key={p.plan_id} value={String(p.plan_id)}>{p.plan_name} — {peso(p.monthly_rate)}</SelectItem>
