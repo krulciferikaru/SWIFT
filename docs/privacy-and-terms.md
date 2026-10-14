@@ -31,3 +31,8 @@ The register page has a required box: *I have read and agree to the Terms of Ser
 - A person can delete their own account in Settings: their login is deleted, the company's record of them stays with a note that they deleted their account, and no more texts are sent to them.
 - Verification and reset codes last ten minutes and are stored scrambled.
 - No advertising or tracking cookies.
+- A field collector never sees a subscriber's email address or equipment MAC address (the server does not send them), whatever tasks an administrator switches on.
+- Two-step sign-in: required for administrators, optional for everyone else; its key is stored encrypted and its recovery codes scrambled, and they are deleted when it is turned off, reset or the account is deleted.
+- Each open sign-in remembers its browser, device type and network address, shown to the person in Settings (with the address partly hidden) and deleted when the sign-in ends (expired ones are cleared daily).
+- The audit trail records the network address of each action, and is covered by the same "period to be confirmed by the company" as the rest of the audit trail.
+- An account switched to Inactive stops working at once, including any sign-in that was still open.

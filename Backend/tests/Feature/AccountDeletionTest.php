@@ -214,4 +214,24 @@ class AccountDeletionTest extends TestCase
         $this->assertContains('privacy', $values);
         $this->assertContains('other', $values);
     }
+
+    public function test_with_two_step_on_deleting_the_account_needs_a_current_code_too(): void
+    {
+        [$user, $subscriber] = $this->subscriberWithLogin();
+        $mfa = app(\App\Services\MfaService::class);
+        $secret = $mfa->beginSetup($user)['secret'];
+        $codes = $mfa->enable($user->fresh(), \App\Support\Totp::code($secret));
+        $this->travel(31)->seconds();
+        Sanctum::actingAs($user->fresh());
+
+        // The password is not enough, and a wrong code deletes nothing.
+        $this->postJson('/api/me/delete-account', ['password' => 'my-password-1'])->assertStatus(422)->assertJsonValidationErrors('code');
+        $this->postJson('/api/me/delete-account', ['password' => 'my-password-1', 'code' => '000000'])->assertStatus(422);
+        $this->assertNotNull(User::find($user->id));
+
+        // A recovery code works too (the phone may be the thing that was lost).
+        $this->postJson('/api/me/delete-account', ['password' => 'my-password-1', 'code' => $codes[0]])->assertOk();
+        $this->assertNull(User::find($user->id));
+        $this->assertNotNull(Subscriber::find($subscriber->subscriber_id)); // the company's record stays
+    }
 }

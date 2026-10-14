@@ -42,14 +42,22 @@ export default function ConfirmAction({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            disabled={busy}
-            className={destructive ? 'bg-red-600 hover:bg-red-700' : undefined}
-          >
-            {busy ? busyLabel : confirmLabel}
-          </AlertDialogAction>
+          {destructive ? (
+            // A destructive action: the risky button is the plain one, the safe way out is the filled one.
+            <>
+              <AlertDialogAction variant="outline" onClick={onConfirm} disabled={busy} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
+                {busy ? busyLabel : confirmLabel}
+              </AlertDialogAction>
+              <AlertDialogCancel variant="default" disabled={busy}>Cancel</AlertDialogCancel>
+            </>
+          ) : (
+            <>
+              <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onConfirm} disabled={busy}>
+                {busy ? busyLabel : confirmLabel}
+              </AlertDialogAction>
+            </>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

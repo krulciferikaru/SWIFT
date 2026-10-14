@@ -179,7 +179,7 @@ const SECTIONS = [
         <p>Open it from <strong>Settings</strong>. This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
-          <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
+          <li><strong>Permissions</strong> (Secretary and Field Collector rows) — tick exactly what that person may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
           <li><strong>Passwords</strong> — nobody here can see or reset another person's password. Everyone recovers their own with <em>Forgot password?</em> on the sign-in page: a 6-digit code is texted to their <strong>verified</strong> mobile number. Staff add and verify theirs in Settings (or when the account is created), so it is worth doing straight away.</li>
         </ul>
@@ -220,7 +220,8 @@ const SECTIONS = [
         <p>These preferences are saved on the device and browser you are using.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Guide</strong>{role === 'admin' && <> and <strong>Manage Roles</strong></>} — the links at the top open {role === 'admin' ? 'them' : 'it'}. Use <em>Back to Settings</em> to return.</li>
-          {role === 'admin' && <li><strong>Two-step sign-in</strong> — shows that your authenticator app is set up and how many recovery codes you have left. <em>Get new recovery codes</em> replaces them (it asks for a current code from the app). Keep the codes somewhere safe: they are how you get back in if you lose your phone.</li>}
+          <li><strong>Signed-in devices</strong> — lists the places you are signed in (for example Chrome on Windows), with part of the network address and when each was last used. Press <em>Sign out</em> on one you don't recognise, or <em>Sign out of all other devices</em> to end all but this one. Use it after losing a phone or computer, or if someone may have your password.</li>
+          <li><strong>Two-step sign-in</strong> — {role === 'admin' ? 'required for administrators.' : 'optional: you can turn it on for extra protection, and off again.'} Once it is on, this card shows how many recovery codes you have left. <em>Get new recovery codes</em> replaces them, <em>Set up on a new phone</em> moves it to a new phone{role === 'admin' ? '' : ', and Turn off switches it off'}. Each of these asks for a current code from your app (and turning it on asks for your password again). Keep the codes somewhere safe: they are how you get back in if you lose your phone.</li>
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
           <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>

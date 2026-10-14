@@ -1,6 +1,6 @@
 # Roles and permissions
 
-There are three roles. A person's role is fixed when their account is created and **cannot be changed afterwards**. The rules are enforced by the backend, not just hidden in the interface.
+There are four roles: admin, secretary, field collector and subscriber. A person's role is fixed when their account is created and **cannot be changed afterwards**. The rules are enforced by the backend, not just hidden in the interface.
 
 | Capability | Admin | Secretary | Subscriber |
 |---|:---:|:---:|:---:|
@@ -11,7 +11,7 @@ There are three roles. A person's role is fixed when their account is created an
 | Subscribers: list, search, add, edit, archive, change status | yes | yes | |
 | Approve or reject new applications and account claims | yes | yes | |
 | Payments: view a subscriber's billing, record a payment, reconnect | yes | yes | |
-| **Cancel a wrongly recorded payment** (reason and password required; it stays in the history marked Cancelled) | **yes** | | |
+| **Cancel a wrongly recorded payment** (reason and password required; it stays in the history marked Cancelled) | **yes** | **yes** | |
 | Service plans: add, edit, archive | yes | yes | |
 | Archive: restore or permanently delete subscribers and plans | yes | yes | |
 | Reports: view the Collection Report with filters, and download PDF / Excel / CSV | yes | yes | |
@@ -20,6 +20,12 @@ There are three roles. A person's role is fixed when their account is created an
 | **Audit Trail:** see who did what and when | **yes** | | |
 | **Settings:** edit the payment methods and the company contact information | **yes** | | |
 | Settings: dark mode, text size, logout confirmation, tour options | yes | yes | yes |
+
+## Field collector
+
+A field collector goes out to collect payments. A new collector can **view subscribers** (never their email or MAC address, whatever is switched on), **view payments and record them**, and see the dashboard counts. They cannot cancel a payment, send texts, open reports or the archive, manage plans or approvals, or add or edit subscribers.
+
+Like a secretary, an admin can switch individual tasks on or off for each collector in Manage Roles (**Permissions**). A collector starts with the short list above, and **Reset to default** returns to it; the extra tasks an admin may grant are the same ones available for a secretary.
 
 ## In short
 

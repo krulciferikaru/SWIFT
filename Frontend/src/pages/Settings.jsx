@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import PhoneVerification from '../components/PhoneVerification.jsx'
 import SecurityCard from '../components/SecurityCard.jsx'
+import SessionsCard from '../components/SessionsCard.jsx'
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx'
 import StaffMobileNumber from '../components/StaffMobileNumber.jsx'
 import TextSizeControl from '../components/TextSizeControl.jsx'
@@ -248,11 +249,10 @@ export default function Settings() {
         </div>
       </section>
 
-      {(showPhoneCard || user?.role === 'admin' || user?.role === 'subscriber') && (
       <section className="space-y-4">
         <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">Your account</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Your mobile number and sign-in security.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Your mobile number and how you sign in.</p>
         </div>
         <div className="grid items-stretch gap-6 xl:grid-cols-2 xl:[&>*:last-child:nth-child(odd)]:col-span-2">
       {showPhoneCard && (
@@ -272,12 +272,13 @@ export default function Settings() {
         </Card>
       )}
 
-      {user?.role === 'admin' && <SecurityCard />}
+      <SecurityCard />
+
+      <SessionsCard showToast={showToast} />
 
       {user?.role === 'subscriber' && <DeleteAccountCard />}
         </div>
       </section>
-      )}
 
       {canSendSms && (
       <section className="space-y-4">
@@ -363,6 +364,7 @@ export default function Settings() {
 
       <ReviewDialog
         open={confirmSms}
+        sensitive
         onOpenChange={setConfirmSms}
         title="Send this text message?"
         description="Check the number and the message before it goes out."
@@ -379,6 +381,7 @@ export default function Settings() {
 
       <ReviewDialog
         open={confirmReminders}
+        sensitive
         onOpenChange={setConfirmReminders}
         title="Send payment reminders to everyone who is Unpaid?"
         description="Each Unpaid subscriber gets a text with the amount they owe."

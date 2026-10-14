@@ -47,23 +47,38 @@ Route::get('/barangays', [BarangayController::class, 'index'])->middleware('thro
  * Staff routes are guarded by permission (config/permissions.php), not by role name, so an
  * admin can switch individual abilities on or off for each secretary. Admins hold them all.
  */
-Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.active', 'session.slide', 'mfa.enrolled'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Where you are signed in, and ending one place or all the others (lost device, password seen, account taken over).
+    Route::get('/me/sessions', [\App\Http\Controllers\Auth\SessionController::class, 'index']);
+    Route::delete('/me/sessions/{id}', [\App\Http\Controllers\Auth\SessionController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('throttle:confirm-password');
+    Route::post('/me/sessions/end-others',[\App\Http\Controllers\Auth\SessionController::class, 'endOthers'])
+        ->middleware('throttle:confirm-password');
 
     // Type your password again before a sensitive action (valid for 10 minutes).
     Route::post('/me/confirm-password', [PasswordConfirmationController::class, 'store'])
         ->middleware('throttle:confirm-password');
 
-    // An administrator's authenticator app (required for administrators).
+    // Authenticator app: required for administrators, optional for everyone else.
     Route::get('/me/mfa', [MfaController::class, 'status']);
-    Route::post('/me/mfa/setup', [MfaController::class, 'setup'])->middleware('password.confirmed');
+    Route::post('/me/mfa/setup', [MfaController::class, 'setup'])->middleware('password.confirmed:fresh');
     Route::post('/me/mfa/enable', [MfaController::class, 'enable'])->middleware('throttle:confirm-password');
     Route::post('/me/mfa/recovery-codes', [MfaController::class, 'recoveryCodes'])
+        ->middleware(['password.confirmed', 'throttle:confirm-password']);
+    Route::post('/me/mfa/replace', [MfaController::class, 'replaceStart'])
+        ->middleware(['password.confirmed', 'throttle:confirm-password']);
+    Route::post('/me/mfa/replace/confirm', [MfaController::class, 'replaceConfirm'])
+        ->middleware('throttle:confirm-password');
+    Route::delete('/me/mfa', [MfaController::class, 'disable'])
         ->middleware(['password.confirmed', 'throttle:confirm-password']);
     // A staff member adds or changes their own mobile number (they are verified afterwards,
     // in the same way as a subscriber's). It is what lets them use Forgot password.
     Route::patch('/me/mobile-number', [PhoneVerificationController::class, 'update'])
+        ->middleware('password.confirmed:fresh')
         ->middleware('throttle:confirm-password');
 
     // A subscriber deletes their own account (their right under the Data Privacy Act).
@@ -126,7 +141,7 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         ->middleware('permission:payments.record');
     // Cancel a wrongly recorded payment: administrators and the secretary, and it asks for their password.
     Route::post('/payments/{id}/void', [PaymentController::class, 'void'])
-        ->middleware(['role:admin,secretary', 'password.confirmed']);
+        ->middleware(['role:admin,secretary', 'password.confirmed:fresh']);
     // The OR number that probably comes next for this person (the last one they recorded, plus one).
     Route::get('/payments/next-or-number', [PaymentController::class, 'nextOrNumber'])
         ->middleware('permission:payments.record');
@@ -151,11 +166,11 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         Route::get('/archive/subscribers', [ArchiveController::class, 'subscribers']);
         Route::patch('/archive/subscribers/{id}/restore', [ArchiveController::class, 'restoreSubscriber']);
         Route::delete('/archive/subscribers/{id}', [ArchiveController::class, 'deleteSubscriber'])
-            ->middleware('password.confirmed');
+            ->middleware('password.confirmed:fresh');
         Route::get('/archive/plans', [ArchiveController::class, 'plans']);
         Route::patch('/archive/plans/{id}/restore', [ArchiveController::class, 'restorePlan']);
         Route::delete('/archive/plans/{id}', [ArchiveController::class, 'deletePlan'])
-            ->middleware('password.confirmed');
+            ->middleware('password.confirmed:fresh');
     });
 
     // The Payments page and the subscriber details window both need to look subscribers up.
@@ -178,8 +193,13 @@ Route::middleware(['auth:sanctum', 'session.slide', 'mfa.enrolled'])->group(func
         Route::post('/users', [UserController::class, 'store']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
         Route::get('/permissions', [UserController::class, 'permissionCatalog']);
+        // The two most powerful admin actions: the password typed again (the sign-in does not count) and a
+        // current code from the admin's authenticator app.
         Route::patch('/users/{user}/permissions', [UserController::class, 'updatePermissions'])
-            ->middleware('password.confirmed');
+            ->middleware(['password.confirmed:fresh', 'throttle:confirm-password', 'mfa.code']);
+        // Someone lost their phone and their recovery codes: switch their two-step sign-in off.
+        Route::post('/users/{user}/mfa/reset', [MfaController::class, 'adminReset'])
+            ->middleware(['password.confirmed:fresh', 'throttle:confirm-password', 'mfa.code']);
 
         Route::get('/barangays/manage', [BarangayController::class, 'manage']);
         Route::post('/barangays', [BarangayController::class, 'store']);

@@ -883,6 +883,7 @@ export default function SubscribersPage() {
 
       <ReviewDialog
         open={remindOpen}
+        sensitive
         onOpenChange={setRemindOpen}
         title={`Send a payment reminder to ${picked.size} ${picked.size === 1 ? "person" : "people"}?`}
         description="Each person gets a text with the amount they owe."

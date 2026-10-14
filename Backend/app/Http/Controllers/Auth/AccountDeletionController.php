@@ -52,6 +52,21 @@ class AccountDeletionController extends Controller
             return response()->json(['message' => 'That password is not correct.', 'errors' => ['password' => ['That password is not correct.']]], 422);
         }
 
+        // With two-step sign-in on, the password alone cannot delete the account: a current code from the app
+        // (or a recovery code, for someone who lost their phone) proves it is really them. Deleting is permanent.
+        if ($user->mfa_enabled_at) {
+            $request->validate(
+                ['code' => ['required', 'string', 'max:30']],
+                ['code.required' => 'Type the current code from your authenticator app to delete your account.'],
+            );
+            if (app(\App\Services\MfaService::class)->check($user, $request->input('code')) === null) {
+                return response()->json([
+                    'message' => 'That code is not right.',
+                    'errors' => ['code' => ['That code is not right.']],
+                ], 422);
+            }
+        }
+
         $this->deletion->delete($user, $validated['reason'] ?? null, $validated['detail'] ?? null);
 
         return response()->json([

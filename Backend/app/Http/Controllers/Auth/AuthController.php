@@ -201,9 +201,9 @@ class AuthController extends Controller
 
         $remember = filter_var($requestData['remember'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        // Administrators with an authenticator app are not signed in yet: the password was the
-        // first step. They get a short-lived challenge and must send the code from their app.
-        if ($user->role === 'admin' && $user->mfa_enabled_at) {
+        // Anyone with an authenticator app (administrators must; others may) is not signed in yet: the
+        // password was the first step. They get a short-lived challenge and must send the code from their app.
+        if ($user->mfa_enabled_at) {
             $challenge = \Illuminate\Support\Str::random(48);
             Cache::put('mfa-challenge:'.hash('sha256', $challenge), ['user_id' => $user->id, 'remember' => $remember], now()->addMinutes(config('mfa.challenge_minutes')));
 
@@ -234,7 +234,7 @@ class AuthController extends Controller
         $challenge = Cache::get($key);
         $user = $challenge ? User::find($challenge['user_id']) : null;
 
-        if (! $user || $user->role !== 'admin' || ! $user->mfa_enabled_at) {
+        if (! $user || ! $user->mfa_enabled_at) {
             return response()->json(['message' => 'That sign-in expired. Please enter your password again.', 'expired' => true], 422);
         }
 
@@ -275,7 +275,17 @@ class AuthController extends Controller
 
         // Only the normal sign-in slides with activity (see SlideSession); a kept one has a fixed end.
         $tokenName = $remember ? 'auth_token_remember' : \App\Http\Middleware\SlideSession::NORMAL_TOKEN_NAME;
-        $token = $user->createToken($tokenName, ['*'], $expiresAt)->plainTextToken;
+        $newToken = $user->createToken($tokenName, ['*'], $expiresAt);
+        $token = $newToken->plainTextToken;
+
+        // Where this sign-in came from, so the person can see it in their list of devices and end it.
+        $newToken->accessToken->forceFill([
+            'ip_address' => request()->ip(),
+            'user_agent' => \Illuminate\Support\Str::limit((string) request()->userAgent(), 250, ''),
+        ])->save();
+
+        // They have just typed their password to get here: no second prompt for the usual 10 minutes.
+        \App\Http\Middleware\CheckPasswordConfirmed::confirmNewSignIn($newToken->accessToken);
 
         Audit::log('auth.login', $user, null, ['remembered' => $remember], $user);
 

@@ -29,7 +29,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { useOnReconnect } from '../hooks/useOnline'
-import { UserPlus, SlidersHorizontal, ShieldCheck, Info } from 'lucide-react'
+import { UserPlus, SlidersHorizontal, ShieldCheck, ShieldOff, Info } from 'lucide-react'
+import StepUpDialog from '../components/StepUpDialog.jsx'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
@@ -110,7 +111,8 @@ export default function Users() {
   const [touched, setTouched] = useState({})
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
-  const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
+  const [permTarget, setPermTarget] = useState(null) // secretary or collector whose permissions are being edited
+  const [mfaResetTarget, setMfaResetTarget] = useState(null) // someone whose two-step sign-in is being reset
 
   const { toast, showToast } = useToast()
 
@@ -365,7 +367,7 @@ export default function Users() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
-                      {user.role === 'secretary' && (
+                      {(user.role === 'secretary' || user.role === 'collector') && (
                         <Button
                           data-tour="users-permissions"
                           variant="outline"
@@ -376,6 +378,18 @@ export default function Users() {
                         >
                           <SlidersHorizontal className="size-3.5" />
                           Permissions
+                        </Button>
+                      )}
+                      {user.mfa_enabled && user.id !== currentUser?.id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setMfaResetTarget(user)}
+                          aria-label={`Reset two-step sign-in for ${user.name}`}
+                        >
+                          <ShieldOff className="size-3.5" aria-hidden="true" />
+                          Reset two-step
                         </Button>
                       )}
                       </div>
@@ -469,6 +483,29 @@ export default function Users() {
         </form>
       </Modal>
 
+      <StepUpDialog
+        open={!!mfaResetTarget}
+        onClose={() => setMfaResetTarget(null)}
+        needCode={Boolean(currentUser?.mfa_enabled)}
+        title="Reset two-step sign-in?"
+        description={
+          mfaResetTarget && (
+            <>
+              <strong>{mfaResetTarget.name}</strong> lost their phone or their recovery codes. Their two-step sign-in is switched off and they are signed out
+              everywhere. {mfaResetTarget.role === 'subscriber' ? 'They can switch it on again from Settings if they want to.' : 'They have to set it up again the next time they sign in, so it is never left off without them knowing.'}
+            </>
+          )
+        }
+        confirmLabel="Reset"
+        risky
+        onConfirm={async (code) => {
+          const res = await usersApi.resetMfa(mfaResetTarget.id, code)
+          showToast(res.data.message)
+          setMfaResetTarget(null)
+          fetchUsers()
+        }}
+      />
+
       <PermissionsModal
         user={permTarget}
         onClose={() => setPermTarget(null)}
@@ -493,10 +530,10 @@ export default function Users() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => createStaffAccount(pendingCreate)} disabled={creating}>
+            <AlertDialogAction variant="outline" onClick={() => createStaffAccount(pendingCreate)} disabled={creating} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
               {creating ? 'Creating...' : 'Confirm Create Account'}
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

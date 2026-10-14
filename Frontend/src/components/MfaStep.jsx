@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
 import api from '../api/axios'
 import { errorMessage } from '../utils/errors'
 import FormField from './FormField.jsx'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import CodeInput from './CodeInput.jsx'
 
 /**
  * The second step of signing in for administrators: the 6-digit code from their authenticator
@@ -65,10 +65,7 @@ export default function MfaStep({ challenge, onDone, onBack }) {
 
   return (
     <div>
-      <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <ShieldCheck className="size-6" aria-hidden="true" />
-      </span>
-      <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Two-step sign-in</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Two-step sign-in</h1>
       <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
         {recovery
           ? 'Type one of your recovery codes. Each one works only once.'
@@ -77,16 +74,19 @@ export default function MfaStep({ challenge, onDone, onBack }) {
 
       <form onSubmit={submit} noValidate className="mt-8 space-y-5">
         <FormField id="mfa-code" label={recovery ? 'Recovery code' : '6-digit code'} error={error}>
-          <Input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            inputMode={recovery ? 'text' : 'numeric'}
-            autoComplete="one-time-code"
-            autoFocus
-            maxLength={recovery ? 12 : 7}
-            placeholder={recovery ? 'XXXX-XXXX' : '123456'}
-            className="h-12 text-center font-mono text-xl tracking-[0.3em]"
-          />
+          {recovery ? (
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoComplete="one-time-code"
+              autoFocus
+              maxLength={12}
+              placeholder="XXXX-XXXX"
+              className="h-12 text-center font-mono text-xl tracking-[0.3em]"
+            />
+          ) : (
+            <CodeInput value={code} onChange={setCode} autoFocus disabled={busy || locked} />
+          )}
         </FormField>
         <Button type="submit" disabled={busy || locked || !code.trim()} className="h-11 w-full text-base">
           {busy ? 'Checking...' : locked ? `Try again in ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}` : 'Continue'}

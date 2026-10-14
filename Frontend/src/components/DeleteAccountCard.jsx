@@ -7,6 +7,8 @@ import { errorMessage } from '../utils/errors'
 import Modal from './Modal.jsx'
 import FormField from './FormField.jsx'
 import PasswordField from './PasswordField.jsx'
+import CodeInput from './CodeInput.jsx'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,11 +20,14 @@ const peso = (value) => `₱${Number(value ?? 0).toLocaleString('en-PH', { minim
  * "Delete my account", at the bottom of Settings, for subscribers. In three short steps, like the
  * big services do it: why (optional), what will happen, and the password to confirm.
  *
+ * With two-step sign-in on, a current code from the authenticator app (or a recovery code) is asked for too, so the
+ * password alone cannot delete the account.
+ *
  * What is deleted is the login and the contact details. The billing record is kept, because it is
  * the company's financial record: the Privacy Policy explains this, and so does step 2.
  */
 export default function DeleteAccountCard() {
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(1)
@@ -33,6 +38,11 @@ export default function DeleteAccountCard() {
   const [understood, setUnderstood] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [code, setCode] = useState('')
+  const [codeError, setCodeError] = useState('')
+  const [useRecovery, setUseRecovery] = useState(false)
+  const needsCode = Boolean(user?.mfa_enabled)
+  const codeReady = !needsCode || code.trim().length >= (useRecovery ? 8 : 6)
   const [busy, setBusy] = useState(false)
 
   // What is owed is shown in step 2, because deleting an account does not cancel a balance.
@@ -50,13 +60,22 @@ export default function DeleteAccountCard() {
     setUnderstood(false)
     setPassword('')
     setError('')
+    setCode('')
+    setCodeError('')
+    setUseRecovery(false)
   }
 
   const deleteNow = async () => {
     setBusy(true)
     setError('')
+    setCodeError('')
     try {
-      await api.post('/me/delete-account', { password, reason: reason || undefined, detail: detail.trim() || undefined })
+      await api.post('/me/delete-account', {
+        password,
+        reason: reason || undefined,
+        detail: detail.trim() || undefined,
+        ...(needsCode ? { code: code.trim() } : {}),
+      })
       try {
         sessionStorage.setItem('swift.notice', 'Your account was deleted. Your SWIFT account has been deleted.')
       } catch {
@@ -65,7 +84,13 @@ export default function DeleteAccountCard() {
       await logout()
       navigate('/login', { replace: true })
     } catch (err) {
-      setError(err.response?.data?.errors?.password?.[0] ?? errorMessage(err, 'Could not delete the account. Please try again.'))
+      const errors = err.response?.data?.errors
+      if (errors?.code) {
+        setCodeError(errors.code[0])
+        setCode('')
+      } else {
+        setError(errors?.password?.[0] ?? errorMessage(err, 'Could not delete the account. Please try again.'))
+      }
       setBusy(false)
     }
   }
@@ -92,15 +117,24 @@ export default function DeleteAccountCard() {
         size="md"
         footer={() => (
           <div className="flex justify-between gap-3">
-            <Button type="button" variant="outline" onClick={step === 1 ? reset : () => setStep(1)} disabled={busy}>
-              {step === 1 ? 'Keep my account' : 'Back'}
-            </Button>
             {step === 1 ? (
-              <Button type="button" onClick={() => setStep(2)}>Continue</Button>
+              <>
+                <Button type="button" variant="outline" onClick={reset} disabled={busy}>Keep my account</Button>
+                <Button type="button" onClick={() => setStep(2)}>Continue</Button>
+              </>
             ) : (
-              <Button type="button" variant="destructive" onClick={deleteNow} disabled={busy || !understood || !password}>
-                {busy ? 'Deleting...' : 'Delete my account'}
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"
+                  onClick={deleteNow}
+                  disabled={busy || !understood || !password || !codeReady}
+                >
+                  {busy ? 'Deleting...' : 'Delete my account'}
+                </Button>
+                <Button type="button" onClick={() => setStep(1)} disabled={busy}>Back</Button>
+              </>
             )}
           </div>
         )}
@@ -146,6 +180,37 @@ export default function DeleteAccountCard() {
             <FormField id="delete-password" label="Type your password to confirm" required error={error}>
               <PasswordField value={password} onChange={(e) => { setPassword(e.target.value); setError('') }} autoComplete="current-password" />
             </FormField>
+            {needsCode && (
+              <div className="space-y-2">
+                <FormField
+                  id="delete-code"
+                  label={useRecovery ? 'Recovery code' : 'Code from your authenticator app'}
+                  hint="Two-step sign-in is on, so deleting your account also needs a current code."
+                  required
+                  error={codeError}
+                >
+                  {useRecovery ? (
+                    <Input
+                      value={code}
+                      onChange={(e) => { setCode(e.target.value); setCodeError('') }}
+                      autoComplete="off"
+                      maxLength={12}
+                      placeholder="XXXX-XXXX"
+                      className="h-11 text-center font-mono text-lg tracking-[0.3em]"
+                    />
+                  ) : (
+                    <CodeInput value={code} onChange={(v) => { setCode(v); setCodeError('') }} />
+                  )}
+                </FormField>
+                <button
+                  type="button"
+                  onClick={() => { setUseRecovery((r) => !r); setCode(''); setCodeError('') }}
+                  className="text-sm font-medium text-primary hover:underline dark:text-blue-300"
+                >
+                  {useRecovery ? 'Use the code from my authenticator app' : 'My phone is lost: use a recovery code'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Modal>

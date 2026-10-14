@@ -40,7 +40,7 @@ import { Button } from "@/components/ui/button";
 // The menu is split into labelled sections. Each section only appears for people who have at
 // least one page in it. "bottom" sections sit at the foot of the menu, away from the work pages.
 const STAFF = ["admin", "secretary", "collector"];
-// Pages a field collector never needs (they have no permission for them either).
+// Kept for the pages that are never offered by role alone (Audit Trail).
 const OFFICE = ["admin", "secretary"];
 const EVERYONE = ["admin", "secretary", "collector", "subscriber"];
 
@@ -56,21 +56,21 @@ const NAV_GROUPS = [
     label: "Customers",
     items: [
       { label: "Subscribers", path: "/subscribers", icon: Users2, roles: STAFF },
-      { label: "Pending Approvals", path: "/approvals", icon: ClipboardCheck, roles: OFFICE, showBadge: true },
-      { label: "Service Plans", path: "/plans", icon: Wifi, roles: OFFICE },
+      { label: "Pending Approvals", path: "/approvals", icon: ClipboardCheck, roles: STAFF, showBadge: true },
+      { label: "Service Plans", path: "/plans", icon: Wifi, roles: STAFF },
     ],
   },
   {
     label: "Billing",
     items: [
       { label: "Payments", path: "/payments", icon: Wallet, roles: STAFF },
-      { label: "Reports", path: "/reports", icon: FileText, roles: OFFICE },
+      { label: "Reports", path: "/reports", icon: FileText, roles: STAFF },
     ],
   },
   {
     label: "Administration",
     items: [
-      { label: "Archive", path: "/archive", icon: Archive, roles: OFFICE },
+      { label: "Archive", path: "/archive", icon: Archive, roles: STAFF },
       { label: "Audit Trail", path: "/audit", icon: ScrollText, roles: ["admin"] },
     ],
   },
@@ -128,7 +128,10 @@ export default function Sidebar({ open: pinned, onToggle }) {
     items: group.items.filter(
       (item) =>
         item.roles.includes(user?.role) &&
-        (!PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path]))),
+        (!PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path]))) &&
+        // Service Plans is open to a secretary even without managing them; a field collector only sees it once an
+        // admin has given them that task.
+        !(item.path === "/plans" && user?.role === "collector" && !can("plans.manage")),
     ),
   })).filter((group) => group.items.length > 0);
   const isActivePath = (path) =>

@@ -657,13 +657,10 @@ export default function Approvals() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmReject}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction variant="outline" onClick={confirmReject} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
               Reject Application
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -689,13 +686,10 @@ export default function Approvals() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmRejectClaim}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction variant="outline" onClick={confirmRejectClaim} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
               Reject Claim
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

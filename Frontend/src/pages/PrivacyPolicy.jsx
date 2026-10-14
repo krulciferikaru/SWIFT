@@ -46,8 +46,10 @@ export default function PrivacyPolicy() {
           <li><strong>About you:</strong> your name, mobile number, address (barangay), and email if you give one.</li>
           <li><strong>About your service:</strong> your service plan, installation date, the MAC address of your equipment, and your service status (Active, Unpaid or Disconnected).</li>
           <li><strong>About your payments:</strong> each payment recorded for you: amount, date, official receipt (OR) number, method, notes, and which staff member recorded it.</li>
-          <li><strong>Your account:</strong> your password (kept only in a scrambled form that nobody can read back), whether your mobile number is verified, and the date you agreed to our Terms and this policy.</li>
-          <li><strong>Activity records:</strong> an audit trail of important actions in the system, such as sign-ins, edits and payments, with the date and the person who did them. Passwords and codes are never written to it.</li>
+          <li><strong>Your account:</strong> your password (kept only in a scrambled form that nobody can read back), whether your mobile number is verified, and the date you agreed to our Terms and this policy. If you turn on <strong>two-step sign-in</strong>, also the secret key for your authenticator app (kept encrypted) and your recovery codes (kept scrambled, like a password).</li>
+          <li><strong>If you are one of our staff:</strong> your name, email, mobile number (optional, so you can use Forgot password), your role and what you are allowed to do, and the actions you take in the system.</li>
+          <li><strong>Where you are signed in:</strong> for each open sign-in, the type of browser and device it came from (for example “Chrome on Windows”), its network (IP) address, and when it was started and last used. It is shown to you in Settings so you can spot and end a sign-in that is not yours.</li>
+          <li><strong>Activity records:</strong> an audit trail of important actions in the system, such as sign-ins, edits and payments, with the date, the person who did them and the network (IP) address they came from. Passwords and codes are never written to it.</li>
           <li><strong>Messages:</strong> the text messages we send you (reminders, payment confirmations, verification and reset codes).</li>
         </ul>
         <p>We collect it from you when you register, from our staff when they set up or update your service, and from the payments recorded for you.</p>
@@ -57,7 +59,7 @@ export default function PrivacyPolicy() {
         <ul>
           <li><strong>To provide and bill your cable TV service:</strong> to know who you are, which plan you are on, what you owe, and what you have paid.</li>
           <li><strong>To contact you about your service:</strong> payment confirmations, due-date reminders, status changes, and codes for verifying your number or resetting your password.</li>
-          <li><strong>To keep the system and your account safe:</strong> signing you in, limiting wrong-password guesses, and keeping the audit trail.</li>
+          <li><strong>To keep the system and your account safe:</strong> signing you in, limiting wrong-password guesses, offering two-step sign-in, showing you where you are signed in, controlling what each member of staff can see and do, and keeping the audit trail.</li>
           <li><strong>To meet our legal and accounting duties:</strong> billing and payment records have to be kept, and may have to be shown to the authorities.</li>
         </ul>
         <p>We do not use your information for advertising, and we do not sell it.</p>
@@ -66,6 +68,7 @@ export default function PrivacyPolicy() {
       <Section id="share" title="4. Who can see it">
         <ul>
           <li><strong>Our staff:</strong> administrators and secretaries can see subscriber records. What each secretary may do is set by an administrator, and every important action is recorded in the audit trail.</li>
+          <li><strong>Our field collectors:</strong> the staff who visit households to collect payments can see only what they need for that: your name, address, mobile number, plan, service status, balance and payment history, and they can record a payment. They do not see your email address or the MAC address of your equipment. An administrator sets exactly what each field collector may do, and their actions are recorded in the audit trail too.</li>
           <li><strong>You:</strong> you can see your own account, balance and payment history.</li>
           <li><strong>Service providers that run the system for us:</strong> <strong>PhilSMS</strong> (it receives your mobile number and the text of each message in order to deliver it), and our hosting providers <strong>Vercel</strong> (the website) and <strong>Railway</strong> (the server and database). They handle information only to provide their service to us. <Todo>confirm whether any other provider or any data stored outside the Philippines needs to be listed</Todo></li>
           <li><strong>Authorities:</strong> only when the law requires it.</li>
@@ -89,6 +92,8 @@ export default function PrivacyPolicy() {
           <li><strong>The company&apos;s record of you as a subscriber</strong> (your name, address, mobile number, plan, installation date, service status and payments): <Todo>number of years, to be confirmed by the company with its accountant</Todo>. We keep this even after you delete your account, because it is the company&apos;s own record and the integrity of its books depends on it. It is marked with a note that you deleted your account, and we send you no more text messages. After that period it is anonymised or destroyed.</li>
           <li><strong>The audit trail:</strong> <Todo>period, to be confirmed by the company</Todo>.</li>
           <li><strong>Verification and reset codes:</strong> ten minutes, and they are stored scrambled.</li>
+          <li><strong>Two-step sign-in details</strong> (the authenticator key and recovery codes): for as long as you keep it turned on. They are deleted when you turn it off, when an administrator resets it for you, or when you delete your account.</li>
+          <li><strong>Where you are signed in</strong> (browser, device type and network address): only while the sign-in is open. It is deleted when you sign out or end it, and a sign-in that simply runs out is cleared within about a day. The network address is shown to you with its last part hidden.</li>
         </ul>
       </Section>
 
@@ -114,7 +119,7 @@ export default function PrivacyPolicy() {
         </p>
         <p><strong>What happens:</strong></p>
         <ul>
-          <li>Your login (your SWIFT account) is deleted and stops working straight away.</li>
+          <li>Your login (your SWIFT account) is deleted and stops working straight away. Your open sign-ins and any two-step sign-in details go with it.</li>
           <li>The company&apos;s <strong>record of you is kept</strong>, as explained in section 6, with a note that you deleted your account, so its financial records stay complete and correct. We send you no more text messages.</li>
           <li>Anything you still owe stays owed. Deleting an account does not cancel a balance.</li>
           <li>If you want a SWIFT account again later, you can register again with the same mobile number; our staff will link it to your existing record.</li>
@@ -124,8 +129,10 @@ export default function PrivacyPolicy() {
       <Section id="security" title="9. How we protect it">
         <ul>
           <li>Passwords are scrambled before they are stored. Nobody, including our administrators, can see or reset your password; you reset it yourself with a code sent to your verified mobile number.</li>
-          <li>Staff only see what their role allows, and sensitive actions ask them to type their own password again.</li>
+          <li>Staff only see what their role allows (a field collector, for example, never sees email addresses or equipment MAC addresses), and sensitive actions ask them to type their own password again.</li>
           <li>Signing in is limited after several wrong passwords, and sign-ins end after a period of inactivity.</li>
+          <li><strong>Two-step sign-in</strong> (a 6-digit code from an authenticator app on your phone) is required for administrators and is optional for everyone else, who can turn it on from Settings.</li>
+          <li>In Settings you can see where you are signed in and sign out of any device, or all the others. An account that is switched off stops working at once, even where it was still signed in.</li>
           <li>Connections to the system are encrypted, and an audit trail records who did what.</li>
         </ul>
         <p>No system is perfectly secure. If your information is ever involved in a breach that puts you at risk, we will tell you and the National Privacy Commission as the law requires.</p>
@@ -135,7 +142,7 @@ export default function PrivacyPolicy() {
         <p>
           SWIFT does not use advertising or tracking cookies. It stores a sign-in token in your browser so you stay signed in (it is removed when you sign
           out, or when you close the browser unless you chose &ldquo;Keep me signed in&rdquo;), and a few preferences on your device, such as dark mode, text size
-          and the last few subscribers staff opened.
+          which table columns you chose to show, and the last few subscribers staff opened.
         </p>
       </Section>
 

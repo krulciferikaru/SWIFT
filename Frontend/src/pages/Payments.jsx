@@ -93,6 +93,16 @@ const rememberRecent = (subscriber) => {
     return readRecent();
   }
 };
+// A person who has since been removed (or an old entry on this device) is dropped from the list.
+const forgetRecent = (id) => {
+  try {
+    const next = readRecent().filter((r) => r.subscriber_id !== id);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return readRecent();
+  }
+};
 const lastMethod = () => {
   try {
     return localStorage.getItem(METHOD_KEY) || "";
@@ -233,7 +243,14 @@ export default function Payments() {
         setBilling(billingRes.data.data);
         setHistory(historyRes.data.data);
       } catch (err) {
-        showToast(errorMessage(err, "Failed to load billing details."), "error");
+        if (err.response?.status === 404) {
+          // They are no longer in the system (removed since this device last opened them).
+          setRecent(forgetRecent(subscriber.subscriber_id));
+          setSelected(null);
+          showToast("That subscriber is no longer in the system. They may have been removed.", "error");
+        } else {
+          showToast(errorMessage(err, "Failed to load billing details."), "error");
+        }
       } finally {
         setLoadingDetail(false);
       }

@@ -15,22 +15,22 @@ class ResetMfa extends Command
 {
     protected $signature = 'swift:reset-mfa {email : The administrator\'s email address}';
 
-    protected $description = 'Turn off two-step sign-in for an administrator who is locked out (they set it up again at next sign-in)';
+    protected $description = 'Turn off two-step sign-in for someone who is locked out (an administrator sets it up again at next sign-in, anyone else may do it again from Settings)';
 
     public function handle(): int
     {
-        $user = User::where('email', $this->argument('email'))->where('role', 'admin')->first();
+        $user = User::where('email', $this->argument('email'))->first();
         if (! $user) {
-            $this->error('No administrator with that email address.');
+            $this->error('No account with that email address.');
 
             return self::FAILURE;
         }
 
-        $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'mfa_last_step' => null])->save();
+        app(\App\Services\MfaService::class)->clear($user, requireAgain: in_array($user->role, ['admin', 'secretary', 'collector'], true));
         $user->tokens()->delete();
         Audit::log('auth.mfa_reset', $user, null, ['by' => 'server command'], null);
 
-        $this->info("Two-step sign-in was reset for {$user->email}. They will be asked to set it up again when they sign in.");
+        $this->info("Two-step sign-in was reset for {$user->email}. Administrators, secretaries and field collectors have to set it up again when they sign in.");
 
         return self::SUCCESS;
     }

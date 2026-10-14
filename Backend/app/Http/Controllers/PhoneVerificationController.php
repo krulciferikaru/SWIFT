@@ -33,6 +33,22 @@ class PhoneVerificationController extends Controller
             'contact_number.regex' => 'Enter a mobile number such as 0917 123 4567.',
         ]);
 
+        // The number is how a forgotten password is recovered, so changing it is a way to take over an account.
+        // Someone with two-step sign-in has to prove it is really them: a current code from the app (or a
+        // recovery code), as well as the password the route already asked for.
+        if ($user->mfa_enabled_at) {
+            $request->validate(
+                ['code' => ['required', 'string', 'max:30']],
+                ['code.required' => 'Type the current code from your authenticator app to change your number.'],
+            );
+            if (app(\App\Services\MfaService::class)->check($user, $request->input('code')) === null) {
+                return response()->json([
+                    'message' => 'That code is not right.',
+                    'errors' => ['code' => ['That code is not right.']],
+                ], 422);
+            }
+        }
+
         $user->forceFill(['contact_number' => trim($validated['contact_number']), 'contact_verified_at' => null])->save();
         PhoneVerification::where('user_id', $user->id)->delete();
         Audit::log('user.mobile_changed', $user, null, [], $user);

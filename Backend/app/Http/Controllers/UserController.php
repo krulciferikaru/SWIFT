@@ -89,6 +89,11 @@ class UserController extends Controller
         $previous = $user->account_status;
         $user->update($validated);
 
+        // Anything but Active ends the person's open sign-ins at once, not when they next expire.
+        if ($user->account_status !== 'active') {
+            $user->tokens()->delete();
+        }
+
         Audit::log('user.status_changed', $user, null, [
             'account_status' => ['old' => $previous, 'new' => $user->account_status],
         ]);
@@ -105,7 +110,7 @@ class UserController extends Controller
      * one at the office can ever set, or see, another person's password.
      */
 
-    /** GET /api/permissions: the list of switches the admin can set for a secretary. */
+    /** GET /api/permissions: the list of switches the admin can set for a secretary or a field collector. */
     public function permissionCatalog(): JsonResponse
     {
         $items = [];
@@ -119,14 +124,15 @@ class UserController extends Controller
     /**
      * PATCH /api/users/{user}/permissions
      *
-     * Sets exactly which tasks a secretary may do. Send `permissions: null` to go back to the
-     * default (everything). Admins can't be restricted, and subscribers have no staff abilities.
+     * Sets exactly which tasks a secretary or a field collector may do. Send `permissions: null` to go back
+     * to the default (everything for a secretary; viewing subscribers and recording payments for a collector).
+     * Admins can't be restricted, and subscribers have no staff abilities.
      */
     public function updatePermissions(Request $request, User $user): JsonResponse
     {
-        if ($user->role !== 'secretary') {
+        if (! in_array($user->role, ['secretary', 'collector'], true)) {
             return response()->json([
-                'message' => 'Only secretary accounts have adjustable permissions.',
+                'message' => 'Only secretary and field collector accounts have adjustable permissions.',
             ], 422);
         }
 

@@ -44,9 +44,10 @@ export default function Terms() {
       <Section id="account" title="3. Your account">
         <ul>
           <li>Give correct information when you register, and keep your details up to date.</li>
-          <li>Your mobile number is your login. Keep your password private and do not share it. You are responsible for what is done with your account.</li>
+          <li>Your mobile number (or your email) is your login. Keep your password private and do not share it. You are responsible for what is done with your account.</li>
+          <li>You can add <strong>two-step sign-in</strong> in Settings: after your password you also type a 6-digit code from an app on your phone. If you turn it on, keep your phone and your recovery codes safe. If you lose both, the company can switch it off for you so you can sign in again.</li>
           <li>New registrations are reviewed by our staff before the account is activated. We may refuse a registration, for example if the details cannot be matched to a real person.</li>
-          <li>If you think someone else is using your account, change your password and tell us right away.</li>
+          <li>If you think someone else is using your account, change your password (Forgot password on the sign-in page), sign out of other devices in Settings, and tell us right away.</li>
         </ul>
       </Section>
 
@@ -54,6 +55,7 @@ export default function Terms() {
         <ul>
           <li>You are billed <strong>monthly</strong> at the rate of your service plan. Billing starts the month <strong>after</strong> your installation date; the installation month is not billed.</li>
           <li>Payments are recorded by our staff after they are received (cash, GCash or another method the company accepts). A payment appears in your history once it is recorded. SWIFT does not take online payments.</li>
+          <li>A payment recorded by mistake can be cancelled by our staff. It stays in your history marked <strong>Cancelled</strong> with the reason, and it does not count towards your balance.</li>
           <li>A payment goes to your oldest unpaid month first. Money paid beyond what you owe stays as credit towards later months.</li>
           <li>The <strong>payment receipt</strong> SWIFT can print is a summary of a recorded payment. It is not a BIR-registered official receipt.</li>
           <li>Plan rates and billing rules are set by the company and may change. <Todo>how and when a change in rate or plan takes effect, to be confirmed by the company</Todo></li>
