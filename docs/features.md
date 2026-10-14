@@ -52,7 +52,7 @@ Everything on this page was added in response to the evaluators' feedback or the
 | **Company contact information** | Settings (admin): the contact details above. |
 | **Archive** | Archived subscribers and plans can be restored or permanently deleted. An archived subscriber cannot sign in until restored. |
 | **Details windows** | Click a subscriber's or plan's name (shown as a blue link with an arrow) to see everything in one window with the same Edit, Archive and Payments buttons. Edit, Archive, Restore, Approve and Reject are real buttons with icons. |
-| **Address and names** | Addresses are chosen from a list of barangays (see [Future improvements](future-improvements.md) for the list's limits). Names are capitalised automatically. The MAC address fills in its colons as you type. |
+| **Address and names** | An address is a **barangay** picked from a searchable list (managed by an admin in Settings), an optional **street, purok or house number**, and the city, which is always Palayan City. The full text (for example "12 Rizal St, Malete, Palayan City") is still kept for lists, search and reports. An older address typed in free text stays as it is until a barangay is chosen for that subscriber. Names are capitalised automatically. The MAC address fills in its colons as you type. |
 
 ## Using SWIFT
 

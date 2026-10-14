@@ -49,7 +49,7 @@ export default function LegalLayout({ title, intro, sections, children }) {
             <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
             <p>
               <strong>Draft for review.</strong> This page was prepared for Jubal Brothers Cable TV Corporation, Palayan Branch, and has not
-              yet been reviewed by the company or its Data Protection Officer. Items in [square brackets] still have to be filled in or confirmed.
+              yet been reviewed by the company. Items in [square brackets] still have to be filled in or confirmed.
             </p>
           </div>
         )}

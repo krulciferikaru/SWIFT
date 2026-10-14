@@ -44,7 +44,8 @@ class BarangayListTest extends TestCase
     public function test_the_registration_form_can_read_the_list_without_signing_in(): void
     {
         $this->getJson('/api/barangays')->assertOk()
-            ->assertJsonPath('data.0', 'Malete, Palayan City')
+            ->assertJsonPath('data.0', 'Malete')
+            ->assertJsonPath('city', 'Palayan City')
             ->assertJsonCount(5, 'data');
     }
 

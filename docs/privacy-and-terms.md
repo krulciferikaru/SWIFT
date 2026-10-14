@@ -6,11 +6,11 @@ The system has a **Privacy Policy** (`/privacy`) and **Terms of Service** (`/ter
 
 The wording was prepared against the Data Privacy Act of 2012 (Republic Act No. 10173) and with similar service providers' notices in mind, **but it is not legal advice and the company has not approved it**. Every item the company has to decide is shown in the page itself as a highlighted **[bracketed]** placeholder, and a yellow "Draft for review" banner is shown at the top of both pages.
 
-Before real subscribers use the system, the company (with its Data Protection Officer) should:
+Before real subscribers use the system, the company should:
 
 1. **Read both pages** and correct anything that is not true of how the company works.
 2. **Fill in every [bracketed] item.** At the time of writing they are:
-   - the name and email of the **Data Protection Officer**;
+   - (done) the **privacy contact**: the Palayan branch has no Data Protection Officer, so `laureanojasmine180051@gmail.com` is named as the privacy contact for questions, requests and complaints (`PRIVACY_CONTACT_EMAIL` in `Frontend/src/legal/meta.js`). The Data Privacy Act expects the company to designate a Data Protection Officer, so the company may want to name one and change that address;
    - any other provider, or any storage outside the Philippines, that must be listed;
    - how long **billing and payment records** are kept (normally set by tax and accounting rules; ask the company's accountant);
    - how long the **audit trail** is kept;

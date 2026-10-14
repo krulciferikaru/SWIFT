@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import LegalLayout, { Section, Todo } from '../legal/LegalLayout.jsx'
+import { PRIVACY_CONTACT_EMAIL } from '../legal/meta'
 
 const SECTIONS = [
   { id: 'accept', title: 'Agreeing to these terms' },
@@ -114,7 +115,10 @@ export default function Terms() {
 
       <Section id="law" title="11. Governing law and contact">
         <p>These terms are governed by the laws of the Republic of the Philippines. <Todo>place where disputes are to be settled, to be confirmed by the company</Todo></p>
-        <p>Questions about these terms: contact the company using the details shown on the sign-in page.</p>
+        <p>
+          Questions about these terms: contact the company using the details shown on the sign-in page. For questions or concerns about your personal information, write to{' '}
+          <a className="text-primary underline dark:text-blue-300" href={`mailto:${PRIVACY_CONTACT_EMAIL}`}>{PRIVACY_CONTACT_EMAIL}</a>.
+        </p>
       </Section>
     </LegalLayout>
   )

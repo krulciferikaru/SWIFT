@@ -9,6 +9,7 @@ import PasswordField from '../components/PasswordField.jsx'
 import api from '../api/axios'
 import { capitalizeWords } from '../utils/text'
 import { useBarangays } from '../hooks/useBarangays'
+import BarangayPicker from '../components/BarangayPicker.jsx'
 import { Input } from '@/components/ui/input'
 import FormField, { RequiredNote } from '../components/FormField.jsx'
 import { required, mobileNumber, emailAddress, minLength, matches, firstError } from '../utils/validators'
@@ -24,7 +25,8 @@ export default function Register() {
     password: '',
     password_confirmation: '',
     contact_number: '',
-    address: '',
+    barangay: '',
+    street: '',
     accept_terms: false,
   })
   const [errors, setErrors] = useState({})
@@ -49,7 +51,7 @@ export default function Register() {
     last_name: required('Last name')(form.last_name),
     contact_number: firstError(form.contact_number, required('Mobile number'), mobileNumber),
     email: emailAddress(form.email),
-    address: required('Barangay')(form.address),
+    barangay: required('Barangay')(form.barangay),
     password: firstError(form.password, required('Password'), minLength('Password', 8)),
     password_confirmation: firstError(
       form.password_confirmation,
@@ -165,21 +167,20 @@ export default function Register() {
               <Input type="email" name="email" value={form.email} onChange={handleChange} onBlur={handleBlur} autoComplete="email" />
             </FormField>
 
-            <FormField id="address" label="Address" required error={fieldError('address')}>
-              <select
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm dark:bg-gray-950"
-              >
-                <option value="" disabled hidden>Select your barangay</option>
-                {BARANGAYS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
+            <FormField id="barangay" label="Barangay" required hint="Type to search. Your city is Palayan City." error={fieldError('barangay')}>
+              <BarangayPicker
+                value={form.barangay}
+                options={BARANGAYS}
+                onChange={(name) => {
+                  setForm((f) => ({ ...f, barangay: name }))
+                  setErrors(({ barangay: _gone, ...rest }) => rest)
+                }}
+                onBlur={() => setTouched((t) => ({ ...t, barangay: true }))}
+              />
+            </FormField>
+
+            <FormField id="street" label="Street, purok or house number" optional error={fieldError('street')}>
+              <Input name="street" value={form.street} onChange={handleChange} maxLength={120} autoComplete="street-address" placeholder="For example: 12 Rizal St" />
             </FormField>
 
             <FormField id="password" label="Password" required hint="At least 8 characters." error={fieldError('password')}>
