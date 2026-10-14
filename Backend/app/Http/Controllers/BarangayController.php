@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 class BarangayController extends Controller
 {
-    /** GET /api/barangays (public: the registration form needs it): the addresses on offer, in order. */
+    /** GET /api/barangays (public: the registration form needs it): the barangays on offer, in order. The city is always the same. */
     public function index(): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => Barangay::activeAddresses()]);
+        return response()->json(['success' => true, 'city' => Barangay::CITY, 'data' => Barangay::activeNames()]);
     }
 
     /** GET /api/barangays/manage (admin): every barangay, switched off ones too, with how many subscribers live there. */
@@ -69,7 +69,15 @@ class BarangayController extends Controller
 
         DB::transaction(function () use ($barangay, $name, $active) {
             if ($name !== $barangay->name) {
-                Subscriber::withTrashed()->where('address', $barangay->address)->update(['address' => Barangay::address($name)]);
+                // Everyone in this barangay (an older plain-text address too) moves to the new name, and their full
+                // address text is rebuilt (street kept).
+                Subscriber::withTrashed()
+                    ->where(fn ($q) => $q->where('barangay', $barangay->name)->orWhere(fn ($q2) => $q2->whereNull('barangay')->where('address', $barangay->address)))
+                    ->get()
+                    ->each(function (Subscriber $subscriber) use ($name) {
+                        $subscriber->barangay = $name;
+                        $subscriber->save();
+                    });
             }
             $barangay->update(['name' => $name, 'is_active' => $active]);
         });

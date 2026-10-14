@@ -46,15 +46,25 @@ class AuthController extends Controller
             ? 'nullable|string|email|max:255|unique:users,email'
             : 'nullable|string|email|max:255|unique:users,email|unique:subscriber,email';
 
+        // The address is a barangay chosen from the list plus an optional street (the city is always Palayan City).
+        // The older single "address" text is still understood when it ends with a barangay on the list.
+        if (empty($requestData['barangay']) && ! empty($requestData['address']) && ($parts = \App\Models\Barangay::split($requestData['address']))) {
+            $requestData['street'] = $parts[0];
+            $requestData['barangay'] = $parts[1];
+        }
+
         $validator = Validator::make($requestData, [
             'first_name' => 'required|string|max:127',
             'last_name' => 'required|string|max:127',
             'contact_number' => $contactRule,
             'email' => $emailRule,
             'password' => 'required|string|min:8|confirmed',
-            'address' => ['required', 'string', Rule::in(\App\Models\Barangay::activeAddresses())],
+            'barangay' => ['required', 'string', Rule::in(\App\Models\Barangay::activeNames())],
+            'street' => ['nullable', 'string', 'max:120'],
             'accept_terms' => ['accepted'],
         ], [
+            'barangay.required' => 'Choose your barangay from the list.',
+            'barangay.in' => 'Choose your barangay from the list.',
             'accept_terms.accepted' => 'You need to agree to the Terms of Service and Privacy Policy to register.',
         ]);
 
@@ -95,7 +105,8 @@ class AuthController extends Controller
 
         $subscriber = Subscriber::create([
             'name' => $fullName,
-            'address' => $requestData['address'] ?? null,
+            'barangay' => $requestData['barangay'],
+            'street' => ($requestData['street'] ?? null) ?: null,
             'contact_number' => $requestData['contact_number'],
             'email' => $requestData['email'],
             'password' => Hash::make($requestData['password']),

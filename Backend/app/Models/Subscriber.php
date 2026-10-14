@@ -22,6 +22,8 @@ class Subscriber extends Model
         'plan_id',
         'name',
         'address',
+        'barangay',
+        'street',
         'contact_number',
         'email',
         'password',
@@ -66,6 +68,14 @@ class Subscriber extends Model
 
     protected static function booted(): void
     {
+        // The full address text follows the barangay and street whenever those are set (an older free-text address,
+        // with no barangay, is left exactly as it is).
+        static::saving(function (Subscriber $subscriber) {
+            if ($subscriber->barangay && ($subscriber->isDirty('barangay') || $subscriber->isDirty('street') || ! $subscriber->address)) {
+                $subscriber->address = \App\Models\Barangay::compose($subscriber->street, $subscriber->barangay);
+            }
+        });
+
         // Which plan they are on, month by month (see RateHistoryService).
         static::created(function (Subscriber $subscriber) {
             if ($subscriber->plan_id) {

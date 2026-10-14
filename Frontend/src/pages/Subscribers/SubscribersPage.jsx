@@ -1020,6 +1020,8 @@ export default function SubscribersPage() {
               plan_id: editTarget.plan_id ?? "",
               name: editTarget.name ?? "",
               address: editTarget.address ?? "",
+              barangay: editTarget.barangay ?? "",
+              street: editTarget.street ?? "",
               contact_number:
                 editTarget.contact ?? editTarget.contact_number ?? "",
               email: editTarget.email ?? "",

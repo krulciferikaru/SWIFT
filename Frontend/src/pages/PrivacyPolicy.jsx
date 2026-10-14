@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import LegalLayout, { Section, Todo } from '../legal/LegalLayout.jsx'
 import CompanyContact from '../components/CompanyContact.jsx'
+import { PRIVACY_CONTACT_EMAIL } from '../legal/meta'
 
 const SECTIONS = [
   { id: 'who', title: 'Who we are and what this covers' },
@@ -36,7 +37,8 @@ export default function PrivacyPolicy() {
           This policy applies to subscribers who register or are registered by our staff, and to the staff who use the system.
         </p>
         <p>
-          Data Protection Officer: <Todo>name and email of the Data Protection Officer, to be provided by the company</Todo>
+          <strong>Privacy contact</strong> (for questions, requests and concerns about your information):{' '}
+          <a className="text-primary underline dark:text-blue-300" href={`mailto:${PRIVACY_CONTACT_EMAIL}`}>{PRIVACY_CONTACT_EMAIL}</a>
         </p>
         <CompanyContact variant="card" />
       </Section>
@@ -109,7 +111,7 @@ export default function PrivacyPolicy() {
           <li><strong>Be compensated</strong> for damage caused by inaccurate, false or unlawfully obtained information.</li>
           <li><strong>Complain</strong> to the National Privacy Commission (see section 11).</li>
         </ul>
-        <p>To use any of these, contact the Data Protection Officer in section 1. We will answer within <Todo>number of days, to be confirmed by the company</Todo>.</p>
+        <p>To use any of these, write to the privacy contact in section 1 ({PRIVACY_CONTACT_EMAIL}). We will answer within <Todo>number of days, to be confirmed by the company</Todo>.</p>
       </Section>
 
       <Section id="delete" title="8. Deleting your account">
@@ -152,6 +154,7 @@ export default function PrivacyPolicy() {
           Please read it together with our <Link to="/terms" className="text-primary underline dark:text-blue-300">Terms of Service</Link>.
         </p>
         <p>
+          Questions or concerns about this policy or your information: write to <a className="text-primary underline dark:text-blue-300" href={`mailto:${PRIVACY_CONTACT_EMAIL}`}>{PRIVACY_CONTACT_EMAIL}</a>.
           If you think your rights were not respected, you may complain to the <strong>National Privacy Commission</strong> (privacy.gov.ph).
         </p>
       </Section>

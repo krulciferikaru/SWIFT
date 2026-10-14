@@ -15,6 +15,7 @@ import TourButton from "../../components/TourButton.jsx";
 import { errorMessage } from "../../utils/errors";
 import { capitalizeWords, spelledDate } from "../../utils/text";
 import { useBarangays } from "../../hooks/useBarangays";
+import BarangayPicker from "../../components/BarangayPicker.jsx";
 import FormField, { RequiredNote } from "../../components/FormField.jsx";
 
 const monthLabel = (d) => d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -24,6 +25,9 @@ import { required, emailAddress } from "../../utils/validators";
 const EMPTY_FORM = {
   plan_id: "",
   name: "",
+  barangay: "",
+  street: "",
+  // An older address typed in free text (no barangay yet): kept as it is until a barangay is chosen.
   address: "",
   contact_number: "",
   email: "",
@@ -126,6 +130,7 @@ export default function SubscriberForm({
     name: required("Name")(form.name),
     contact_number: required("Mobile number")(form.contact_number),
     email: emailAddress(form.email),
+    barangay: !form.barangay && !form.address ? "Choose a barangay from the list." : "",
     mac_address:
       form.mac_address && form.mac_address.length !== 17
         ? "A MAC address has six pairs of letters or digits, like AA:BB:CC:DD:EE:FF."
@@ -146,8 +151,12 @@ export default function SubscriberForm({
     setErrors({});
     setFormError("");
     try {
+      // The full address text is rebuilt on the server from the barangay and street; the older loose text is
+      // only sent when no barangay was chosen (so it stays as it is).
+      const { address, ...rest } = form;
       await onSubmit({
-        ...form,
+        ...rest,
+        ...(form.barangay ? {} : address ? { address } : {}),
         plan_id: form.plan_id ? Number(form.plan_id) : "",
         ...(planChanged ? { plan_effective_from: planFrom } : {}),
       });
@@ -307,36 +316,20 @@ export default function SubscriberForm({
           )}
         </div>
         {field("Email Address (optional)", "email", "email")}
-        <div className="space-y-1.5">
-          <Label htmlFor="address">
-            Address<span className="text-red-500 ml-0.5">*</span>
-          </Label>
-          <select
-            id="address"
-            value={form.address}
-            onChange={set("address")}
-            aria-required="true"
-            aria-invalid={errors.address ? true : undefined}
-            aria-describedby={errors.address ? "address-error" : undefined}
-            className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? "border-red-400" : "border-input"}`}
-          >
-            <option value="" disabled hidden>Select a barangay</option>
-            {/* Keep an older free-text address selectable when editing. */}
-            {form.address && !BARANGAYS.includes(form.address) && (
-              <option value={form.address}>{form.address}</option>
-            )}
-            {BARANGAYS.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-          {errors.address && (
-            <p id="address-error" role="alert" className="text-red-700 dark:text-red-400 text-xs">
-              {errors.address[0]}
-            </p>
-          )}
-        </div>
+        <FormField id="barangay" label="Barangay" required hint="Type to search. The city is always Palayan City." error={fieldError("barangay")}>
+          <BarangayPicker
+            value={form.barangay}
+            options={BARANGAYS}
+            onChange={(name) => setForm((prev) => ({ ...prev, barangay: name }))}
+            onBlur={() => setTouched((t) => ({ ...t, barangay: true }))}
+          />
+        </FormField>
+        {!form.barangay && form.address && (
+          <p className="rounded-md bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            Current address: <strong>{form.address}</strong>. It was typed in before the barangay list existed. Choose a barangay to replace it.
+          </p>
+        )}
+        {field("Street, purok or house number (optional)", "street", "text", { maxLength: 120, placeholder: "For example: 12 Rizal St" })}
       </div>
 
       {/* Section: Connection Details */}
