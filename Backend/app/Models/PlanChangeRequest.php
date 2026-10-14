@@ -45,6 +45,12 @@ class PlanChangeRequest extends Model
         return $this->belongsTo(User::class, 'requested_by');
     }
 
+    /** Wherever a request is sent inside another response (a subscriber, the list), it has the same shape the screens expect. */
+    public function toArray(): array
+    {
+        return \App\Http\Controllers\PlanChangeController::present($this);
+    }
+
     /** Whether staff can confirm it now: pending, and the waiting time has passed. */
     public function isReady(): bool
     {
