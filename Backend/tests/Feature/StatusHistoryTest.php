@@ -96,7 +96,7 @@ class StatusHistoryTest extends TestCase
     {
         $sub = $this->subscriber('Active');
 
-        $sub->update(['address' => 'Malete, Palayan City']);
+        $sub->update(['address' => 'Malate, Palayan City']);
         $sub->update(['status' => 'Active']);
 
         $this->assertCount(1, $this->lines($sub));

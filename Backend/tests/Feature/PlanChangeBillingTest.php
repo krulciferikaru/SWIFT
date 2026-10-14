@@ -253,7 +253,7 @@ class PlanChangeBillingTest extends TestCase
     public function test_someone_who_registers_starts_as_active_not_unpaid(): void
     {
         $this->postJson('/api/register', [
-            'first_name' => 'New', 'last_name' => 'Person', 'address' => 'Malete, Palayan City', 'contact_number' => '09175559999',
+            'first_name' => 'New', 'last_name' => 'Person', 'address' => 'Malate, Palayan City', 'contact_number' => '09175559999',
             'password' => 'password1', 'password_confirmation' => 'password1', 'accept_terms' => true,
         ])->assertCreated();
 

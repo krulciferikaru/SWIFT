@@ -20,7 +20,7 @@ class TermsAcceptanceTest extends TestCase
     private function registration(array $extra = []): array
     {
         return array_merge([
-            'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malete, Palayan City',
+            'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malate, Palayan City',
             'contact_number' => '09171112222', 'password' => 'password1', 'password_confirmation' => 'password1',
         ], $extra);
     }

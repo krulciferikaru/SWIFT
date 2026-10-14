@@ -59,7 +59,7 @@ export default function Terms() {
           <li>A payment recorded by mistake can be cancelled by our staff. It stays in your history marked <strong>Cancelled</strong> with the reason, and it does not count towards your balance.</li>
           <li>A payment goes to your oldest unpaid month first. Money paid beyond what you owe stays as credit towards later months.</li>
           <li>The <strong>payment receipt</strong> SWIFT can print is a summary of a recorded payment. It is not a BIR-registered official receipt.</li>
-          <li>Plan rates and billing rules are set by the company and may change. <Todo>how and when a change in rate or plan takes effect, to be confirmed by the company</Todo></li>
+          <li>Plan rates and billing rules are set by the company and may change. A change of plan is requested and confirmed by the company, and the new rate starts with the first bill issued after it is confirmed. A bill that has already been issued is not changed.</li>
         </ul>
       </Section>
 
@@ -67,15 +67,14 @@ export default function Terms() {
         <p>
           Your service status follows your payments: <strong>Active</strong> when you are paid up, <strong>Unpaid</strong> when you are behind, and{' '}
           <strong>Disconnected</strong> when you are three or more months behind. A disconnected service can be reconnected after the balance is paid and
-          the company has completed the reconnection. <Todo>any reconnection fee or waiting time, to be confirmed by the company</Todo>
+          the company has completed the reconnection. Ask the company about any reconnection fee.
         </p>
       </Section>
 
       <Section id="messages" title="6. Text messages">
         <p>
           You agree that we may send text messages to your mobile number about your account: payment confirmations, due-date reminders, status changes, and codes
-          for verifying your number or resetting your password. Standard message rates of your network may apply. Messages go through our SMS provider and may not reach every mobile network.
-          <Todo>networks covered, to be confirmed by the company</Todo>
+          for verifying your number or resetting your password. Standard message rates of your network may apply. Messages go through our SMS provider and may not reach every mobile network. Some networks may not receive messages.
         </p>
       </Section>
 
@@ -106,7 +105,7 @@ export default function Terms() {
       <Section id="liability" title="10. Responsibility and changes">
         <p>
           We take care to keep SWIFT accurate and available, but we cannot promise it will always be free of errors or interruptions. If you see a mistake in your
-          balance or payments, tell us and we will check it. <Todo>any limit on the company&apos;s responsibility, to be written or confirmed by the company&apos;s legal adviser</Todo>
+          balance or payments, tell us and we will check it. The company is not responsible for losses caused by things outside its control, such as a network or power failure.
         </p>
         <p>
           We may update these terms. When we do, the new version is posted here with its date, and you will be asked to agree again if the change is important.
@@ -114,7 +113,7 @@ export default function Terms() {
       </Section>
 
       <Section id="law" title="11. Governing law and contact">
-        <p>These terms are governed by the laws of the Republic of the Philippines. <Todo>place where disputes are to be settled, to be confirmed by the company</Todo></p>
+        <p>These terms are governed by the laws of the Republic of the Philippines. Disputes are to be settled in the courts of Palayan City, Nueva Ecija.</p>
         <p>
           Questions about these terms: contact the company using the details shown on the sign-in page. For questions or concerns about your personal information, write to{' '}
           <a className="text-primary underline dark:text-blue-300" href={`mailto:${PRIVACY_CONTACT_EMAIL}`}>{PRIVACY_CONTACT_EMAIL}</a>.

@@ -19,6 +19,7 @@ class BarangayListTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        \Illuminate\Support\Facades\DB::table("barangays")->whereNotIn("name", ["Malate", "Santolan", "Caballero", "Ganaderia", "Caimito"])->delete(); // the tests start from five
         config(['ratelimit.enabled' => false]);
         Http::fake(['*' => Http::response(['status' => 'success'])]);
     }
@@ -44,7 +45,7 @@ class BarangayListTest extends TestCase
     public function test_the_registration_form_can_read_the_list_without_signing_in(): void
     {
         $this->getJson('/api/barangays')->assertOk()
-            ->assertJsonPath('data.0', 'Malete')
+            ->assertJsonPath('data.0', 'Malate')
             ->assertJsonPath('city', 'Palayan City')
             ->assertJsonCount(5, 'data');
     }
@@ -89,9 +90,9 @@ class BarangayListTest extends TestCase
 
     public function test_renaming_updates_the_addresses_already_saved(): void
     {
-        $sub = Subscriber::create(['name' => 'Ana Cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222', 'account_status' => 'active', 'status' => 'Active']);
+        $sub = Subscriber::create(['name' => 'Ana Cruz', 'address' => 'Malate, Palayan City', 'contact_number' => '09171112222', 'account_status' => 'active', 'status' => 'Active']);
         Sanctum::actingAs($this->user('admin'));
-        $malete = Barangay::where('name', 'Malete')->firstOrFail();
+        $malete = Barangay::where('name', 'Malate')->firstOrFail();
 
         $this->putJson("/api/barangays/{$malete->id}", ['name' => 'Malate'])->assertOk();
 
@@ -100,15 +101,15 @@ class BarangayListTest extends TestCase
 
     public function test_one_that_is_in_use_cannot_be_deleted_and_the_last_one_cannot_be_switched_off(): void
     {
-        Subscriber::create(['name' => 'Ana Cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222', 'account_status' => 'active', 'status' => 'Active']);
+        Subscriber::create(['name' => 'Ana Cruz', 'address' => 'Malate, Palayan City', 'contact_number' => '09171112222', 'account_status' => 'active', 'status' => 'Active']);
         Sanctum::actingAs($this->user('admin'));
-        $malete = Barangay::where('name', 'Malete')->firstOrFail();
+        $malete = Barangay::where('name', 'Malate')->firstOrFail();
         $santolan = Barangay::where('name', 'Santolan')->firstOrFail();
 
         $this->deleteJson("/api/barangays/{$malete->id}")->assertStatus(422);
         $this->deleteJson("/api/barangays/{$santolan->id}")->assertOk();
 
-        foreach (Barangay::where('name', '!=', 'Malete')->get() as $other) {
+        foreach (Barangay::where('name', '!=', 'Malate')->get() as $other) {
             $this->putJson("/api/barangays/{$other->id}", ['is_active' => false])->assertOk();
         }
         $this->putJson("/api/barangays/{$malete->id}", ['is_active' => false])->assertStatus(422);

@@ -64,7 +64,7 @@ class MockupDataSeeder extends Seeder
      * are added to the list on this machine so the Barangays card in Settings has something to scroll
      * (the company's real list is its own to enter). An address is saved as "<name>, Palayan City".
      */
-    private const BARANGAYS = ['Malete', 'Santolan', 'Caballero', 'Ganaderia', 'Caimito', 'Atate', 'Aulo', 'Bagong Buhay', 'Bagong Sikat',
+    private const BARANGAYS = ['Malate', 'Santolan', 'Caballero', 'Ganaderia', 'Caimito', 'Atate', 'Aulo', 'Bagong Buhay', 'Bagong Sikat',
         'Doña Josefa', 'Imelda Valley', 'Langka', 'Maligaya', 'Manacnac', 'Marcos Village', 'Militar', 'Singalat', 'Sapang Buho', 'Santo Niño'];
 
     private const METHODS = ['Cash', 'Cash', 'Cash', 'Cash', 'GCash', 'GCash', 'Others'];

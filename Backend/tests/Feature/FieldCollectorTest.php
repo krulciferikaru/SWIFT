@@ -38,7 +38,7 @@ class FieldCollectorTest extends TestCase
         $plan = Plan::create(['plan_name' => 'Basic', 'monthly_rate' => 800, 'speed_mbps' => 10, 'status' => 'Active']);
 
         return Subscriber::create([
-            'plan_id' => $plan->plan_id, 'name' => 'Ana Cruz', 'address' => 'Malete', 'contact_number' => '09171112222',
+            'plan_id' => $plan->plan_id, 'name' => 'Ana Cruz', 'address' => 'Malate', 'contact_number' => '09171112222',
             'email' => 'ana@private.test', 'mac_address' => 'AA:BB:CC:DD:EE:FF',
             'connection_date' => now()->subMonths(2)->toDateString(), 'account_status' => 'active', 'status' => 'Active',
         ]);
