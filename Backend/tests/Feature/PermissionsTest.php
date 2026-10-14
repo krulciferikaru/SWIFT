@@ -96,7 +96,7 @@ class PermissionsTest extends TestCase
 
         $this->patchJson("/api/users/{$secretary->id}/permissions", ['permissions' => null])
             ->assertOk()
-            ->assertJsonCount(10, 'user.effective_permissions');
+            ->assertJsonCount(11, 'user.effective_permissions');
     }
 
     public function test_admin_only_permissions_cannot_be_granted_and_admins_cannot_be_restricted(): void

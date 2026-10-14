@@ -209,6 +209,9 @@ class PaymentController extends Controller
                 'status' => $subscriber->status,
                 'plan_name' => $subscriber->plan?->plan_name,
                 ...$this->billing->nextDue($subscriber),
+                'pending_plan_change' => ($pending = app(\App\Services\PlanChangeService::class)->pendingFor($subscriber))
+                    ? \App\Http\Controllers\PlanChangeController::present($pending)
+                    : null,
             ],
         ]);
     }

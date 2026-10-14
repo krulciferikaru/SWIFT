@@ -47,7 +47,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
 import { spelledDate } from "../../utils/text";
-import { Archive, BellRing, ChevronRight, CreditCard, Download, FileDown, FilterX, MousePointerClick, Pencil, Save, SlidersHorizontal, UserPlus, Users2 } from "lucide-react";
+import { Archive, ArrowLeftRight, BellRing, ChevronRight, CreditCard, Download, FileDown, FilterX, MousePointerClick, Pencil, Save, SlidersHorizontal, UserPlus, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -68,6 +68,7 @@ import planApi from "../../api/plans";
 import TourButton from "../../components/TourButton.jsx";
 import Toast from "../../components/Toast.jsx";
 import SubscriberDetailsModal from "./SubscriberDetailsModal";
+import ChangePlanDialog from "../../components/ChangePlanDialog.jsx";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
 // What the address holds. A page with nothing chosen has a plain address.
 const VIEW_DEFAULTS = { q: "", status: "All", plan: "All", from: "", to: "", page: 1, per: 15, sort: "name", dir: "asc" };
@@ -226,6 +227,7 @@ export default function SubscribersPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [detailsTarget, setDetailsTarget] = useState(null);
+  const [planTarget, setPlanTarget] = useState(null);
   // The subscriber about to be archived: staff confirm first.
   const [archiveTarget, setArchiveTarget] = useState(null);
   // Whether the Add / Edit form has unsaved changes: closing it only asks when it does.
@@ -808,6 +810,19 @@ export default function SubscribersPage() {
                           <span className="hidden max-md:inline 2xl:inline">Edit</span>
                         </Button>
                         )}
+                        {can("subscribers.change_plan") && sub.status !== "Disconnected" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPlanTarget(sub)}
+                          aria-label={`Change plan for ${sub.name}`}
+                          title={sub.pending_plan_change ? "Plan change pending" : "Change plan"}
+                          className="gap-1.5"
+                        >
+                          <ArrowLeftRight className="size-3.5" aria-hidden="true" />
+                          <span className="hidden max-md:inline 2xl:inline">{sub.pending_plan_change ? "Plan change pending" : "Change plan"}</span>
+                        </Button>
+                        )}
                         {can("subscribers.archive") && (
                         <Button
                           variant="destructive"
@@ -973,6 +988,19 @@ export default function SubscribersPage() {
           loading={formLoading}
         />
       </Modal>
+
+      {planTarget && (
+        <ChangePlanDialog
+          subscriber={planTarget}
+          plans={plans}
+          onClose={() => setPlanTarget(null)}
+          onDone={(message) => {
+            setPlanTarget(null);
+            showToast(message || "Done.");
+            refetch();
+          }}
+        />
+      )}
 
       <SubscriberDetailsModal
         subscriber={detailsTarget}

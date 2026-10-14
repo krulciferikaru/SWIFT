@@ -45,6 +45,9 @@ class BillingService
                 'due' => $schedule->rateAt($cursor),
                 'applied' => 0.0,
                 'status' => 'unpaid',
+                // Advance billing: the bill for this month went out on the statement date before it and was due the day before it began.
+                'statement_date' => \App\Support\BillingCycle::statementDateFor($cursor)->toDateString(),
+                'due_date' => \App\Support\BillingCycle::dueDateFor($cursor)->toDateString(),
             ];
             $cursor->addMonth();
         }
@@ -86,6 +89,13 @@ class BillingService
         $balance = round($totalOwed - $totalPaid, 2);
         $monthsBehind = count(array_filter($months, fn ($m) => $m['status'] !== 'paid'));
 
+        // Grace days (none by default): this month's bill, due at the end of last month, is not held against the
+        // subscriber until the grace days after its due date have passed.
+        $grace = \App\Support\BillingCycle::graceDays();
+        if ($grace > 0 && $months !== [] && $cutoff->day <= $grace && end($months)['status'] !== 'paid') {
+            $monthsBehind = max($monthsBehind - 1, 0);
+        }
+
         return [
             'monthly_rate' => $rate,
             'months' => $months,
@@ -98,45 +108,36 @@ class BillingService
     }
 
     /**
-     * The day of the month a subscriber's bill is due, and the next date that falls on
-     * (today counts). Dates follow Philippine time, where the subscribers are.
+     * Where the company's billing calendar stands: the statement date, which month it bills, and the next
+     * due date (today counts). It is the same for every subscriber (see BillingCycle). Dates follow
+     * Philippine time, where the subscribers are.
      *
-     * @return array{due_day: int, next_due_date: string}
+     * @return array{statement_date: string, statement_issued: bool, covers: string, next_due_date: string, due_day: int, grace_days: int}
      */
     public function nextDue(Subscriber $subscriber): array
     {
-        $today = Carbon::now('Asia/Manila')->startOfDay();
-        $connectionDay = Carbon::parse($subscriber->connection_date)->day;
-
-        $thisMonth = $today->copy()->day(min($connectionDay, $today->daysInMonth));
-        $next = $thisMonth->gte($today)
-            ? $thisMonth
-            : ($m = $today->copy()->addMonthNoOverflow())->day(min($connectionDay, $m->daysInMonth));
-
-        return ['due_day' => $connectionDay, 'next_due_date' => $next->toDateString()];
+        return \App\Support\BillingCycle::today();
     }
 
     /**
-     * A subscriber's recurring due day is the day-of-month they connected on
-     * (capped to the last day of shorter months, e.g. a connection on the
-     * 31st is due on the 28th/29th/30th in months that don't have a 31st).
-     * Returns true if that due day falls tomorrow and this month isn't
-     * already fully paid.
+     * The due date is the same for everyone: the last day of the month. True when that day is tomorrow and the
+     * bill for next month (the one that statement billed) is not fully paid yet. Only subscribers whose first
+     * billed month has arrived have a bill to remind about.
      */
     public function isDueTomorrow(Subscriber $subscriber): bool
     {
-        $tomorrow = Carbon::tomorrow();
-        $connectionDay = Carbon::parse($subscriber->connection_date)->day;
-        $dueDay = min($connectionDay, $tomorrow->daysInMonth);
+        $tomorrow = Carbon::tomorrow('Asia/Manila');
 
-        if ($tomorrow->day !== $dueDay) {
+        if (! $tomorrow->isSameDay($tomorrow->copy()->endOfMonth())) {
             return false;
         }
 
-        $breakdown = $this->getBreakdown($subscriber, $tomorrow);
-        $currentMonth = collect($breakdown['months'])->firstWhere('label', $tomorrow->format('F Y'));
+        // As of the first day of next month, the bill that is due tomorrow is the newest month on the list.
+        $nextMonth = $tomorrow->copy()->addDay();
+        $breakdown = $this->getBreakdown($subscriber, $nextMonth);
+        $bill = collect($breakdown['months'])->firstWhere('label', $nextMonth->format('F Y'));
 
-        return $currentMonth && $currentMonth['status'] !== 'paid';
+        return $bill && $bill['status'] !== 'paid';
     }
 
     /**

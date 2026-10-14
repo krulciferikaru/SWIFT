@@ -12,6 +12,7 @@ return [
     'grantable' => [
         'subscribers.view' => ['label' => 'View subscribers', 'help' => 'See the subscriber list and each subscriber\'s details.'],
         'subscribers.manage' => ['label' => 'Add and edit subscribers', 'help' => 'Add new subscribers, edit their details and change their status.'],
+        'subscribers.change_plan' => ['label' => 'Change a subscriber\'s plan', 'help' => 'Request a move to another plan and confirm it once it has been carried out.'],
         'subscribers.archive' => ['label' => 'Archive subscribers', 'help' => 'Move subscribers to the Archive.'],
         'approvals.manage' => ['label' => 'Approve registrations', 'help' => 'Approve or reject new registrations and account claims.'],
         'plans.manage' => ['label' => 'Manage service plans', 'help' => 'Add, edit and archive service plans.'],

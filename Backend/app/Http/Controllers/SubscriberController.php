@@ -43,7 +43,7 @@ class SubscriberController extends Controller
         // A field collector doesn't get email or MAC addresses: not in the list, and not through search.
         $private = ! $request->user()->isCollector();
 
-        $query = Subscriber::with(['plan', 'deletion', 'user:id,subscriber_id,contact_number,contact_verified_at'])
+        $query = Subscriber::with(['plan', 'deletion', 'pendingPlanChange.fromPlan', 'pendingPlanChange.toPlan', 'user:id,subscriber_id,contact_number,contact_verified_at'])
             ->select([
                 'subscriber_id',
                 'plan_id',
@@ -160,6 +160,8 @@ class SubscriberController extends Controller
         $subscriber = Subscriber::with([
             'plan',
             'deletion',
+            'pendingPlanChange.fromPlan',
+            'pendingPlanChange.toPlan',
             'user:id,subscriber_id,contact_number,contact_verified_at',
             'payments' => fn($q) => $q->latest('payment_date')->limit(12),
         ])->findOrFail($id);
@@ -186,36 +188,15 @@ class SubscriberController extends Controller
         $previousStatus = $subscriber->status;
         $before = $subscriber->getOriginal();
 
+        // The plan is never changed here (the request refuses a different one): moving to another plan is a
+        // request that staff confirm, see PlanChangeController.
         $data = $request->validated();
-        $effective = $data['plan_effective_from'] ?? null;
-        unset($data['plan_effective_from']);
-
-        // A change of plan starts from a month, never earlier than the first month billed and never
-        // later than next month: months already billed are not re-priced.
-        $planChanging = isset($data['plan_id']) && (int) $data['plan_id'] !== (int) $subscriber->plan_id;
-        if ($planChanging && $effective) {
-            $from = \Carbon\Carbon::parse($effective)->startOfMonth();
-            $earliest = $subscriber->connection_date ? $subscriber->connection_date->copy()->startOfMonth()->addMonth() : null;
-            $latest = \Carbon\Carbon::now()->startOfMonth()->addMonth(); // next month
-            if (($earliest && $from->lt($earliest)) || $from->gt($latest)) {
-                return response()->json([
-                    'message' => 'The plan change cannot start before the first month billed, or more than a month ahead.',
-                    'errors' => ['plan_effective_from' => ['The plan change cannot start before the first month billed, or more than a month ahead.']],
-                ], 422);
-            }
-        }
-        $subscriber->planEffectiveFrom = $planChanging ? $effective : null;
+        unset($data['plan_id']);
 
         $subscriber->update($data);
         $subscriber->load('plan');
 
-        // A different plan can change how far behind they are.
-        if ($planChanging) {
-            $this->billing->recalculateStatus($subscriber->fresh());
-            $subscriber->refresh()->load('plan');
-        }
-
-        Audit::log('subscriber.updated', $subscriber, null, array_merge(Audit::diff($before, $subscriber), $planChanging ? ['plan_effective_from' => $effective ?: \App\Services\RateHistoryService::defaultEffectiveFrom()->toDateString()] : []));
+        Audit::log('subscriber.updated', $subscriber, null, Audit::diff($before, $subscriber));
 
         $this->notifyStatusChange($subscriber, $previousStatus);
 

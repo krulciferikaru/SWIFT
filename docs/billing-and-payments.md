@@ -15,9 +15,12 @@ Every figure on the Payments page, the subscriber's own dashboard, the reports a
 
 **A month that has been billed is never re-priced.** Each month is billed at the plan, and the price of that plan, that applied *in that month*. So moving a subscriber from a ₱800 plan to a ₱1,300 plan, or raising a plan's price, changes what is billed **from then on**, not the months already billed.
 
-- **When a change starts.** By default a change made this month starts **next month**: this month's bill stays as it was. The company can choose that it starts this month instead (the `PLAN_CHANGE_EFFECTIVE` setting: `next_month` or `current_month`). Either way, earlier months are untouched.
-- **Staff can choose the month** when they change a subscriber's plan (Edit subscriber): *The new plan applies from* offers next month (the usual choice), this month, and, **only to correct a mistake**, earlier months back to the first month billed. It cannot start before the first month billed or more than a month ahead.
-- **A plan's price change** (Service Plans, Edit) works the same way and asks for confirmation first; it starts next month by default.
+- **A subscriber's plan is never edited.** Moving to another plan is a request: staff with the *Change a subscriber's plan* permission (admins and secretaries by default, not collectors) press **Change plan** on the Subscribers page and pick the new plan, with an optional reason. The subscriber stays **Active**, and the Edit window shows the plan as read-only.
+- **A waiting time of 24 to 48 hours** (`PLAN_CHANGE_HOURS`, default 48) applies. Staff can **cancel** the request any time before it is confirmed; once the time has passed and the change has been carried out, staff **confirm** it.
+- **Rules.** The subscriber must be fully paid up and not disconnected, with no other change waiting; the new plan must be active and different from the current one.
+- **When the new price starts.** With the first bill (statement) after the confirmation: confirmed before the 16th, the **next month's** bill is the first at the new price; confirmed on or after the 16th, the month after. Bills already issued keep their price, and there is no proration.
+- The subscriber is texted when a change is requested and when it is confirmed (best effort) and sees the waiting change on their account page. The Audit Trail records the request, the confirmation and any cancellation.
+- **A plan's price change** (Service Plans, Edit) asks for confirmation first and starts with the first statement after it, by the same rule.
 - After a plan change the subscriber's **status is worked out again**.
 - The Billing Breakdown on the Payments page shows each month at the price it was billed at.
 - **Limit:** plan and price changes made *before* this was introduced were not recorded, so existing months are priced as they are today. If one of them is wrong, edit the subscriber's plan and choose an earlier month in *The new plan applies from* to put it right.
@@ -49,9 +52,9 @@ Every time a subscriber's service status changes, a line is kept: what it became
 
 The top of the subscriber's account page says it in plain words: **active** (nothing owed, any advance credit, next bill date), **payment needed** (how much is owed, the number of unpaid months, and that 3 unpaid months means disconnection) or **disconnected** (pay the balance, then contact the company to be reconnected). The same page shows the amount owed, the monthly bill, the month-by-month breakdown, the payment history and the company's contact details and how to pay.
 
-### Due day
+### Statement and due dates
 
-A subscriber's monthly due day is the **day of the month they were connected**. If the month is shorter (connected on the 31st), the due day is the last day of that month. The due-date reminder is sent the day before. The subscriber's own page shows the **next due date** (in Philippine time), which falls on the last day of a shorter month when needed.
+Everyone shares one calendar, in Philippine time. The bill for a month is issued **in advance, on the 16th of the month before** (`BILLING_STATEMENT_DAY`, default 16) and is **due on the last day of that month before**, so November's bill comes out on 16 October and is due on 31 October. It counts as unpaid from the 1st. Optionally `BILLING_GRACE_DAYS` (default 0) holds back "behind" for that many days after the 1st. The due-date reminder is sent the day before the last day of the month to anyone whose next bill is unpaid. Collectors go out on any day from Monday to Saturday with no fixed time; the window between the statement and the due date is when payments are collected. A subscriber is still **Disconnected at 3 or more months behind**. The subscriber's own page shows the statement date, which month it covers and the **next due date**.
 
 ## Recording a payment
 

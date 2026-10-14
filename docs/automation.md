@@ -7,7 +7,7 @@ Three jobs are registered in `Backend/routes/console.php`. All run **daily**.
 | Job | Command | What it does |
 |---|---|---|
 | Status recalculation | `subscribers:recalculate-status` | For every **active** subscriber, recomputes Active / Unpaid / Disconnected from their payment history (rules in [Billing and payments](billing-and-payments.md)). It does **not** send SMS. It never moves anyone out of Disconnected. |
-| Due-date reminder | `subscribers:send-due-reminders` | Sends an SMS to every active, non-disconnected subscriber whose monthly bill is **due tomorrow** and not already fully paid. |
+| Due-date reminder | `subscribers:send-due-reminders` | Sends an SMS to every active, non-disconnected subscriber whose next bill is **due tomorrow** (the day before the last day of the month) and not already fully paid. |
 | Clean-up of old sign-ins | `sanctum:prune-expired --hours=24` | Deletes sign-in tokens that expired more than a day ago (a normal sign-in lasts an hour after its last use, or 7 days if "Keep me signed in" was ticked). It sends no SMS. |
 
 ### When they run

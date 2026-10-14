@@ -31,9 +31,13 @@ class UpdateSubscriberRequest extends FormRequest
         $barangays = array_values(array_unique(array_filter([...Barangay::activeNames(), $current?->barangay])));
 
         return [
-            'plan_id' => ['sometimes', 'integer', 'exists:plan,plan_id'],
-            // The month a change of plan starts from. Months already billed keep the plan they had.
-            'plan_effective_from' => ['nullable', 'date_format:Y-m-d'],
+            // A plan is never edited here: only the plan they are already on is accepted (and ignored). Moving to
+            // another plan is a request that staff confirm ("Change plan").
+            'plan_id' => ['sometimes', 'integer', function ($attribute, $value, $fail) use ($current) {
+                if ($current && (int) $value !== (int) $current->plan_id) {
+                    $fail('A plan cannot be edited here. Use Change plan, so the change is requested and confirmed.');
+                }
+            }],
             'name' => ['sometimes', 'string', 'max:255'],
             'barangay' => ['sometimes', 'string', Rule::in($barangays)],
             'street' => ['sometimes', 'nullable', 'string', 'max:120'],

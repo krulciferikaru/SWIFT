@@ -63,6 +63,7 @@ function describe(b) {
   const lines = ['You do not owe anything right now.']
   if (b.advance_credit > 0) lines.push(`You have ${peso(b.advance_credit)} paid in advance.`)
   if (b.next_due_date) lines.push(`Your next bill is due on ${longDate(b.next_due_date)}.`)
+  if (b.pending_plan_change) lines.push(`A change from ${b.pending_plan_change.from_plan} to ${b.pending_plan_change.to_plan} is being arranged. The new price starts with a later bill, and we will text you when it is done.`)
   return { look: 'ok', title: 'Your service is active', lines }
 }
 
@@ -83,7 +84,7 @@ export default function AccountStatusBanner({ billing }) {
           <p key={line} className={`text-base ${c.text}`}>{line}</p>
         ))}
         {look !== 'ok' && billing.next_due_date && (
-          <p className={`text-base ${c.text}`}>Your bill is due on the {billing.due_day}{ordinal(billing.due_day)} of every month.</p>
+          <p className={`text-base ${c.text}`}>Bills go out on the 16th and are due on the last day of every month.</p>
         )}
       </div>
     </section>

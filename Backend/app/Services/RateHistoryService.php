@@ -17,12 +17,13 @@ class RateHistoryService
     /** "The beginning of time": the first line for a plan or subscriber means it always applied. */
     public const FOREVER = '2000-01-01';
 
-    /** The first day a change made today takes effect, according to the company's setting. */
+    /**
+     * The first day a change made today takes effect: with the first statement issued after it (see
+     * BillingCycle). A bill that has already gone out is never re-priced.
+     */
     public static function defaultEffectiveFrom(?Carbon $today = null): Carbon
     {
-        $month = ($today ?? Carbon::now())->copy()->startOfMonth();
-
-        return config('billing.plan_change_effective') === 'current_month' ? $month : $month->addMonth();
+        return \App\Support\BillingCycle::firstMonthOnNextStatement($today ?? Carbon::now('Asia/Manila'));
     }
 
     public function recordPlanCreated(Plan $plan): void
