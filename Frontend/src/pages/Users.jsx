@@ -15,6 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -111,6 +112,7 @@ export default function Users() {
   const [touched, setTouched] = useState({})
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
+  const [statusTarget, setStatusTarget] = useState(null) // { user, to } while confirming an Active/Inactive switch
   const [permTarget, setPermTarget] = useState(null) // secretary or collector whose permissions are being edited
   const [mfaResetTarget, setMfaResetTarget] = useState(null) // someone whose two-step sign-in is being reset
 
@@ -349,20 +351,17 @@ export default function Users() {
                           {user.account_status}
                         </Badge>
                       ) : (
-                        <Select
-                          value={user.account_status}
-                          onValueChange={(newStatus) => handleStatusChange(user, newStatus)}
-                          disabled={actionLoading === user.id}
-                        >
-                          <SelectTrigger data-tour="users-status" aria-label={`Account status for ${user.name}`} className="w-32 capitalize">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div data-tour="users-status" className="flex items-center gap-2">
+                          <Switch
+                            checked={user.account_status === 'active'}
+                            onCheckedChange={(on) => setStatusTarget({ user, to: on ? 'active' : 'inactive' })}
+                            disabled={actionLoading === user.id}
+                            aria-label={`Account status for ${user.name}`}
+                          />
+                          <span className={`text-sm capitalize ${user.account_status === 'active' ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                            {user.account_status}
+                          </span>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -515,6 +514,31 @@ export default function Users() {
           showToast(message)
         }}
       />
+
+      <AlertDialog open={!!statusTarget} onOpenChange={(open) => { if (!open) setStatusTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{statusTarget?.to === 'active' ? 'Activate this account?' : 'Deactivate this account?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {statusTarget && (statusTarget.to === 'active' ? (
+                <><strong>{statusTarget.user.name}</strong> will be able to sign in again.</>
+              ) : (
+                <><strong>{statusTarget.user.name}</strong> will be signed out and will not be able to sign in until the account is activated again.</>
+              ))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              variant="outline"
+              onClick={() => { const t = statusTarget; setStatusTarget(null); handleStatusChange(t.user, t.to) }}
+              className={statusTarget?.to === 'inactive' ? 'border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950' : undefined}
+            >
+              {statusTarget?.to === 'active' ? 'Confirm Activate' : 'Confirm Deactivate'}
+            </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!pendingCreate} onOpenChange={(open) => { if (!open) setPendingCreate(null) }}>
         <AlertDialogContent>

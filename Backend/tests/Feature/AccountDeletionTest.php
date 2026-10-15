@@ -29,7 +29,7 @@ class AccountDeletionTest extends TestCase
     {
         $plan = Plan::create(['plan_name' => 'Basic', 'monthly_rate' => 500, 'speed_mbps' => 10, 'status' => 'Active']);
         $subscriber = Subscriber::create([
-            'plan_id' => $plan->plan_id, 'name' => 'Ana Cruz', 'address' => 'Malete, Palayan City',
+            'plan_id' => $plan->plan_id, 'name' => 'Ana Cruz', 'address' => 'Malate, Palayan City',
             'contact_number' => $phone, 'email' => 'ana@x.test', 'mac_address' => 'AA:BB:CC:DD:EE:FF',
             'connection_date' => '2026-01-10', 'account_status' => 'active', 'status' => 'Unpaid',
         ]);
@@ -57,7 +57,7 @@ class AccountDeletionTest extends TestCase
         $row = Subscriber::findOrFail($subscriber->subscriber_id);
         $this->assertFalse($row->trashed());
         $this->assertSame('Ana Cruz', $row->name);
-        $this->assertSame('Malete, Palayan City', $row->address);
+        $this->assertSame('Malate, Palayan City', $row->address);
         $this->assertSame('09171112222', $row->contact_number);
         $this->assertSame('ana@x.test', $row->email);
         $this->assertSame('AA:BB:CC:DD:EE:FF', $row->mac_address);
@@ -130,7 +130,7 @@ class AccountDeletionTest extends TestCase
 
         // The record still has this number, so registering again is a claim that staff verify.
         $this->postJson('/api/register', [
-            'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
+            'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malate, Palayan City', 'contact_number' => '09171112222',
             'password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1', 'accept_terms' => true,
         ])->assertStatus(201)->assertJsonPath('claim', true);
     }
@@ -174,7 +174,7 @@ class AccountDeletionTest extends TestCase
         $this->app['auth']->forgetGuards();
 
         $this->postJson('/api/register', [
-            'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
+            'first_name' => 'Ana', 'last_name' => 'Cruz', 'address' => 'Malate, Palayan City', 'contact_number' => '09171112222',
             'password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1', 'accept_terms' => true,
         ])->assertStatus(201);
         $claim = User::where('contact_number', '09171112222')->firstOrFail();

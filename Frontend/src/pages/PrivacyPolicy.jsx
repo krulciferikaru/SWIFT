@@ -72,7 +72,7 @@ export default function PrivacyPolicy() {
           <li><strong>Our staff:</strong> administrators and secretaries can see subscriber records. What each secretary may do is set by an administrator, and every important action is recorded in the audit trail.</li>
           <li><strong>Our field collectors:</strong> the staff who visit households to collect payments can see only what they need for that: your name, address, mobile number, plan, service status, balance and payment history, and they can record a payment. They do not see your email address or the MAC address of your equipment. An administrator sets exactly what each field collector may do, and their actions are recorded in the audit trail too.</li>
           <li><strong>You:</strong> you can see your own account, balance and payment history.</li>
-          <li><strong>Service providers that run the system for us:</strong> <strong>PhilSMS</strong> (it receives your mobile number and the text of each message in order to deliver it), and our hosting providers <strong>Vercel</strong> (the website) and <strong>Railway</strong> (the server and database). They handle information only to provide their service to us. <Todo>confirm whether any other provider or any data stored outside the Philippines needs to be listed</Todo></li>
+          <li><strong>Service providers that run the system for us:</strong> <strong>PhilSMS</strong> (it receives your mobile number and the text of each message in order to deliver it), and our hosting providers <strong>Vercel</strong> (the website) and <strong>Railway</strong> (the server and database). They handle information only to provide their service to us. These providers may store information on servers outside the Philippines; we use them only for running SWIFT.</li>
           <li><strong>Authorities:</strong> only when the law requires it.</li>
         </ul>
       </Section>
@@ -90,9 +90,9 @@ export default function PrivacyPolicy() {
 
       <Section id="keep" title="6. How long we keep it">
         <ul>
-          <li><strong>Your SWIFT account</strong> (your login): while you want it. When you delete your account, or after it has been <strong>inactive for <Todo>one year, to be confirmed by the company</Todo></strong>, the login is deleted.</li>
-          <li><strong>The company&apos;s record of you as a subscriber</strong> (your name, address, mobile number, plan, installation date, service status and payments): <Todo>number of years, to be confirmed by the company with its accountant</Todo>. We keep this even after you delete your account, because it is the company&apos;s own record and the integrity of its books depends on it. It is marked with a note that you deleted your account, and we send you no more text messages. After that period it is anonymised or destroyed.</li>
-          <li><strong>The audit trail:</strong> <Todo>period, to be confirmed by the company</Todo>.</li>
+          <li><strong>Your SWIFT account</strong> (your login): while you want it. When you delete your account, or after it has been <strong>inactive for one year</strong>, the login is deleted.</li>
+          <li><strong>The company&apos;s record of you as a subscriber</strong> (your name, address, mobile number, plan, installation date, service status and payments): for <strong>five years</strong> after your service ends, the usual period for business and tax records. We keep this even after you delete your account, because it is the company&apos;s own record and the integrity of its books depends on it. It is marked with a note that you deleted your account, and we send you no more text messages. After that period it is anonymised or destroyed.</li>
+          <li><strong>The audit trail:</strong> kept for <strong>two years</strong>, to be able to check who changed what.</li>
           <li><strong>Verification and reset codes:</strong> ten minutes, and they are stored scrambled.</li>
           <li><strong>Two-step sign-in details</strong> (the authenticator key and recovery codes): for as long as you keep it turned on. They are deleted when you turn it off, when an administrator resets it for you, or when you delete your account.</li>
           <li><strong>Where you are signed in</strong> (browser, device type and network address): only while the sign-in is open. It is deleted when you sign out or end it, and a sign-in that simply runs out is cleared within about a day. The network address is shown to you with its last part hidden.</li>
@@ -111,7 +111,7 @@ export default function PrivacyPolicy() {
           <li><strong>Be compensated</strong> for damage caused by inaccurate, false or unlawfully obtained information.</li>
           <li><strong>Complain</strong> to the National Privacy Commission (see section 11).</li>
         </ul>
-        <p>To use any of these, write to the privacy contact in section 1 ({PRIVACY_CONTACT_EMAIL}). We will answer within <Todo>number of days, to be confirmed by the company</Todo>.</p>
+        <p>To use any of these, write to the privacy contact in section 1 ({PRIVACY_CONTACT_EMAIL}). We will answer within <strong>15 days</strong>.</p>
       </Section>
 
       <Section id="delete" title="8. Deleting your account">

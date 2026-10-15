@@ -118,6 +118,12 @@ class Subscriber extends Model
     // Relationships
     // -----------------------------------------------------------------------
 
+    /** A plan change that has been requested and is waiting to be confirmed (at most one). */
+    public function pendingPlanChange(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\PlanChangeRequest::class, 'subscriber_id', 'subscriber_id')->where('status', 'pending');
+    }
+
     public function plan(): BelongsTo
     {
         // withTrashed: an archived plan must keep billing its existing subscribers.

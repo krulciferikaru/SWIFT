@@ -46,26 +46,39 @@ class SubscriberExperienceTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'Disconnected')
             ->assertJsonPath('data.plan_name', 'Basic 10')
-            ->assertJsonPath('data.due_day', 10);
+            ->assertJsonPath('data.due_day', 31);
     }
 
-    public function test_next_due_date_is_this_month_until_the_day_passes_then_next_month(): void
+    public function test_every_subscriber_has_the_same_statement_and_due_dates(): void
     {
-        $sub = $this->subscriber('2026-01-20');
-        Sanctum::actingAs($this->user('subscriber', $sub->subscriber_id));
+        // Installed on different days, the dates are the same: the statement is on the 16th and the bill is
+        // due on the last day of the month.
+        $early = $this->subscriber('2026-01-05');
+        $late = $this->subscriber('2026-01-28');
 
-        $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 14)->setTime(12, 0));
-        $this->getJson('/api/me/billing')->assertJsonPath('data.next_due_date', '2026-10-20');
+        foreach ([$early, $late] as $sub) {
+            Sanctum::actingAs($this->user('subscriber', $sub->subscriber_id));
 
-        // On the day itself it is still "due today".
-        $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 20)->setTime(9, 0));
-        $this->getJson('/api/me/billing')->assertJsonPath('data.next_due_date', '2026-10-20');
+            $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 14)->setTime(12, 0));
+            $this->getJson('/api/me/billing')
+                ->assertJsonPath('data.statement_date', '2026-10-16')
+                ->assertJsonPath('data.statement_issued', false)
+                ->assertJsonPath('data.covers', 'November 2026')
+                ->assertJsonPath('data.next_due_date', '2026-10-31');
 
-        $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 21)->setTime(9, 0));
-        $this->getJson('/api/me/billing')->assertJsonPath('data.next_due_date', '2026-11-20');
+            // The statement goes out on the 16th; the due date stays at the end of the month.
+            $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 16)->setTime(9, 0));
+            $this->getJson('/api/me/billing')->assertJsonPath('data.statement_issued', true)->assertJsonPath('data.next_due_date', '2026-10-31');
+
+            // On the due date itself it is still "due today"; the day after, the next month's dates apply.
+            $this->travelTo(now('Asia/Manila')->setDate(2026, 10, 31)->setTime(9, 0));
+            $this->getJson('/api/me/billing')->assertJsonPath('data.next_due_date', '2026-10-31');
+            $this->travelTo(now('Asia/Manila')->setDate(2026, 11, 1)->setTime(9, 0));
+            $this->getJson('/api/me/billing')->assertJsonPath('data.next_due_date', '2026-11-30')->assertJsonPath('data.covers', 'December 2026');
+        }
     }
 
-    public function test_a_due_day_after_the_end_of_a_short_month_falls_on_its_last_day(): void
+    public function test_the_due_date_follows_the_length_of_the_month(): void
     {
         $sub = $this->subscriber('2026-01-31');
         Sanctum::actingAs($this->user('subscriber', $sub->subscriber_id));

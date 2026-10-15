@@ -42,7 +42,7 @@ class ApprovalWithPlanTest extends TestCase
     {
         return Subscriber::create(array_merge([
             'name' => 'New Person', 'contact_number' => '0917'.random_int(1000000, 9999999),
-            'address' => 'Malete, Palayan City', 'account_status' => 'pending', 'status' => 'Unpaid', 'password' => bcrypt('x'),
+            'address' => 'Malate, Palayan City', 'account_status' => 'pending', 'status' => 'Unpaid', 'password' => bcrypt('x'),
         ], $extra));
     }
 

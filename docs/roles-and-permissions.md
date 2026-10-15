@@ -9,6 +9,7 @@ There are four roles: admin, secretary, field collector and subscriber. A person
 | See the service plans | yes | yes | yes |
 | Dashboard with the Activity filter, subscriber counts and collections | yes | yes | |
 | Subscribers: list, search, add, edit, archive, change status | yes | yes | |
+| Change a subscriber's plan (request, then confirm after 24 to 48 hours) | yes | yes | |
 | Approve or reject new applications and account claims | yes | yes | |
 | Payments: view a subscriber's billing, record a payment, reconnect | yes | yes | |
 | **Cancel a wrongly recorded payment** (reason and password required; it stays in the history marked Cancelled) | **yes** | **yes** | |
@@ -43,6 +44,7 @@ On **Manage Roles** (opened from Settings), each secretary has a **Permissions**
 | Add and edit subscribers | Add subscribers, edit details, change status |
 | Archive subscribers | Move subscribers to the Archive |
 | Approve registrations | Approve or reject new registrations and account claims |
+| Change a subscriber's plan | Request a move to another plan and confirm or cancel it |
 | Manage service plans | Add, edit and archive plans |
 | View payments | Open Payments and see payment history and balances |
 | Record payments | Enter a payment received |

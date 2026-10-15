@@ -9,6 +9,6 @@
 // Protection Officer, so this one email address is the privacy contact named in both pages.
 export const PRIVACY_CONTACT_EMAIL = 'laureanojasmine180051@gmail.com'
 
-export const LEGAL_DRAFT = true
-export const LEGAL_VERSION = '2026-10-draft'
+export const LEGAL_DRAFT = false
+export const LEGAL_VERSION = '2026-10'
 export const LEGAL_UPDATED = 'October 2026'

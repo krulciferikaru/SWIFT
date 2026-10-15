@@ -20,6 +20,7 @@ class AddressSplitTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        \Illuminate\Support\Facades\DB::table("barangays")->whereNotIn("name", ["Malate", "Santolan", "Caballero", "Ganaderia", "Caimito"])->delete(); // the tests start from five
         config(['ratelimit.enabled' => false, 'mfa.enforce_for_admins' => false]);
         Http::fake(['*' => Http::response(['status' => 'success'])]);
     }
@@ -49,9 +50,9 @@ class AddressSplitTest extends TestCase
 
     public function test_the_helpers_compose_and_split_an_address(): void
     {
-        $this->assertSame('12 Rizal St, Malete, Palayan City', Barangay::compose('12 Rizal St', 'Malete'));
-        $this->assertSame('Malete, Palayan City', Barangay::compose('', 'Malete'));
-        $this->assertSame(['12 Rizal St', 'Malete'], Barangay::split('12 Rizal St, Malete, Palayan City'));
+        $this->assertSame('12 Rizal St, Malate, Palayan City', Barangay::compose('12 Rizal St', 'Malate'));
+        $this->assertSame('Malate, Palayan City', Barangay::compose('', 'Malate'));
+        $this->assertSame(['12 Rizal St', 'Malate'], Barangay::split('12 Rizal St, Malate, Palayan City'));
         $this->assertSame([null, 'Caimito'], Barangay::split('caimito, palayan city'));
         $this->assertNull(Barangay::split('Somewhere else entirely'));
         $this->assertNull(Barangay::split('Aulo, Palayan City')); // not on the list
@@ -61,12 +62,12 @@ class AddressSplitTest extends TestCase
     {
         Sanctum::actingAs($this->staff());
 
-        $this->newSubscriber(['barangay' => 'Malete', 'street' => '12 Rizal St'])->assertCreated();
+        $this->newSubscriber(['barangay' => 'Malate', 'street' => '12 Rizal St'])->assertCreated();
 
         $sub = Subscriber::firstOrFail();
-        $this->assertSame('Malete', $sub->barangay);
+        $this->assertSame('Malate', $sub->barangay);
         $this->assertSame('12 Rizal St', $sub->street);
-        $this->assertSame('12 Rizal St, Malete, Palayan City', $sub->address);
+        $this->assertSame('12 Rizal St, Malate, Palayan City', $sub->address);
     }
 
     public function test_the_street_is_optional_and_the_older_single_address_text_is_still_understood(): void
@@ -96,7 +97,7 @@ class AddressSplitTest extends TestCase
     {
         $admin = $this->staff('admin');
         Sanctum::actingAs($admin);
-        $this->newSubscriber(['barangay' => 'Malete', 'street' => '12 Rizal St'])->assertCreated();
+        $this->newSubscriber(['barangay' => 'Malate', 'street' => '12 Rizal St'])->assertCreated();
         $sub = Subscriber::firstOrFail();
 
         $this->putJson("/api/subscribers/{$sub->subscriber_id}", ['barangay' => 'Caimito', 'street' => ''])->assertOk();
@@ -150,10 +151,10 @@ class AddressSplitTest extends TestCase
     {
         $admin = $this->staff('admin');
         Sanctum::actingAs($admin);
-        $this->newSubscriber(['barangay' => 'Malete', 'street' => '12 Rizal St'])->assertCreated();
+        $this->newSubscriber(['barangay' => 'Malate', 'street' => '12 Rizal St'])->assertCreated();
         $this->passwordConfirmed($admin);
 
-        $this->putJson('/api/barangays/'.Barangay::where('name', 'Malete')->value('id'), ['name' => 'Malate'])->assertOk();
+        $this->putJson('/api/barangays/'.Barangay::where('name', 'Malate')->value('id'), ['name' => 'Malate'])->assertOk();
 
         $sub = Subscriber::firstOrFail();
         $this->assertSame('Malate', $sub->barangay);

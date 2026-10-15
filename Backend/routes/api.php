@@ -182,6 +182,13 @@ Route::middleware(['auth:sanctum', 'account.active', 'session.slide', 'mfa.enrol
         ->middleware('permission:subscribers.manage');
     Route::put('/subscribers/{subscriber}', [SubscriberController::class, 'update'])
         ->middleware('permission:subscribers.manage');
+    // A plan is never edited: it is requested, then confirmed once carried out (or cancelled).
+    Route::post('/subscribers/{subscriber}/plan-change', [\App\Http\Controllers\PlanChangeController::class, 'store'])
+        ->middleware('permission:subscribers.change_plan');
+    Route::post('/plan-changes/{id}/complete', [\App\Http\Controllers\PlanChangeController::class, 'complete'])
+        ->middleware('permission:subscribers.change_plan')->whereNumber('id');
+    Route::post('/plan-changes/{id}/cancel', [\App\Http\Controllers\PlanChangeController::class, 'cancel'])
+        ->middleware('permission:subscribers.change_plan')->whereNumber('id');
     Route::patch('/subscribers/{subscriber}/status', [SubscriberController::class, 'updateStatus'])
         ->middleware('permission:subscribers.manage');
     Route::delete('/subscribers/{subscriber}', [SubscriberController::class, 'destroy'])
