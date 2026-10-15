@@ -4,8 +4,8 @@ import phoneApi from '../api/phone'
 import { useAuth } from '../context/AuthContext'
 import Modal from './Modal'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import CodeInput from './CodeInput.jsx'
 
 /** Small "Verified" tag for staff views. */
 export function VerifiedBadge({ verified }) {
@@ -121,16 +121,7 @@ export default function PhoneVerification({ variant = 'card' }) {
           {info && <p role="status" className="text-sm text-gray-600 dark:text-gray-400">{info}</p>}
           <div className="space-y-1.5">
             <Label htmlFor="phone-code">6-digit code</Label>
-            <Input
-              id="phone-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="font-mono tracking-widest text-lg"
-              autoFocus
-            />
+            <CodeInput id="phone-code" value={code} onChange={setCode} autoFocus />
           </div>
           <button
             type="button"

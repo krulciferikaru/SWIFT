@@ -5,6 +5,7 @@ import { useToast } from '../hooks/useToast'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import DateHint from '../components/DateHint.jsx'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -258,10 +259,12 @@ export default function Reports() {
               <div className="space-y-1">
                 <label htmlFor="report-from" className="text-xs font-medium text-gray-700 dark:text-gray-300">From</label>
                 <Input id="report-from" type="date" value={customFrom} max={customTo || today} onChange={(e) => setCustomFrom(e.target.value)} className="sm:w-40" aria-invalid={customError ? true : undefined} />
+                <DateHint value={customFrom} />
               </div>
               <div className="space-y-1">
                 <label htmlFor="report-to" className="text-xs font-medium text-gray-700 dark:text-gray-300">To</label>
                 <Input id="report-to" type="date" value={customTo} min={customFrom || undefined} max={today} onChange={(e) => setCustomTo(e.target.value)} className="sm:w-40" aria-invalid={customError ? true : undefined} />
+                <DateHint value={customTo} />
               </div>
             </div>
           )}

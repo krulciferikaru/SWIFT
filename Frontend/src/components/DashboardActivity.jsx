@@ -3,6 +3,9 @@ import { ArrowDownRight, ArrowUpRight, Receipt, UserPlus, PiggyBank } from 'luci
 import api from '../api/axios'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import DateHint from './DateHint.jsx'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 
@@ -12,16 +15,28 @@ const PERIODS = [
   ['quarter', 'This quarter'],
   ['year', 'This year'],
   ['all', 'All time'],
+  ['custom', 'Custom range'],
 ]
 const STORAGE_KEY = 'swift.dashboardPeriod'
-const COMPARE_WORD = { day: 'yesterday', month: 'last month', quarter: 'last quarter', year: 'last year' }
+const COMPARE_WORD = {
+  day: 'yesterday',
+  month: 'last month',
+  quarter: 'last quarter',
+  year: 'last year',
+  custom: 'the days before',
+}
+
+const localDate = (d) => {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
 
 const peso = (value) => `₱${Number(value ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
 
 function storedPeriod() {
   try {
     const value = localStorage.getItem(STORAGE_KEY)
-    return PERIODS.some(([key]) => key === value) ? value : 'month'
+    return PERIODS.some(([key]) => key === value) && value !== 'custom' ? value : 'month'
   } catch {
     return 'month'
   }
@@ -52,22 +67,27 @@ function Change({ period, current, previous }) {
  */
 export default function DashboardActivity() {
   const [period, setPeriod] = useState(storedPeriod)
+  // The dates being typed, and the dates that were applied (what is actually shown).
+  const [draft, setDraft] = useState({ from: '', to: '' })
+  const [range, setRange] = useState(null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
+    if (period === 'custom' && !range) return // nothing to show until a range is applied
     setLoading(true)
     setError('')
     try {
-      const res = await api.get('/dashboard/period', { params: { period } })
+      const params = period === 'custom' ? { period, from: range.from, to: range.to } : { period }
+      const res = await api.get('/dashboard/period', { params })
       setData(res.data.data)
     } catch (err) {
       setError(errorMessage(err, 'Failed to load activity for this period.'))
     } finally {
       setLoading(false)
     }
-  }, [period])
+  }, [period, range])
 
   useEffect(() => {
     load()
@@ -77,6 +97,7 @@ export default function DashboardActivity() {
 
   const choose = (key) => {
     setPeriod(key)
+    if (key === 'custom') return // the dates are not remembered, so the preset choice stays as it was
     try {
       localStorage.setItem(STORAGE_KEY, key)
     } catch {
@@ -84,8 +105,21 @@ export default function DashboardActivity() {
     }
   }
 
+  const today = localDate(new Date())
+  const draftError =
+    draft.from && draft.to && draft.to < draft.from
+      ? 'The end date is before the start date.'
+      : ''
+  const applyRange = (e) => {
+    e.preventDefault()
+    if (!draft.from || !draft.to || draftError) return
+    setRange({ ...draft })
+  }
+
   const showMoney = data && data.collected !== null
-  const fresh = data && data.period === period
+  const fresh =
+    data && data.period === period && (period !== 'custom' || (range && data.from === range.from && data.to === range.to))
+  const waitingForRange = period === 'custom' && !range
 
   return (
     <section data-tour="dash-activity" aria-labelledby="dash-activity-heading" aria-busy={loading || undefined} className="space-y-3">
@@ -95,7 +129,7 @@ export default function DashboardActivity() {
             Activity
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
-            {fresh ? data.label : ' '}
+            {waitingForRange ? 'Pick the dates to look at.' : fresh ? data.label : ' '}
           </p>
         </div>
         <div role="group" aria-label="Show activity for" className="flex flex-wrap gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
@@ -117,7 +151,40 @@ export default function DashboardActivity() {
         </div>
       </div>
 
-      {error ? (
+      {period === 'custom' && (
+        <form onSubmit={applyRange} className="flex flex-wrap items-end gap-3" aria-label="Custom date range">
+          <div className="space-y-1">
+            <label htmlFor="dash-from" className="block text-xs font-medium text-gray-600 dark:text-gray-400">From</label>
+            <Input
+              id="dash-from"
+              type="date"
+              value={draft.from}
+              max={draft.to || today}
+              onChange={(e) => setDraft({ ...draft, from: e.target.value })}
+              required
+              className="w-40"
+            />
+            <DateHint value={draft.from} />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="dash-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">To</label>
+            <Input
+              id="dash-to"
+              type="date"
+              value={draft.to}
+              min={draft.from || undefined}
+              onChange={(e) => setDraft({ ...draft, to: e.target.value })}
+              required
+              className="w-40"
+            />
+            <DateHint value={draft.to} />
+          </div>
+          <Button type="submit" disabled={!draft.from || !draft.to || !!draftError}>Show</Button>
+          {draftError && <p role="alert" className="w-full text-xs text-red-600 dark:text-red-400">{draftError}</p>}
+        </form>
+      )}
+
+      {waitingForRange ? null : error ? (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-400">
           {error}
           <button type="button" className="underline" onClick={load}>Try again</button>

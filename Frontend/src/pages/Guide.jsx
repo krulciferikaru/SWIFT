@@ -7,6 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useAuth } from '../context/AuthContext'
+import BackToSettings from '../components/BackToSettings.jsx'
 import { TOUR_PAGES } from '../tour/tours'
 import {
   PlayCircle,
@@ -53,19 +54,20 @@ const SECTIONS = [
     icon: Users2,
     title: 'Subscribers',
     summary: 'The full list of cable TV/internet subscribers.',
-    roles: ['admin', 'secretary'],
+    roles: ['admin', 'secretary', 'collector'],
     body: (
       <>
         <p>This is the master list of everyone signed up for service. At the top you'll see totals for Total, Pending, Active, Unpaid, and Disconnected.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Name</strong> — click a subscriber's name to open all of their details in one window, including their balance, months behind and advance credit. It has the same Edit, Archive and Payments buttons as the row.</li>
-          <li><strong>Search box</strong> — type a name, contact number, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
-          <li><strong>Status dropdown</strong> — narrow the list to only Active, Unpaid, or Disconnected subscribers.</li>
+          <li><strong>Search box</strong> — type a name, mobile number, or MAC address to filter the list. You don't need to press Enter, it filters as you type.</li>
+          <li><strong>Service status</strong> — the dropdown, or the cards at the top, narrow the list to only Active, Unpaid, or Disconnected subscribers. (This is the service status; it follows payments. It is not the same as an account being approved or deactivated, which is the <em>Account status</em> in Manage Roles.)</li>
           <li><strong>Add Subscriber</strong> — opens a form to manually register a new subscriber (name, plan, contact info, etc.).</li>
-          <li><strong>Edit</strong> (per row) — update a subscriber's details, like their assigned plan or contact number.</li>
-          <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. Nothing is lost; you can restore them anytime.</li>
+          <li><strong>Edit</strong> (per row) — update a subscriber's details, like their assigned plan or mobile number. If you change the <em>plan</em>, a box asks which month the new plan applies from: next month is the usual choice. Months already billed keep the price they had; pick an earlier month only to correct a plan that was recorded wrongly.</li>
+          <li><strong>Archive</strong> (per row) — moves the subscriber to the Archive page and suspends their login. It asks you to confirm first, and the message afterwards has an <em>Undo</em> button for a few seconds. Nothing is lost; you can also restore them anytime from the Archive page.</li>
           <li><strong>Payments</strong> (per row) — jumps straight to that subscriber's billing page (see the Payments section below).</li>
           <li><strong>Export CSV</strong> — downloads the current filtered list as a spreadsheet file.</li>
+          <li><strong>Tick boxes</strong> (if you may send texts) — tick the people to remind, or press <em>Select everyone who owes on this page</em>, then <em>Send payment reminder</em>. A window shows how many people will be texted. Texts cannot be recalled, and anyone who owes nothing is skipped.</li>
         </ul>
       </>
     ),
@@ -81,9 +83,9 @@ const SECTIONS = [
       <>
         <p>When someone registers themselves through the subscriber sign-up page, their application lands here first — they can't log in until you approve them. A red number badge on the sidebar tells you how many are waiting.</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Pending tab</strong> — new applications. Click <em>Approve</em> to activate them, or <em>Reject</em> if the application looks wrong or fraudulent.</li>
+          <li><strong>Pending tab</strong> — new applications. Click <em>Approve</em>, choose their <strong>service plan</strong> and the <strong>installation date</strong> in the window that opens (billing needs both; the first bill is for the month after the installation date), then confirm. Or click <em>Reject</em> if the application looks wrong or fraudulent.</li>
           <li><strong>Rejected tab</strong> — applications you previously rejected. You can re-approve from here if it turns out to be a mistake.</li>
-          <li><strong>Account Claims tab</strong> — this is different from a new sign-up. It happens when someone registers using a contact number that matches an <em>existing</em> subscriber already on file (for example, an old subscriber who never had a login before). Always double-check the name, address, and contact number shown against what you have on file before approving a claim — approving it links that login to the existing subscriber's record and billing history.</li>
+          <li><strong>Account Claims tab</strong> — this is different from a new sign-up. It happens when someone registers using a mobile number that matches an <em>existing</em> subscriber already on file (for example, an old subscriber who never had a login before). Always double-check the name, address, and mobile number shown against what you have on file before approving a claim — approving it links that login to the existing subscriber's record and billing history.</li>
         </ul>
       </>
     ),
@@ -101,8 +103,9 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Name</strong> — click a plan's name to see its full details, with Edit and Archive buttons.</li>
           <li><strong>Add Plan</strong> — create a new plan with a name, monthly rate, speed, and description.</li>
-          <li><strong>Edit</strong> — change a plan's price or details. This affects future billing, not past payments.</li>
-          <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. Restore it from the Archive page.</li>
+          <li><strong>Edit</strong> — change a plan's price or details. A new price applies from next month; months already billed keep the price they had.</li>
+          <li><strong>Archive</strong> — hides the plan from new subscriber assignments. Subscribers already on it keep it and are billed as usual. It asks you to confirm first, and the message afterwards has an <em>Undo</em> button; you can also restore it from the Archive page.</li>
+          <li><strong>Availability</strong> — <em>Offered</em> plans can be given to subscribers. Set a plan to <em>Not offered</em> to stop giving it out without archiving it.</li>
         </ul>
       </>
     ),
@@ -113,15 +116,17 @@ const SECTIONS = [
     icon: Wallet,
     title: 'Payments',
     summary: 'Record a subscriber\'s payment and see their balance.',
-    roles: ['admin', 'secretary'],
+    roles: ['admin', 'secretary', 'collector'],
     body: (
       <>
         <p>This is where you'll spend the most time day-to-day.</p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>Search for the subscriber by name, contact number, or MAC address.</li>
-          <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Payment History</strong>. Each payment has a <em>Receipt</em> button: it opens a receipt you can print for the subscriber.</li>
+          <li>Search for the subscriber by name, mobile number, or MAC address.</li>
+          <li>Click their name — you'll see their current <strong>balance due</strong>, a <strong>Billing Breakdown</strong> (which months are paid/unpaid), and their <strong>Payment History</strong>. Each payment has a <em>Receipt</em> button: it opens a receipt you can print for the subscriber. At the bottom is the <strong>Service history</strong>: when they were installed and every time their status changed (Active, Unpaid, Disconnected), with the date and whether staff or the system did it.</li>
           <li>Fill in the <strong>Record Payment</strong> form: amount, OR (official receipt) number, date, and payment method (Cash, GCash, or Others). As you type an amount, it shows you a live preview of which month(s) that payment will cover.</li>
-          <li>Click <strong>Record Payment</strong> to save it.</li>
+          <li>The page helps you go faster: <em>Recently opened</em> shows the last few subscribers to open with one tap, the payment method you used last is already chosen, and under the OR number a link offers the <em>next number in your book</em>. These are kept on your own device only.</li>
+          <li>Click <strong>Record Payment</strong>. A window shows the subscriber, the amount in large type, the date, the OR number and the method. Check them, then press <em>Record payment</em> to save, or <em>Go back and edit</em> to fix a mistake. A payment can't be edited or deleted once it is saved, so this is the moment to catch a wrong digit. (If one still turns out wrong, an administrator can cancel it: see below.) If the amount is far above what the subscriber owes, the window warns you.</li>
+          <li><strong>Cancel</strong> (administrators and the secretary) — beside each payment in the history. Use it when a payment was entered wrongly (an extra zero, the wrong date, the wrong subscriber). It asks for a <em>reason</em> and your own password. The payment is <strong>not deleted</strong>: it stays in the history, struck through and marked <em>Cancelled</em> with your name and the reason, and it stops counting towards the balance, reports and totals. The window offers to fill in the payment form with the old details so you only correct what was wrong; the same OR number can be used again. No text message is sent, so if the wrong amount was already texted to the subscriber, tell them.</li>
         </ol>
         <p>If a subscriber was disconnected for non-payment and has now fully paid off their balance, a <strong>Reconnect Subscriber</strong> button appears — use it only after you've physically reconnected their service, not before.</p>
       </>
@@ -167,19 +172,16 @@ const SECTIONS = [
     tour: 'users',
     icon: ShieldCheck,
     title: 'Manage Roles',
-    summary: 'Admin-only: create staff accounts and manage all user accounts.',
+    summary: 'Admin-only: create staff accounts and manage all user accounts. Opened from Settings.',
     roles: ['admin'],
     body: (
       <>
-        <p>This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
+        <p>Open it from <strong>Settings</strong>. This page lists every account in the system — Admins, Secretaries, and Subscribers alike.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Add Staff Account</strong> — creates a new Secretary login. A role can't be changed after the account is created, as a safety measure.</li>
-          <li><strong>Permissions</strong> (Secretary rows) — tick exactly what that secretary may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
+          <li><strong>Permissions</strong> (Secretary and Field Collector rows) — tick exactly what that person may do: view or edit subscribers, record payments, approve registrations, use reports, and so on. Pages and buttons they aren't allowed to use disappear for them. <em>Reset to default</em> gives them everything again.</li>
           <li><strong>Account Status</strong> dropdown (per row) — set an account to Pending, Active, or Inactive.</li>
-          <li className="flex items-start gap-1.5">
-            <KeyRound className="size-4 mt-0.5 shrink-0" />
-            <span><strong>Reset Password</strong> — there is no self-service "forgot password" flow in SWIFT. If a secretary or subscriber forgets their password, come here, find their row, and click Reset Password to set a new one for them. Resetting a password, changing permissions, and deleting from the Archive each ask you to type your own password first, as a safety step; it then stays confirmed for 10 minutes.</span>
-          </li>
+          <li><strong>Passwords</strong> — nobody here can see or reset another person's password. Everyone recovers their own with <em>Forgot password?</em> on the sign-in page: a 6-digit code is texted to their <strong>verified</strong> mobile number. Staff add and verify theirs in Settings (or when the account is created), so it is worth doing straight away.</li>
         </ul>
       </>
     ),
@@ -212,11 +214,14 @@ const SECTIONS = [
       role === 'subscriber'
         ? 'Appearance, tour options, and logout behavior.'
         : 'Appearance, tour options, logout behavior, and SMS tools.',
-    roles: ['admin', 'secretary', 'subscriber'],
+    roles: ['admin', 'secretary', 'collector', 'subscriber'],
     body: (role) => (
       <>
         <p>These preferences are saved on the device and browser you are using.</p>
         <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Guide</strong>{role === 'admin' && <> and <strong>Manage Roles</strong></>} — the links at the top open {role === 'admin' ? 'them' : 'it'}. Use <em>Back to Settings</em> to return.</li>
+          <li><strong>Signed-in devices</strong> — lists the places you are signed in (for example Chrome on Windows), with part of the network address and when each was last used. Press <em>Sign out</em> on one you don't recognise, or <em>Sign out of all other devices</em> to end all but this one. Use it after losing a phone or computer, or if someone may have your password.</li>
+          <li><strong>Two-step sign-in</strong> — {role === 'admin' ? 'required for administrators.' : 'optional: you can turn it on for extra protection, and off again.'} Once it is on, this card shows how many recovery codes you have left. <em>Get new recovery codes</em> replaces them, <em>Set up on a new phone</em> moves it to a new phone{role === 'admin' ? '' : ', and Turn off switches it off'}. Each of these asks for a current code from your app (and turning it on asks for your password again). Keep the codes somewhere safe: they are how you get back in if you lose your phone.</li>
           <li><strong>Dark Mode</strong> — switch between light and dark appearance.</li>
           <li><strong>Confirm before logging out</strong> — turn off if you don't want the "are you sure?" prompt every time you log out.</li>
           <li><strong>Show "Take a tour" buttons</strong> — turn off to hide the Take a tour buttons on pages and forms. You can still start any tour from this Guide with <em>Show me</em>.</li>
@@ -259,7 +264,7 @@ const sectionsForRole = (role) =>
 
 const HIGHLIGHT_NAME = 'guide-search'
 
-const ROLE_LABELS = { admin: 'Administrator', secretary: 'Secretary', subscriber: 'Subscriber' }
+const ROLE_LABELS = { admin: 'Administrator', secretary: 'Secretary', collector: 'Field Collector', subscriber: 'Subscriber' }
 
 // Marks matches on the page with the CSS Custom Highlight API (no DOM changes).
 // Browsers without it still filter; they just do not highlight.
@@ -291,6 +296,15 @@ function useSearchHighlight(containerId, terms, watch) {
   }, [containerId, terms.join(' '), watch])
 }
 
+// How the guide is organised: a heading for each area of the system, with its sections under it.
+const GROUPS = [
+  { title: 'Overview', description: 'Your home screen.', ids: ['dashboard'] },
+  { title: 'Customers', description: 'Subscribers, registrations and service plans.', ids: ['subscribers', 'approvals', 'plans'] },
+  { title: 'Billing', description: 'Recording payments and reading the reports.', ids: ['payments', 'reports'] },
+  { title: 'Administration', description: 'The archive, staff accounts and the audit trail.', ids: ['archive', 'users', 'audit'] },
+  { title: 'Settings', description: 'Your preferences and your own account.', ids: ['settings'] },
+]
+
 export default function Guide() {
   const { user } = useAuth()
   const role = user?.role
@@ -299,6 +313,15 @@ export default function Guide() {
   const available = useMemo(() => sectionsForRole(role), [role])
   const sections = available.filter((s) => terms.every((t) => s.haystack.includes(t)))
   const searching = terms.length > 0
+
+  // Sections are shown under headings, in this order. Anything not listed goes under "More".
+  const groups = (() => {
+    const placed = new Set(GROUPS.flatMap((g) => g.ids))
+    const list = GROUPS.map((g) => ({ ...g, items: sections.filter((s) => g.ids.includes(s.id)) }))
+    const rest = sections.filter((s) => !placed.has(s.id))
+    if (rest.length) list.push({ title: 'More', items: rest })
+    return list.filter((g) => g.items.length > 0)
+  })()
 
   useSearchHighlight('guide-results', sections.length ? terms : [], sections.map((s) => s.id).join(','))
 
@@ -340,10 +363,42 @@ export default function Guide() {
     }
   }, [])
 
+  const renderSection = (s) => {
+    const Icon = s.icon
+    return (
+      <Card key={s.id} id={s.id} className="scroll-mt-4 print:break-inside-avoid print:border print:border-gray-300 print:shadow-none print:ring-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Icon className="size-4 text-primary" />
+            {s.title}
+            {s.roles && !s.roles.includes('subscriber') && (
+              <Badge variant="outline" className="ml-1 text-[10px] font-normal capitalize">
+                {s.roles.join(' / ')}
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>{s.summary}</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+          {s.body}
+          {s.tour && TOUR_PAGES[s.tour] && (
+            <Link
+              to={`${TOUR_PAGES[s.tour]}?tour=1`}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5 print:hidden')}
+            >
+              <PlayCircle className="size-4" />
+              Show me
+            </Link>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
   const printedOn = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="hidden print:block border-b border-gray-300 pb-4">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-600">
           Jubal Brothers Cable TV Corporation · Palayan Branch
@@ -359,6 +414,8 @@ export default function Guide() {
           ))}
         </ol>
       </div>
+
+      <BackToSettings />
 
       <div className="flex items-start justify-between gap-3 print:hidden">
         <div>
@@ -392,7 +449,7 @@ export default function Guide() {
             onKeyDown={(e) => {
               if (e.key === 'Escape') setQuery('')
             }}
-            placeholder="Search the guide, e.g. reset password, export, reconnect"
+            placeholder="Search the guide, e.g. forgot password, export, reconnect"
             aria-label="Search the guide"
             className="pl-9 pr-9"
           />
@@ -419,7 +476,7 @@ export default function Guide() {
           <CardContent className="flex items-start gap-3">
             <Info className="size-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <p className="text-sm text-blue-900 dark:text-blue-300">
-              Forgot your password? There's no self-reset yet. Contact the office, or ask an Admin to reset it for you from the Manage Roles page. After 5 wrong passwords, sign-in for that account pauses for 15 minutes, and the page counts down. Tick "Keep me signed in" to stay signed in for 30 days on your own device; otherwise you are signed out when you close the browser or after a working day.
+              Forgot your password? There's no self-reset yet. Contact the office, or ask an Admin to reset it for you from the Manage Roles page. After 5 wrong passwords, sign-in for that account pauses for 15 minutes, and the page counts down. Tick "Keep me signed in" to stay signed in for 7 days on your own device; otherwise you stay signed in while the page is open and are signed out when you close the browser or tab.
             </p>
           </CardContent>
         </Card>
@@ -438,7 +495,7 @@ export default function Guide() {
         ))}
       </div>
 
-      <div id="guide-results" className="space-y-4">
+      <div id="guide-results" className="space-y-8">
         {sections.length === 0 && (
           <Card>
             <CardContent className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
@@ -451,37 +508,17 @@ export default function Guide() {
             </CardContent>
           </Card>
         )}
-        {sections.map((s) => {
-          const Icon = s.icon
-          return (
-            <Card key={s.id} id={s.id} className="scroll-mt-4 print:break-inside-avoid print:border print:border-gray-300 print:shadow-none print:ring-0">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Icon className="size-4 text-primary" />
-                  {s.title}
-                  {s.roles && !s.roles.includes('subscriber') && (
-                    <Badge variant="outline" className="ml-1 text-[10px] font-normal capitalize">
-                      {s.roles.join(' / ')}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription>{s.summary}</CardDescription>
-              </CardHeader>
-              <CardContent className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
-                {s.body}
-                {s.tour && TOUR_PAGES[s.tour] && (
-                  <Link
-                    to={`${TOUR_PAGES[s.tour]}?tour=1`}
-                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5 print:hidden')}
-                  >
-                    <PlayCircle className="size-4" />
-                    Show me
-                  </Link>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+        {groups.map((g) => (
+          <section key={g.title} className="space-y-4 print:break-inside-avoid-page">
+            <div className="border-b border-gray-200 pb-2 dark:border-gray-800">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400 print:text-gray-800">{g.title}</h2>
+              {g.description && <p className="text-xs text-gray-500 dark:text-gray-400">{g.description}</p>}
+            </div>
+            <div className={`gap-4 print:columns-1 [&>*]:mb-4 [&>*]:break-inside-avoid ${g.items.length > 1 ? 'columns-1 xl:columns-2' : ''}`}>
+              {g.items.map(renderSection)}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   )

@@ -1,4 +1,7 @@
+import { Link } from 'react-router-dom'
 import CompanyContact from './CompanyContact.jsx'
+
+const legalLink = 'underline underline-offset-2 hover:no-underline'
 
 /**
  * The frame around the sign-in and register pages: a brand panel on the left on wide screens
@@ -16,19 +19,26 @@ export default function AuthLayout({ children, wide = false }) {
           <span className="flex size-11 items-center justify-center rounded-xl bg-white">
             <img src="/SWIFT_Logo.svg" alt="" className="size-7" />
           </span>
-          <span className="text-2xl font-bold tracking-tight">SWIFT</span>
+          <span className="text-xl font-bold tracking-tight">SWIFT</span>
         </div>
 
         <div className="max-w-md space-y-3">
-          <h2 className="text-3xl font-semibold leading-tight">
-            Subscriber and Web-based Information and Financial Tracking System
+          <h2 className="text-4xl font-bold leading-tight tracking-tight">
+            Jubal Brothers Cable TV Corporation
           </h2>
-          <p className="text-lg text-blue-50">Jubal Brothers Cable TV Corp. · Palayan Branch</p>
+          <p className="text-xl font-medium text-blue-50">Palayan Branch</p>
+          <p className="pt-2 text-sm text-blue-100">
+            SWIFT: Subscriber and Web-based Information and Financial Tracking System
+          </p>
         </div>
 
         <div className="space-y-4">
           <CompanyContact variant="panel" />
-          <p className="text-sm text-blue-100">© {new Date().getFullYear()} Jubal Brothers Cable TV Corp.</p>
+          <p className="text-sm text-blue-100">
+            © {new Date().getFullYear()} Jubal Brothers Cable TV Corporation · {' '}
+            <Link to="/privacy" className={legalLink}>Privacy Policy</Link> ·{' '}
+            <Link to="/terms" className={legalLink}>Terms</Link>
+          </p>
         </div>
       </aside>
 
@@ -38,18 +48,23 @@ export default function AuthLayout({ children, wide = false }) {
           <div className="mb-8 lg:hidden">
             <div className="flex items-center gap-2.5">
               <img src="/SWIFT_Logo.svg" alt="" className="size-9" />
-              <span className="text-2xl font-bold tracking-tight text-primary">SWIFT</span>
+              <span className="text-xl font-bold tracking-tight text-primary">SWIFT</span>
             </div>
-            <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+            <p className="mt-3 text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100">Jubal Brothers Cable TV Corporation</p>
+            <p className="text-base font-medium text-gray-700 dark:text-gray-300">Palayan Branch</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Subscriber and Web-based Information and Financial Tracking System
             </p>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Jubal Brothers Cable TV Corp. · Palayan Branch</p>
           </div>
 
           {children}
 
           <div className="lg:hidden">
             <CompanyContact variant="inline" />
+            <p className="mt-4 text-center text-xs text-gray-600 dark:text-gray-400">
+              <Link to="/privacy" className={legalLink}>Privacy Policy</Link> ·{' '}
+              <Link to="/terms" className={legalLink}>Terms of Service</Link>
+            </p>
           </div>
         </div>
       </main>

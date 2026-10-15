@@ -5,12 +5,18 @@ import { LoadingStatus } from './Skeletons.jsx'
 import { Skeleton } from '@/components/ui/skeleton'
 import { errorMessage } from '../utils/errors'
 import { Button } from '@/components/ui/button'
+import StepUpDialog from './StepUpDialog.jsx'
+import { useAuth } from '../context/AuthContext'
 
 /**
- * Lets an admin choose exactly which tasks one secretary may do.
- * `user.permissions === null` means "never customised", which behaves as everything allowed.
+ * Lets an admin choose exactly which tasks one secretary or field collector may do.
+ * `user.permissions === null` means "never customised": everything allowed for a secretary, and the short
+ * default list (view subscribers, view and record payments) for a collector.
  */
 export default function PermissionsModal({ user, onClose, onSaved }) {
+  const { user: me } = useAuth()
+  // Changing what someone may do needs the admin's own current authenticator code too (the password is asked for separately).
+  const [pending, setPending] = useState(null) // { permissions } waiting for the code
   const [catalog, setCatalog] = useState([])
   const [selected, setSelected] = useState(new Set())
   const [loading, setLoading] = useState(false)
@@ -36,12 +42,20 @@ export default function PermissionsModal({ user, onClose, onSaved }) {
       return next
     })
 
+  const send = async (permissions, code) => {
+    const res = await usersApi.updatePermissions(user.id, permissions, code)
+    onSaved(res.data.user, res.data.message)
+  }
+
   const save = async (permissions) => {
+    if (me?.mfa_enabled) {
+      setPending({ permissions })
+      return
+    }
     setSaving(true)
     setError('')
     try {
-      const res = await usersApi.updatePermissions(user.id, permissions)
-      onSaved(res.data.user, res.data.message)
+      await send(permissions, undefined)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save permissions.')
     } finally {
@@ -56,7 +70,7 @@ export default function PermissionsModal({ user, onClose, onSaved }) {
       isOpen={!!user}
       onClose={onClose}
       title="Permissions"
-      description={user ? `Choose what ${user.name} is allowed to do. Changes take effect on their next action.` : ''}
+      description={user ? `Choose what ${user.name} is allowed to do. Changes take effect on their next action.${user.role === 'collector' ? " A field collector never sees subscribers’ email or MAC addresses, whatever is switched on." : ""}` : ""}
       size="md"
       footer={(requestClose) => (
         <div className="flex flex-wrap justify-between gap-3">
@@ -126,6 +140,17 @@ export default function PermissionsModal({ user, onClose, onSaved }) {
           </ul>
         </fieldset>
       )}
+      <StepUpDialog
+        open={!!pending}
+        onClose={() => setPending(null)}
+        title="Confirm the change"
+        description={user ? `You are changing what ${user.name} may do.` : ''}
+        confirmLabel="Save permissions"
+        onConfirm={async (code) => {
+          await send(pending.permissions, code)
+          setPending(null)
+        }}
+      />
     </Modal>
   )
 }

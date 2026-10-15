@@ -12,6 +12,7 @@ return [
     'grantable' => [
         'subscribers.view' => ['label' => 'View subscribers', 'help' => 'See the subscriber list and each subscriber\'s details.'],
         'subscribers.manage' => ['label' => 'Add and edit subscribers', 'help' => 'Add new subscribers, edit their details and change their status.'],
+        'subscribers.change_plan' => ['label' => 'Change a subscriber\'s plan', 'help' => 'Request a move to another plan and confirm it once it has been carried out.'],
         'subscribers.archive' => ['label' => 'Archive subscribers', 'help' => 'Move subscribers to the Archive.'],
         'approvals.manage' => ['label' => 'Approve registrations', 'help' => 'Approve or reject new registrations and account claims.'],
         'plans.manage' => ['label' => 'Manage service plans', 'help' => 'Add, edit and archive service plans.'],
@@ -21,6 +22,11 @@ return [
         'archive.manage' => ['label' => 'Use the Archive', 'help' => 'See archived records, restore them, or delete them permanently.'],
         'sms.send' => ['label' => 'Send text messages', 'help' => 'Send payment reminders and other text messages.'],
     ],
+
+    // A field collector goes out to collect payments. This is what a new collector starts with: they see
+    // subscribers (never email or MAC address, whatever else is switched on) and record payments. An admin can
+    // switch individual tasks on or off for each collector, like for a secretary.
+    'collector' => ['subscribers.view', 'payments.view', 'payments.record'],
 
     'admin_only' => ['users.manage', 'audit.view'],
 ];

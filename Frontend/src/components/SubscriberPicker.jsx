@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 /**
- * Search for one subscriber by name, contact number or MAC address and pick them.
+ * Search for one subscriber by name, mobile number or MAC address and pick them.
  * `value` is { id, name } or null; `onChange` gets the same shape.
  */
 export default function SubscriberPicker({ value, onChange, id = 'subscriber-picker' }) {

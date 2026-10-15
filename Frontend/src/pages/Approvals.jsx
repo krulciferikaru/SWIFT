@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../api/axios";
 import { TableSkeleton } from "../components/Skeletons.jsx";
-import { Check, RotateCcw, X } from "lucide-react";
+import { Check, ClipboardCheck, RotateCcw, X } from "lucide-react";
+import EmptyState from "../components/EmptyState.jsx";
+import Pager from "../components/Pager.jsx";
+import ApproveDialog from "../components/ApproveDialog.jsx";
+import ConfirmAction from "../components/ConfirmAction.jsx";
 import { useOnReconnect } from "../hooks/useOnline";
 import subscriberApi from "../api/subscribers";
 import {
@@ -47,7 +51,14 @@ export default function Approvals() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  // The lists are loaded whole and shown a page at a time, so a long queue stays easy to scan.
+  const [pageNo, setPageNo] = useState(1);
+  const [perPage, setPerPage] = useState(25);
   const [actionLoading, setActionLoading] = useState(null);
+  // The applicant being approved: a plan and an installation date are chosen first.
+  const [approveTarget, setApproveTarget] = useState(null);
+  // The rejected claim about to be approved again: staff confirm first.
+  const [reapproveClaimTarget, setReapproveClaimTarget] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectClaimTarget, setRejectClaimTarget] = useState(null);
   const { refreshPendingCount, refreshClaimsCount } = useApprovals();
@@ -137,29 +148,16 @@ export default function Approvals() {
     else fetchRejectedClaims();
   });
 
-  const handleApprove = async (subscriber) => {
-    setActionLoading(subscriber.subscriber_id);
-    try {
-      await api.patch(`/subscribers/${subscriber.subscriber_id}/approve`);
-      if (tab === "pending") {
-        setPending((prev) =>
-          prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id),
-        );
-      } else {
-        setRejected((prev) =>
-          prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id),
-        );
-      }
-      showToast(`${subscriber.name} approved.`);
-      refreshPendingCount();
-    } catch (err) {
-      showToast(
-        err.response?.data?.message || "Failed to approve subscriber.",
-        "error",
-      );
-    } finally {
-      setActionLoading(null);
+  // The dialog has already approved them on the server; this updates the lists.
+  const handleApproved = (subscriber) => {
+    setApproveTarget(null);
+    if (tab === "pending") {
+      setPending((prev) => prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id));
+    } else {
+      setRejected((prev) => prev.filter((s) => s.subscriber_id !== subscriber.subscriber_id));
     }
+    showToast(`${subscriber.name} approved.`);
+    refreshPendingCount();
   };
 
   const confirmReject = async () => {
@@ -258,7 +256,7 @@ export default function Approvals() {
           ? claims
           : rejectedClaims;
 
-  const list = search
+  const fullList = search
     ? baseList.filter((s) => {
         const q = search.toLowerCase();
         return (
@@ -269,14 +267,29 @@ export default function Approvals() {
       })
     : baseList;
 
-  const emptyMessage =
+  const lastPage = Math.max(Math.ceil(fullList.length / perPage), 1);
+  const currentPage = Math.min(pageNo, lastPage);
+  const pageStart = (currentPage - 1) * perPage;
+  const list = fullList.slice(pageStart, pageStart + perPage);
+  const pagerMeta = {
+    total: fullList.length,
+    from: fullList.length ? pageStart + 1 : 0,
+    to: Math.min(pageStart + perPage, fullList.length),
+    last_page: lastPage,
+  };
+  // A different tab or search starts again from the first page.
+  useEffect(() => {
+    setPageNo(1);
+  }, [tab, claimsSubTab, search]);
+
+  const emptyState =
     tab === "pending"
-      ? "No pending subscribers."
+      ? { title: "No applications waiting", description: "New sign-ups from the registration page wait here until you approve or reject them." }
       : tab === "rejected"
-        ? "No rejected subscribers."
+        ? { title: "No rejected applications", description: "Applications you reject are kept here for reference." }
         : claimsSubTab === "pending"
-          ? "No pending account claims."
-          : "No rejected account claims.";
+          ? { title: "No account claims waiting", description: "When someone signs up with a number that already belongs to a subscriber, you verify the claim here." }
+          : { title: "No rejected claims", description: "Claims you reject are kept here for reference." };
 
   return (
     <div>
@@ -286,7 +299,7 @@ export default function Approvals() {
         <>
           <h1 className="sr-only">Pending Approvals</h1>
           <Skeleton className="h-8 w-40 mb-4" />
-          <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700 pb-2">
+          <div className="flex h-10 items-end gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
             <Skeleton className="h-9 w-20" />
             <Skeleton className="h-9 w-20" />
             <Skeleton className="h-9 w-32" />
@@ -380,13 +393,13 @@ export default function Approvals() {
       )}
 
       {initialLoading ? (
-        <Skeleton className="h-9 w-full max-w-sm mb-4" />
+        <Skeleton className="h-8 w-full max-w-sm mb-4" />
       ) : (
         <Input
           data-tour="approvals-search"
           aria-label="Search approvals"
           type="text"
-          placeholder="Search by name, contact number, or email…"
+          placeholder="Search by name, mobile number, or email…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="mb-4 max-w-sm"
@@ -401,9 +414,9 @@ export default function Approvals() {
 
       {tab === "claims" && claimsSubTab === "pending" && list.length > 0 && (
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded text-sm text-amber-800 dark:text-amber-400">
-          These are new login registrations using a contact number that matches an
+          These are new login registrations using a mobile number that matches an
           existing subscriber record. Verify the person's identity (name,
-          contact number, address on file) before approving — approving links
+          mobile number, address on file) before approving — approving links
           this login to the existing subscriber's account.
         </div>
       )}
@@ -412,19 +425,26 @@ export default function Approvals() {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {tab === "claims" ? (
             <TableSkeleton rows={4} columns={[
-              { label: "Requested Name" }, { label: "Contact Number" }, { label: "Existing Subscriber on File" },
+              { label: "Requested Name" }, { label: "Mobile Number" }, { label: "Existing Subscriber on File" },
               { label: "Requested On" }, { label: "Actions", kind: "actions" },
             ]} />
           ) : (
             <TableSkeleton rows={4} columns={[
-              { label: "Name" }, { label: "Email" }, { label: "Contact Number" }, { label: "Status", kind: "badge" },
+              { label: "Name" }, { label: "Email" }, { label: "Mobile Number" }, { label: "Status", kind: "badge" },
               { label: "Registered On" }, { label: "Actions", kind: "actions" },
             ]} />
           )}
         </div>
       ) : list.length === 0 ? (
         <>
-          <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+          <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <EmptyState
+              icon={ClipboardCheck}
+              title={search ? "No one matches your search" : emptyState.title}
+              description={search ? "Check the spelling, or clear the search." : emptyState.description}
+              onClearFilters={search ? () => setSearch("") : undefined}
+            />
+          </div>
           {tourActive && <ApprovalSample tab={tab} claimsSubTab={claimsSubTab} />}
         </>
       ) : tab === "claims" ? (
@@ -433,7 +453,7 @@ export default function Approvals() {
             <TableHeader>
               <TableRow>
                 <TableHead>Requested Name</TableHead>
-                <TableHead>Contact Number</TableHead>
+                <TableHead>Mobile Number</TableHead>
                 <TableHead>Existing Subscriber on File</TableHead>
                 <TableHead>Requested On</TableHead>
                 <TableHead>Actions</TableHead>
@@ -493,7 +513,7 @@ export default function Approvals() {
                       ) : (
                         <Button
                           size="sm"
-                          onClick={() => handleReapproveClaim(claimUser)}
+                          onClick={() => setReapproveClaimTarget(claimUser)}
                           aria-label={`Re-approve ${claimUser.name}`}
                           disabled={actionLoading === claimUser.id}
                           className="gap-1.5 bg-green-700 text-white hover:bg-green-800"
@@ -516,7 +536,7 @@ export default function Approvals() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Contact Number</TableHead>
+                <TableHead>Mobile Number</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Registered On</TableHead>
                 <TableHead>Actions</TableHead>
@@ -553,7 +573,7 @@ export default function Approvals() {
                     <div data-tour="approvals-row-actions" className="flex gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleApprove(subscriber)}
+                        onClick={() => setApproveTarget(subscriber)}
                         aria-label={`${tab === "pending" ? "Approve" : "Re-approve"} ${subscriber.name}`}
                         disabled={actionLoading === subscriber.subscriber_id}
                         className="gap-1.5 bg-green-700 text-white hover:bg-green-800"
@@ -583,6 +603,40 @@ export default function Approvals() {
         </div>
       )}
 
+      <ConfirmAction
+        open={!!reapproveClaimTarget}
+        onOpenChange={(open) => { if (!open) setReapproveClaimTarget(null); }}
+        title="Approve this account claim again?"
+        description={
+          reapproveClaimTarget && (
+            <>
+              You rejected <strong>{reapproveClaimTarget.name}</strong>&apos;s claim earlier. Approving it now links their login to the existing
+              subscriber record and lets them sign in. Only do this if you have checked that they really are that subscriber.
+            </>
+          )
+        }
+        confirmLabel="Approve claim"
+        busyLabel="Approving..."
+        busy={actionLoading === reapproveClaimTarget?.id}
+        onConfirm={async () => {
+          const target = reapproveClaimTarget;
+          await handleReapproveClaim(target);
+          setReapproveClaimTarget(null);
+        }}
+      />
+
+      <ApproveDialog subscriber={approveTarget} onClose={() => setApproveTarget(null)} onApproved={handleApproved} />
+
+      <Pager
+        meta={pagerMeta}
+        page={currentPage}
+        onPage={(n) => setPageNo(Math.max(n, 1))}
+        perPage={perPage}
+        onPerPage={(n) => { setPerPage(n); setPageNo(1); }}
+        noun={tab === "claims" ? "claims" : "applications"}
+        sizes={[25, 50, 100]}
+      />
+
       <AlertDialog
         open={!!rejectTarget}
         onOpenChange={(open) => {
@@ -603,13 +657,10 @@ export default function Approvals() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmReject}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction variant="outline" onClick={confirmReject} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
               Reject Application
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -635,13 +686,10 @@ export default function Approvals() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmRejectClaim}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction variant="outline" onClick={confirmRejectClaim} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
               Reject Claim
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

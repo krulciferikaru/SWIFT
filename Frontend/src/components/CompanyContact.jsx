@@ -1,4 +1,4 @@
-import { Clock, Mail, MapPin, Phone, Smartphone } from 'lucide-react'
+import { Clock, Mail, MapPin, Smartphone } from 'lucide-react'
 import { useCompanyInfo } from '../hooks/useCompanyInfo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -29,7 +29,6 @@ export default function CompanyContact({ variant = 'card' }) {
   if (variant === 'inline') {
     const bits = [
       info.mobile && <a key="m" className={link} href={telHref(info.mobile)}>{info.mobile}</a>,
-      info.phone && <a key="p" className={link} href={telHref(info.phone)}>{info.phone}</a>,
       info.email && <a key="e" className={link} href={`mailto:${info.email}`}>{info.email}</a>,
     ].filter(Boolean)
     if (bits.length === 0) return null
@@ -53,7 +52,6 @@ export default function CompanyContact({ variant = 'card' }) {
   if (variant === 'panel') {
     const lines = [
       info.mobile && [Smartphone, <a key="m" className="underline underline-offset-2" href={telHref(info.mobile)}>{info.mobile}</a>],
-      info.phone && [Phone, <a key="p" className="underline underline-offset-2" href={telHref(info.phone)}>{info.phone}</a>],
       info.email && [Mail, <a key="e" className="underline underline-offset-2" href={`mailto:${info.email}`}>{info.email}</a>],
       info.address && [MapPin, info.address],
       info.office_hours && [Clock, info.office_hours],
@@ -86,11 +84,6 @@ export default function CompanyContact({ variant = 'card' }) {
           {info.mobile && (
             <Line icon={Smartphone} label="Mobile">
               <a className={link} href={telHref(info.mobile)}>{info.mobile}</a>
-            </Line>
-          )}
-          {info.phone && (
-            <Line icon={Phone} label="Telephone">
-              <a className={link} href={telHref(info.phone)}>{info.phone}</a>
             </Line>
           )}
           {info.email && (

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LoadingStatus, StatCardsSkeleton } from './Skeletons.jsx'
 
-export default function ProtectedRoute({ children, allowedRoles, permission }) {
+export default function ProtectedRoute({ children, allowedRoles, permission, allowMfaSetup = false }) {
   const { user, loading, isAuthenticated, can, connectionError, refetch } = useAuth()
 
   if (loading) {
@@ -49,6 +49,11 @@ export default function ProtectedRoute({ children, allowedRoles, permission }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  // Administrators must set up their authenticator app before they can use anything else.
+  if (user.mfa_setup_required && !allowMfaSetup) {
+    return <Navigate to="/security/mfa" replace />
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

@@ -5,13 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 // Loading placeholders that mirror the real layouts, so nothing jumps when the data arrives.
 // Every group announces itself once to screen readers instead of reading each grey bar.
 
-/** Wraps a set of placeholders: one "Loading" announcement, hidden bars. */
-export function LoadingStatus({ children, className = '', label = 'Loading…', heading }) {
+/**
+ * Wraps a set of placeholders: one "Loading" announcement, hidden bars.
+ * `className` styles the outer wrapper; `contentClassName` styles the placeholders' own container, so
+ * spacing such as space-y-6 reaches them (it would not through the wrapper).
+ */
+export function LoadingStatus({ children, className = '', contentClassName = '', label = 'Loading…', heading }) {
   return (
     <div role="status" aria-busy="true" className={className}>
       {heading && <h1 className="sr-only">{heading}</h1>}
       <span className="sr-only">{label}</span>
-      <div inert>{children}</div>
+      <div inert className={contentClassName}>{children}</div>
     </div>
   )
 }
@@ -73,11 +77,11 @@ export function PageHeaderSkeleton({ action = false, subtitle = true }) {
 }
 
 /** A row of small stat cards (label, number). */
-export function StatCardsSkeleton({ count = 3, className = '' }) {
+export function StatCardsSkeleton({ count = 3, className = '', cardClassName = '' }) {
   return (
     <div className={`grid gap-4 ${className || 'grid-cols-1 sm:grid-cols-3'}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i}>
+        <Card key={i} className={cardClassName}>
           <CardContent className="space-y-3">
             <Skeleton className="h-5 w-5 rounded" />
             <Skeleton className="h-3 w-24" />
@@ -132,7 +136,7 @@ export function TablePanel({ children }) {
 /** Summary cards and a table block, for the report previews. */
 export function ReportSkeleton({ cards = 3 }) {
   return (
-    <LoadingStatus label="Loading report…" className="space-y-4">
+    <LoadingStatus label="Loading report…" contentClassName="space-y-4">
       <div className={`grid gap-3 ${cards === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
         {Array.from({ length: cards }).map((_, i) => (
           <div key={i} className="space-y-2 rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-700">

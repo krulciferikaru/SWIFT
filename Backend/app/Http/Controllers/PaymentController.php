@@ -35,7 +35,93 @@ class PaymentController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $subscriber->payments()->with('recordedBy:id,name')->orderByDesc('payment_date')->orderByDesc('id')->get(),
+            'data' => $subscriber->payments()->withoutGlobalScope(Payment::NOT_VOIDED)->with(['recordedBy:id,name', 'voidedBy:id,name'])->orderByDesc('payment_date')->orderByDesc('id')->get(),
+        ]);
+    }
+
+    /**
+     * GET /api/payments/next-or-number
+     *
+     * Official receipt books are numbered in order, so the number after the last one this person
+     * recorded is usually the next one. It is only a suggestion: the person can type another.
+     * Returns null when there is nothing to go on (their first payment) or the last number has
+     * no digits at the end.
+     */
+    public function nextOrNumber(Request $request): JsonResponse
+    {
+        $last = Payment::withVoided()->where('recorded_by', $request->user()->id)->orderByDesc('id')->value('or_number');
+
+        return response()->json([
+            'success' => true,
+            'data' => ['suggestion' => $last ? $this->followingOrNumber($last) : null],
+        ]);
+    }
+
+    /** "OR-00041" -> "OR-00042": keeps the prefix and the zero padding, and skips numbers already used. */
+    private function followingOrNumber(string $last): ?string
+    {
+        if (! preg_match('/^(.*?)(\d+)$/', trim($last), $parts)) {
+            return null;
+        }
+        [, $prefix, $digits] = $parts;
+
+        for ($step = 1; $step <= 50; $step++) {
+            $candidate = $prefix.str_pad((string) ((int) $digits + $step), strlen($digits), '0', STR_PAD_LEFT);
+            // A cancelled receipt number is still used up: that paper receipt exists.
+            if (! Payment::withVoided()->where('or_number', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * POST /api/payments/{id}/void  { reason }   (administrators, and asks for their password)
+     *
+     * How a mistake is put right without touching the record: the payment is cancelled, with who,
+     * when and why, and stays in the history. It stops counting towards the balance, the
+     * reports and the totals at once, and the subscriber's status is worked out again. The correct
+     * payment is then recorded as a new one.
+     */
+    public function void(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:255'],
+        ], [
+            'reason.required' => 'Say why the payment is being cancelled.',
+            'reason.min' => 'Say a little more about why (at least 5 characters).',
+        ]);
+
+        $payment = Payment::withVoided()->findOrFail($id);
+        if ($payment->voided_at) {
+            return response()->json(['message' => 'This payment was already cancelled.'], 422);
+        }
+
+        $payment->forceFill([
+            'voided_at' => now(),
+            'voided_by' => $request->user()->id,
+            'void_reason' => trim($validated['reason']),
+        ])->save();
+
+        $subscriber = Subscriber::withTrashed()->find($payment->subscriber_id);
+        Audit::log('payment.voided', $subscriber, null, [
+            'amount' => (float) $payment->amount,
+            'or_number' => $payment->or_number,
+            'payment_date' => $payment->payment_date?->toDateString(),
+            'reason' => $payment->void_reason,
+        ]);
+
+        $billing = null;
+        if ($subscriber && ! $subscriber->trashed()) {
+            $this->billing->recalculateStatus($subscriber->fresh());
+            $billing = $this->billing->getBreakdown($subscriber->fresh());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'The payment was cancelled. It stays in the history, and the balance was worked out again.',
+            'data' => ['payment' => $payment->fresh(['recordedBy', 'voidedBy']), 'billing' => $billing],
         ]);
     }
 
@@ -94,6 +180,17 @@ class PaymentController extends Controller
     /**
      * GET /api/me/billing — the logged-in subscriber's own billing breakdown.
      */
+    /** GET /api/me/status-history: the subscriber's own service history (they have a right to it). */
+    public function myStatusHistory(Request $request): JsonResponse
+    {
+        $subscriber = $request->user()->subscriber_id ? Subscriber::find($request->user()->subscriber_id) : null;
+        if (! $subscriber) {
+            return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => app(\App\Services\StatusHistoryService::class)->timeline($subscriber, forStaff: false)]);
+    }
+
     public function myBilling(Request $request): JsonResponse
     {
         $subscriberId = $request->user()->subscriber_id;
@@ -112,6 +209,9 @@ class PaymentController extends Controller
                 'status' => $subscriber->status,
                 'plan_name' => $subscriber->plan?->plan_name,
                 ...$this->billing->nextDue($subscriber),
+                'pending_plan_change' => ($pending = app(\App\Services\PlanChangeService::class)->pendingFor($subscriber))
+                    ? \App\Http\Controllers\PlanChangeController::present($pending)
+                    : null,
             ],
         ]);
     }
@@ -127,7 +227,7 @@ class PaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'No subscriber record linked to this account.'], 404);
         }
 
-        $payments = Payment::with('recordedBy:id,name')->where('subscriber_id', $subscriberId)
+        $payments = Payment::withVoided()->with(['recordedBy:id,name', 'voidedBy:id,name'])->where('subscriber_id', $subscriberId)
             ->orderByDesc('payment_date')
             ->orderByDesc('id')
             ->get();

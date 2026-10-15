@@ -40,8 +40,8 @@ class AdminRecoTest extends TestCase
     public function test_register_with_names_and_contact_then_login_by_contact(): void
     {
         $this->postJson('/api/register', [
-            'first_name' => 'juan', 'last_name' => 'cruz', 'address' => 'Malete, Palayan City', 'contact_number' => '09171112222',
-            'password' => 'password1', 'password_confirmation' => 'password1',
+            'first_name' => 'juan', 'last_name' => 'cruz', 'address' => 'Malate, Palayan City', 'contact_number' => '09171112222',
+            'password' => 'password1', 'password_confirmation' => 'password1', 'accept_terms' => true,
         ])->assertCreated();
 
         $sub = Subscriber::where('contact_number', '09171112222')->first();
@@ -49,7 +49,7 @@ class AdminRecoTest extends TestCase
         $this->assertNull($sub->email);
 
         $staff = User::create(['name' => 'S', 'email' => 's@x.test', 'password' => 'abcd1234', 'role' => 'secretary', 'account_status' => 'active']);
-        $this->actingAs($staff)->patchJson("/api/subscribers/{$sub->subscriber_id}/approve")->assertOk();
+        $this->actingAs($staff)->patchJson("/api/subscribers/{$sub->subscriber_id}/approve", ['plan_id' => $this->plan()->plan_id, 'connection_date' => '2026-05-01'])->assertOk();
         $this->app['auth']->forgetGuards();
 
         $this->postJson('/api/login', ['login' => '09171112222', 'password' => 'password1'])->assertOk()->assertJsonStructure(['token']);

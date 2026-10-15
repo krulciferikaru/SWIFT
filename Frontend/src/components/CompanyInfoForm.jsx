@@ -12,7 +12,6 @@ const EMPTY = Object.fromEntries(COMPANY_FIELDS.map((f) => [f, '']))
 
 const TEXT_FIELDS = [
   ['mobile', 'Mobile number', 'tel', '09XX-XXX-XXXX'],
-  ['phone', 'Telephone', 'tel', '(044) 000-0000'],
   ['email', 'Email', 'email', 'name@example.com'],
   ['address', 'Office address', 'text', 'Street, barangay, Palayan City'],
   ['office_hours', 'Office hours', 'text', 'Monday to Saturday, 8 AM to 5 PM'],

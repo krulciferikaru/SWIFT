@@ -44,14 +44,19 @@ class PhilSmsService
     }
 
     /**
-     * Send a notification to a subscriber's contact number, if they have one.
+     * Send a notification to a subscriber's mobile number, if they have one.
      * Silently no-ops (rather than failing the caller's request) when there's
      * no number on file — subscriber notifications are best-effort.
      */
     public function sendToSubscriber(Subscriber $subscriber, string $message): array
     {
         if (!$subscriber->contact_number) {
-            return ['success' => false, 'message' => 'Subscriber has no contact number on file.'];
+            return ['success' => false, 'message' => 'Subscriber has no mobile number on file.'];
+        }
+
+        // Someone who deleted their own account asked to be left alone: no more texts.
+        if ($subscriber->deletion()->exists()) {
+            return ['success' => false, 'message' => 'This subscriber deleted their account, so no texts are sent to them.'];
         }
 
         return $this->send(self::normalizeNumber($subscriber->contact_number), $message);

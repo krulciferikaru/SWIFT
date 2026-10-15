@@ -8,9 +8,10 @@ import { useAuth } from '../../context/AuthContext'
 import { VerifiedBadge } from '../../components/PhoneVerification.jsx'
 import { Skeleton } from '@/components/ui/skeleton'
 import paymentsApi from '../../api/payments'
+import StatusTimeline from '../../components/StatusTimeline.jsx'
 
 export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, onArchive, onPayments }) {
-  const { can } = useAuth()
+  const { can, user } = useAuth()
   const [billing, setBilling] = useState(null)
   const [billingState, setBillingState] = useState('idle') // idle | loading | error
 
@@ -95,12 +96,19 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
             )}
           </div>
 
+          {s.deletion && (
+            <p role="note" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              <strong>Deleted their SWIFT account</strong> on {longDate(s.deletion.created_at)}. They have no login and are not sent text messages.
+              The company&apos;s record of them is kept as it is.
+            </p>
+          )}
+
           <section aria-labelledby="sub-contact-heading">
             <h3 id="sub-contact-heading" className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               Contact and connection
             </h3>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailField label="Contact number">
+              <DetailField label="Mobile number">
                 {(s.contact || s.contact_number) && (
                   <span className="inline-flex flex-wrap items-center gap-x-2">
                     {s.contact || s.contact_number}
@@ -108,12 +116,14 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
                   </span>
                 )}
               </DetailField>
-              <DetailField label="Email">{s.email}</DetailField>
+              {user?.role !== 'collector' && <DetailField label="Email">{s.email}</DetailField>}
               <DetailField label="Address" className="sm:col-span-2">{s.address}</DetailField>
-              <DetailField label="MAC address">
-                {s.mac_address && <span className="font-mono text-xs">{s.mac_address}</span>}
-              </DetailField>
-              <DetailField label="Connection date">{longDate(s.connection_date ?? s.installation_date)}</DetailField>
+              {user?.role !== 'collector' && (
+                <DetailField label="MAC address">
+                  {s.mac_address && <span className="font-mono text-xs">{s.mac_address}</span>}
+                </DetailField>
+              )}
+              <DetailField label="Installation date">{longDate(s.connection_date ?? s.installation_date)}</DetailField>
               <DetailField label="Registered">{longDate(s.created_at)}</DetailField>
             </dl>
           </section>
@@ -145,6 +155,13 @@ export default function SubscriberDetailsModal({ subscriber, onClose, onEdit, on
                 <DetailField label="Advance credit">{peso(billing.advance_credit)}</DetailField>
               </dl>
             )}
+          </section>
+
+          <section aria-labelledby="sub-history-heading">
+            <h3 id="sub-history-heading" className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Service history
+            </h3>
+            <StatusTimeline subscriberId={id} />
           </section>
         </div>
       )}

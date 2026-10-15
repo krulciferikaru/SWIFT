@@ -13,6 +13,10 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $direction = $request->input('direction') === 'desc' ? 'desc' : 'asc';
+        $columns = ['name' => 'name', 'role' => 'role', 'status' => 'account_status', 'created' => 'created_at'];
+        $sort = (string) $request->input('sort');
+
         $users = User::query()
             ->when($request->filled('role'), fn ($query) => $query->where('role', $request->role))
             ->when($request->filled('account_status'), fn ($query) => $query->where('account_status', $request->account_status))
@@ -24,8 +28,13 @@ class UserController extends Controller
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->latest()
-            ->paginate($request->integer('per_page', 15));
+            // Newest first unless a column was chosen.
+            ->when(
+                isset($columns[$sort]),
+                fn ($q) => $q->orderBy($columns[$sort], $direction)->orderBy('name'),
+                fn ($q) => $q->latest(),
+            )
+            ->paginate(min(max($request->integer('per_page', 15), 1), 100));
 
         return response()->json([
             'success' => true,
@@ -46,13 +55,17 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:subscriber,email'],
+            'contact_number' => ['nullable', 'string', 'max:20', 'regex:/^(\+?63|0)9[\d\s-]{9,13}$/', 'unique:users,contact_number'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', Rule::in(['admin', 'secretary'])],
+            'role' => ['required', Rule::in(['admin', 'secretary', 'collector'])],
+        ], [
+            'contact_number.regex' => 'Enter a mobile number such as 0917 123 4567.',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'contact_number' => $validated['contact_number'] ?? null,
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
             'account_status' => 'active',
@@ -76,6 +89,11 @@ class UserController extends Controller
         $previous = $user->account_status;
         $user->update($validated);
 
+        // Anything but Active ends the person's open sign-ins at once, not when they next expire.
+        if ($user->account_status !== 'active') {
+            $user->tokens()->delete();
+        }
+
         Audit::log('user.status_changed', $user, null, [
             'account_status' => ['old' => $previous, 'new' => $user->account_status],
         ]);
@@ -86,30 +104,13 @@ class UserController extends Controller
         ]);
     }
 
-    /**
-     * PATCH /api/users/{user}/password
-     *
-     * Admin-only password reset. There is no self-service "forgot password"
-     * flow, so users must contact the Admin to have their password reset.
+    /*
+     * There is deliberately no "reset someone else's password" action. People recover their own
+     * account with Forgot password (a code by text message to a verified mobile number), so no
+     * one at the office can ever set, or see, another person's password.
      */
-    public function resetPassword(Request $request, User $user): JsonResponse
-    {
-        $validated = $request->validate([
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
 
-        $user->update([
-            'password' => Hash::make($validated['password']),
-        ]);
-
-        Audit::log('user.password_reset', $user);
-
-        return response()->json([
-            'message' => "{$user->name}'s password has been reset.",
-        ]);
-    }
-
-    /** GET /api/permissions: the list of switches the admin can set for a secretary. */
+    /** GET /api/permissions: the list of switches the admin can set for a secretary or a field collector. */
     public function permissionCatalog(): JsonResponse
     {
         $items = [];
@@ -123,14 +124,15 @@ class UserController extends Controller
     /**
      * PATCH /api/users/{user}/permissions
      *
-     * Sets exactly which tasks a secretary may do. Send `permissions: null` to go back to the
-     * default (everything). Admins can't be restricted, and subscribers have no staff abilities.
+     * Sets exactly which tasks a secretary or a field collector may do. Send `permissions: null` to go back
+     * to the default (everything for a secretary; viewing subscribers and recording payments for a collector).
+     * Admins can't be restricted, and subscribers have no staff abilities.
      */
     public function updatePermissions(Request $request, User $user): JsonResponse
     {
-        if ($user->role !== 'secretary') {
+        if (! in_array($user->role, ['secretary', 'collector'], true)) {
             return response()->json([
-                'message' => 'Only secretary accounts have adjustable permissions.',
+                'message' => 'Only secretary and field collector accounts have adjustable permissions.',
             ], 422);
         }
 

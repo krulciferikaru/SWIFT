@@ -37,7 +37,7 @@ It holds no subscriber data and is not shared.
 
 | Remembered | Where | Why |
 |---|---|---|
-| The sign-in token | Session storage normally (gone when the browser closes); local storage if "Keep me signed in" is ticked | So you stay signed in. The server also ends every sign-in after **12 hours**, or **30 days** if kept |
+| The sign-in token | Session storage normally (gone when the browser closes); local storage if "Keep me signed in" is ticked | So you stay signed in. The server also ends every sign-in **an hour after its last use** (the open page keeps it alive), or **7 days** if kept |
 | Dark or light mode, text size, whether the sidebar is open | Local storage | Your preferences |
 | The Activity period chosen on the dashboard | Local storage | Your preference |
 | Whether you have seen the welcome tour, and the "Take a tour" switch | Local storage | Tour settings |
@@ -52,7 +52,7 @@ It holds no subscriber data and is not shared.
 
 ## "Confirm your password"
 
-Changing a secretary's permissions, resetting a password and permanently deleting from the Archive ask the person to type their own password again. A window opens, the action carries on by itself once the password is right, and it stays confirmed for **10 minutes** for that sign-in. Cancelling changes nothing.
+Changing a secretary's permissions, and permanently deleting from the Archive ask the person to type their own password again. A window opens, the action carries on by itself once the password is right, and it stays confirmed for **10 minutes** for that sign-in. Cancelling changes nothing.
 
 ## Limits that can appear as errors
 

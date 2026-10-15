@@ -6,7 +6,24 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
+import CardAction from "../../components/CardAction.jsx";
+import DateHint from "../../components/DateHint.jsx";
+import EmptyState from "../../components/EmptyState.jsx";
+import ReviewDialog from "../../components/ReviewDialog.jsx";
+import ConfirmAction from "../../components/ConfirmAction.jsx";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -26,10 +43,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { TableSkeleton } from "../../components/Skeletons.jsx";
-import { Archive, ChevronRight, CreditCard, MousePointerClick, Pencil } from "lucide-react";
+import { spelledDate } from "../../utils/text";
+import { Archive, ArrowLeftRight, BellRing, ChevronRight, CreditCard, Download, FileDown, FilterX, MousePointerClick, Pencil, Save, SlidersHorizontal, UserPlus, Users2 } from "lucide-react";
 import { errorMessage } from "../../utils/errors";
 import { VerifiedBadge } from "../../components/PhoneVerification.jsx";
 import reportApi from "../../api/reports";
@@ -41,25 +59,118 @@ import { useSubscribers } from "../../hooks/useSubscribers";
 import { useToast } from "../../hooks/useToast";
 import { extractCsvTableData } from "../../utils/csvParser";
 import subscriberApi from "../../api/subscribers";
+import archiveApi from "../../api/archive";
 import { useNavigate } from "react-router-dom";
+import { useQueryState } from "../../hooks/useQueryState";
+import SortableHead, { nextSort } from "../../components/SortableHead.jsx";
+import Pager from "../../components/Pager.jsx";
+import planApi from "../../api/plans";
 import TourButton from "../../components/TourButton.jsx";
 import Toast from "../../components/Toast.jsx";
 import SubscriberDetailsModal from "./SubscriberDetailsModal";
+import ChangePlanDialog from "../../components/ChangePlanDialog.jsx";
 const STATUSES = ["All", "Active", "Unpaid", "Disconnected"];
+// What the address holds. A page with nothing chosen has a plain address.
+const VIEW_DEFAULTS = { q: "", status: "All", plan: "All", from: "", to: "", page: 1, per: 15, sort: "name", dir: "asc" };
+const peso = (value) => `₱${Number(value ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
+
+// The columns a person can switch off. Name and Actions always stay. "private" ones are never offered
+// to people who are not allowed to see them (a field collector gets no Email or MAC address).
+const COLUMN_CHOICES = [
+  { key: "plan", label: "Plan" },
+  { key: "email", label: "Email", private: true },
+  { key: "mobile", label: "Mobile" },
+  { key: "address", label: "Address" },
+  { key: "mac", label: "MAC address", private: true },
+  { key: "installed", label: "Installed" },
+  { key: "status", label: "Service status" },
+  { key: "balance", label: "Balance" },
+];
 
 export default function SubscribersPage() {
-  const { can } = useAuth();
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("All");
-  const [page, setPage] = useState(1);
+  const { can, user } = useAuth();
+  // A field collector is not shown email or MAC addresses (the server does not send them either).
+  const showPrivate = user?.role !== "collector";
+
+  // Which columns the table shows. Remembered in this browser, separately for each signed-in person.
+  const columnsKey = `swift.subscribers.columns.${user?.id ?? "anon"}`;
+  const [hiddenColumns, setHiddenColumns] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(columnsKey));
+      if (Array.isArray(saved)) return saved;
+    } catch {
+      /* no saved choice */
+    }
+    // Nothing chosen yet: on a laptop-sized screen the two longest columns start hidden so the table
+    // fits. A wide monitor shows everything. "Show all" in the Columns menu brings them back.
+    return window.innerWidth < 1536 ? ["email", "mac"] : [];
+  });
+  const columnChoices = COLUMN_CHOICES.filter((c) => !c.private || showPrivate);
+  const shows = (key) => columnChoices.some((c) => c.key === key) && !hiddenColumns.includes(key);
+  const saveColumns = (next) => {
+    setHiddenColumns(next);
+    try {
+      localStorage.setItem(columnsKey, JSON.stringify(next));
+    } catch {
+      /* private window or blocked storage: the choice just lasts until the page is reloaded */
+    }
+  };
+  const toggleColumn = (key, on) => saveColumns(on ? hiddenColumns.filter((k) => k !== key) : [...hiddenColumns, key]);
+  // The search, filters, sort and page live in the address (for example ?status=Unpaid&sort=plan),
+  // so the dashboard cards can link to a filtered list, and refresh / Back keep the view.
+  const [view, setView] = useQueryState(VIEW_DEFAULTS);
+  const search = view.q;
+  const status = STATUSES.includes(view.status) ? view.status : "All";
+  const planId = view.plan;
+  const installedFrom = view.from;
+  const installedTo = view.to;
+  const page = view.page;
+  const perPage = view.per;
+  const sort = view.sort;
+  const dir = view.dir;
+  const setStatus = (value) => setView({ status: value, page: 1 });
+  const setPlanId = (value) => setView({ plan: value, page: 1 });
+  const setInstalledFrom = (value) => setView({ from: value, page: 1 });
+  const setInstalledTo = (value) => setView({ to: value, page: 1 });
+  const setPage = (value) => setView({ page: Math.max(value, 1) });
+  const changeSort = (column) => setView(nextSort({ sort, dir }, column));
+  // What is typed in the box; it reaches the address after a short pause.
+  const [searchInput, setSearchInput] = useState(view.q);
+  const [plans, setPlans] = useState([]);
   const navigate = useNavigate();
 
-  // Debounce the search box so we don't refetch on every keystroke.
   useEffect(() => {
-    const timeout = setTimeout(() => setSearch(searchInput), 300);
+    planApi
+      .getAll()
+      .then((res) => {
+        const body = res.data;
+        setPlans(Array.isArray(body) ? body : (body?.data?.data ?? body?.data ?? []));
+      })
+      .catch(() => {});
+  }, []);
+
+  const rangeError =
+    installedFrom && installedTo && installedTo < installedFrom
+      ? "The end date is before the start date."
+      : "";
+  // Only send dates that make sense together.
+  const activeFrom = rangeError ? "" : installedFrom;
+  const activeTo = rangeError ? "" : installedTo;
+  const hasExtraFilters = planId !== "All" || installedFrom || installedTo;
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setView({ q: "", status: "All", plan: "All", from: "", to: "", page: 1 });
+  };
+
+  // Debounce the search box so we don't refetch on every keystroke.
+  const latestSearch = useRef(search);
+  latestSearch.current = search;
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (searchInput !== latestSearch.current) setView({ q: searchInput.trim() === "" ? "" : searchInput, page: 1 });
+    }, 300);
     return () => clearTimeout(timeout);
-  }, [searchInput]);
+  }, [searchInput, setView]);
 
   const {
     subscribers,
@@ -69,16 +180,61 @@ export default function SubscribersPage() {
     error,
     refetch,
     refetchSummary,
-  } = useSubscribers({ search, status, page });
+  } = useSubscribers({ search, status, page, perPage, sort, direction: dir, planId, installedFrom: activeFrom, installedTo: activeTo });
 
   const { toast, showToast } = useToast();
 
+  // Picking people to send a payment reminder to (only for staff who may send texts).
+  const canRemind = can("sms.send");
+  const [picked, setPicked] = useState(() => new Set());
+  const [remindOpen, setRemindOpen] = useState(false);
+  const [reminding, setReminding] = useState(false);
+  const togglePick = (id) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const pageAllPicked = subscribers.length > 0 && subscribers.every((s) => picked.has(s.subscriber_id));
+  const togglePage = () =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (pageAllPicked) subscribers.forEach((s) => next.delete(s.subscriber_id));
+      else subscribers.forEach((s) => next.add(s.subscriber_id));
+      return next;
+    });
+  const pickWhoOwes = () =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      subscribers.filter((s) => s.balance > 0).forEach((s) => next.add(s.subscriber_id));
+      return next;
+    });
+  const sendReminders = async () => {
+    setReminding(true);
+    try {
+      const res = await subscriberApi.sendReminders([...picked]);
+      showToast(res.data?.message || "Reminders sent.");
+      setPicked(new Set());
+    } catch (err) {
+      showToast(errorMessage(err, "Could not send the reminders."), "error");
+    } finally {
+      setReminding(false);
+      setRemindOpen(false);
+    }
+  };
+
   const [showAdd, setShowAdd] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailsTarget, setDetailsTarget] = useState(null);
+  const [planTarget, setPlanTarget] = useState(null);
+  // The subscriber about to be archived: staff confirm first.
+  const [archiveTarget, setArchiveTarget] = useState(null);
+  // Whether the Add / Edit form has unsaved changes: closing it only asks when it does.
+  const [addDirty, setAddDirty] = useState(false);
+  const [editDirty, setEditDirty] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [showPreview, setShowPreview] = useState(false);
   const [previewHeaders, setPreviewHeaders] = useState([]);
@@ -93,11 +249,6 @@ export default function SubscribersPage() {
   useEffect(() => {
     if (!loading) setInitialLoading(false);
   }, [loading]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [search, status]);
 
   // -----------------------------------------------------------------------
   // CRUD handlers
@@ -129,25 +280,32 @@ export default function SubscribersPage() {
     }
   };
 
-  const handleDelete = async () => {
-    setDeleteLoading(true);
+  // Archiving can be undone, so it happens straight away and the message offers an Undo button.
+  // (A confirmation window for something reversible only teaches people to click through windows.)
+  const undoArchive = async (sub) => {
     try {
-      const response = await subscriberApi.delete(deleteTarget.subscriber_id);
-
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error("Archive request was not successful.");
-      }
-
-      setDeleteTarget(null);
-      showToast("Subscriber archived.", "success");
+      await archiveApi.restoreSubscriber(sub.subscriber_id);
+      showToast(`${sub.name} was restored.`);
       await refetch();
       await refetchSummary();
     } catch (err) {
-      const msg = err.response?.data?.message ?? "Archive failed.";
-      showToast(msg, "error");
-      return;
-    } finally {
-      setDeleteLoading(false);
+      showToast(errorMessage(err, "Could not undo. You can restore them from the Archive page."), "error");
+    }
+  };
+
+  const archiveSubscriber = async (sub) => {
+    try {
+      const response = await subscriberApi.delete(sub.subscriber_id);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error("Archive request was not successful.");
+      }
+      showToast(`${sub.name} was archived. They can no longer sign in.`, "success", {
+        action: { label: "Undo", onClick: () => undoArchive(sub) },
+      });
+      await refetch();
+      await refetchSummary();
+    } catch (err) {
+      showToast(err.response?.data?.message ?? errorMessage(err, "Archive failed."), "error");
     }
   };
 
@@ -156,6 +314,9 @@ export default function SubscribersPage() {
       const params = {};
       if (search) params.search = search;
       if (status !== "All") params.status = status;
+      if (planId !== "All") params.plan_id = planId;
+      if (activeFrom) params.installed_from = activeFrom;
+      if (activeTo) params.installed_to = activeTo;
 
       const res = await reportApi.downloadSubscribersXlsx(params);
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -182,6 +343,9 @@ export default function SubscribersPage() {
       const params = {};
       if (search) params.search = search;
       if (status !== "All") params.status = status;
+      if (planId !== "All") params.plan_id = planId;
+      if (activeFrom) params.installed_from = activeFrom;
+      if (activeTo) params.installed_to = activeTo;
 
       const res = await reportApi.previewSubscribers(params);
       const csvText = await res.data.text();
@@ -203,7 +367,7 @@ export default function SubscribersPage() {
       fetchPreviewCsv();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPreview, search, status]);
+  }, [showPreview, search, status, planId, activeFrom, activeTo]);
 
   // -----------------------------------------------------------------------
   // Render
@@ -237,7 +401,7 @@ export default function SubscribersPage() {
         </div>
 
         {summary ? (
-          <div data-tour="subs-summary" className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div data-tour="subs-summary" className="grid grid-cols-2 gap-4 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": can("approvals.manage") ? 5 : 4 }}>
             {[
               {
                 label: "Total",
@@ -264,30 +428,49 @@ export default function SubscribersPage() {
                 value: summary.disconnected,
                 color: "text-red-600 dark:text-red-400",
               },
-            ].map((card) => (
-              <div
-                key={card.label}
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3"
-              >
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                  {card.label}
-                </p>
-                <p className={`text-2xl font-bold mt-1 ${card.color}`}>
-                  {card.value}
-                </p>
-              </div>
-            ))}
+            ]
+              // The Pending card leads to the Approvals page, so only people who can approve see it.
+              .filter((card) => card.label !== "Pending" || can("approvals.manage"))
+              .map((card) => {
+              const body = (
+                <CardContent>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {card.label}
+                  </p>
+                  <p className={`text-2xl font-bold mt-1 ${card.color}`}>
+                    {card.value}
+                  </p>
+                </CardContent>
+              );
+              // Pending is not a subscriber status: those people wait on the Approvals page.
+              if (card.label === "Pending") {
+                return (
+                  <CardAction key={card.label} to={can("approvals.manage") ? "/approvals" : undefined} hint="Review applications">
+                    {body}
+                  </CardAction>
+                );
+              }
+              const target = card.label === "Total" ? "All" : card.label;
+              const selected = status === target;
+              const hint = selected
+                ? target === "All" ? "Showing everyone" : `Showing ${card.label.toLowerCase()} only`
+                : target === "All" ? "Show everyone" : `Show only ${card.label.toLowerCase()}`;
+              return (
+                <CardAction key={card.label} onClick={() => setStatus(target)} pressed={selected} hint={hint}>
+                  {body}
+                </CardAction>
+              );
+            })}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 space-y-2"
-              >
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-7 w-10" />
-              </div>
+          <div className="grid grid-cols-2 gap-4 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": can("approvals.manage") ? 5 : 4 }}>
+            {Array.from({ length: can("approvals.manage") ? 5 : 4 }).map((_, i) => (
+              <Card key={i} className={can("approvals.manage") ? "min-h-[141px]" : "min-h-[125px]"}>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-7 w-10" />
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
@@ -295,10 +478,11 @@ export default function SubscribersPage() {
         {/* Toolbar */}
         {initialLoading ? (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <Skeleton className="h-9 flex-1" />
-            <Skeleton className="h-9 w-full sm:w-40" />
-            <Skeleton className="h-9 w-full sm:w-32" />
-            <Skeleton className="h-9 w-full sm:w-36" />
+            <Skeleton className="h-8 flex-1" />
+            <Skeleton className="h-8 w-full sm:w-40" />
+            <Skeleton className="h-8 w-full sm:w-32" />
+            {can("reports.view") && <Skeleton className="h-8 w-full sm:w-32" />}
+            {can("subscribers.manage") && <Skeleton className="h-8 w-full sm:w-36" />}
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -306,14 +490,14 @@ export default function SubscribersPage() {
               data-tour="subs-search"
               aria-label="Search subscribers"
               type="text"
-              placeholder="Search by name, contact number, address, MAC…"
+              placeholder={showPrivate ? "Search by name, mobile number, address, MAC…" : "Search by name, mobile number or address…"}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1"
             />
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger data-tour="subs-status" aria-label="Filter by status" className="w-full sm:w-40">
+              <SelectTrigger data-tour="subs-status" aria-label="Filter by service status" className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -325,23 +509,111 @@ export default function SubscribersPage() {
               </SelectContent>
             </Select>
 
-            <Button
-              data-tour="subs-export"
-              onClick={() => setShowPreview(true)}
-              className="bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
-            >
-              Export CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                data-tour="subs-columns"
+                className={cn(buttonVariants({ variant: "outline" }), "gap-2 whitespace-nowrap")}
+              >
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
+                Columns
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Show these columns</DropdownMenuLabel>
+                  {columnChoices.map((c) => (
+                    <DropdownMenuCheckboxItem
+                      key={c.key}
+                      checked={!hiddenColumns.includes(c.key)}
+                      onCheckedChange={(on) => toggleColumn(c.key, on)}
+                    >
+                      {c.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={hiddenColumns.length === 0}
+                  onCheckedChange={() => saveColumns([])}
+                >
+                  Show all
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {can("reports.view") && (
+              <Button
+                data-tour="subs-export"
+                onClick={() => setShowPreview(true)}
+                className="gap-2 bg-green-700 text-white hover:bg-green-800 whitespace-nowrap"
+              >
+                <FileDown className="size-4" aria-hidden="true" />
+                Export CSV
+              </Button>
+            )}
 
             {can("subscribers.manage") && (
               <Button
                 data-tour="subs-add"
                 onClick={() => setShowAdd(true)}
-                className="whitespace-nowrap"
+                className="gap-2 whitespace-nowrap"
               >
+                <UserPlus className="size-4" aria-hidden="true" />
                 Add Subscriber
               </Button>
             )}
+          </div>
+        )}
+
+        {initialLoading && (
+          <div className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="min-h-14 space-y-1 sm:flex-1">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!initialLoading && (
+          <div data-tour="subs-filters" className="-mt-3 mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="space-y-1 sm:flex-1">
+              <label htmlFor="subs-plan" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Plan</label>
+              <Select value={planId} onValueChange={setPlanId}>
+                <SelectTrigger id="subs-plan" aria-label="Filter by plan" className="w-full">
+                  <SelectValue>
+                    {planId === "All"
+                      ? "All plans"
+                      : (plans.find((p) => String(p.plan_id) === planId)?.plan_name ?? "Plan")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All plans</SelectItem>
+                  {plans.map((p) => (
+                    <SelectItem key={p.plan_id} value={String(p.plan_id)}>
+                      {p.plan_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 sm:flex-1">
+              <label htmlFor="subs-from" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed from</label>
+              <Input id="subs-from" type="date" value={installedFrom} max={installedTo || undefined} onChange={(e) => setInstalledFrom(e.target.value)} className="w-full" />
+              <DateHint value={installedFrom} />
+            </div>
+            <div className="space-y-1 sm:flex-1">
+              <label htmlFor="subs-to" className="block text-xs font-medium text-gray-600 dark:text-gray-400">Installed to</label>
+              <Input id="subs-to" type="date" value={installedTo} min={installedFrom || undefined} onChange={(e) => setInstalledTo(e.target.value)} className="w-full" />
+              <DateHint value={installedTo} />
+            </div>
+            {(hasExtraFilters || search || status !== "All") && (
+              <Button type="button" variant="outline" onClick={clearAllFilters} className="gap-1.5">
+                <FilterX className="size-4" aria-hidden="true" />
+                Clear filters
+              </Button>
+            )}
+            {rangeError && <p role="alert" className="w-full text-xs text-red-600 dark:text-red-400">{rangeError}</p>}
           </div>
         )}
 
@@ -350,38 +622,103 @@ export default function SubscribersPage() {
           Click a subscriber's name to see all their details. Each row also has Edit, Archive and Payments buttons.
         </p>
 
+        {canRemind && initialLoading && (
+          <div className="-mt-1 mb-3 flex h-7 items-center">
+            <Skeleton className="h-7 w-72 max-w-full" />
+          </div>
+        )}
+
+        {canRemind && !initialLoading && subscribers.length > 0 && (
+          <div data-tour="subs-remind" className="-mt-1 mb-3 flex flex-wrap items-center gap-3 text-sm">
+            {picked.size === 0 ? (
+              <Button type="button" variant="outline" size="sm" onClick={pickWhoOwes} className="gap-1.5">
+                <BellRing className="size-3.5" aria-hidden="true" />
+                Select everyone who owes on this page
+              </Button>
+            ) : (
+              <>
+                <span className="font-medium text-gray-900 dark:text-gray-100" aria-live="polite">
+                  {picked.size} selected
+                </span>
+                <Button type="button" size="sm" onClick={() => setRemindOpen(true)} className="gap-1.5">
+                  <BellRing className="size-3.5" aria-hidden="true" />
+                  Send payment reminder
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPicked(new Set())}>
+                  Clear selection
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Table */}
-        <div data-tour="subs-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {loading ? (
+        <div
+          data-tour="subs-table"
+          aria-busy={loading}
+          className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-opacity ${loading && !initialLoading ? "opacity-60" : ""}`}
+        >
+          {initialLoading ? (
             <TableSkeleton rows={9} columns={[
-              { label: "Name" }, { label: "Plan" }, { label: "Email" }, { label: "Contact" },
-              { label: "MAC Address" }, { label: "Status", kind: "badge" }, { label: "Actions", kind: "actions" },
+              ...(canRemind ? [{ label: "" }] : []), { label: "Name" },
+              ...(shows("plan") ? [{ label: "Plan" }] : []), ...(shows("email") ? [{ label: "Email" }] : []), ...(shows("mobile") ? [{ label: "Mobile" }] : []), ...(shows("address") ? [{ label: "Address" }] : []),
+              ...(shows("mac") ? [{ label: "MAC Address" }] : []), ...(shows("installed") ? [{ label: "Installed" }] : []),
+              ...(shows("status") ? [{ label: "Service status", kind: "badge" }] : []), ...(shows("balance") ? [{ label: "Balance" }] : []),
+              { label: "Actions", kind: "actions" },
             ]} />
           ) : error ? (
             <div className="text-center py-16 text-sm text-red-700 dark:text-red-400">
               {error}
             </div>
           ) : subscribers.length === 0 ? (
-            <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">
-              No subscribers found.
-              {search || status !== "All" ? " Try adjusting your filters." : ""}
-            </div>
+            search || status !== "All" || hasExtraFilters ? (
+              <EmptyState
+                icon={Users2}
+                title="No subscribers match these filters"
+                description="Try a different search, or clear the filters to see everyone."
+                onClearFilters={clearAllFilters}
+              />
+            ) : (
+              <EmptyState
+                icon={Users2}
+                title="No subscribers yet"
+                description="Subscribers show up here once staff add them, or after a new sign-up is approved."
+                action={can("subscribers.manage") ? { label: "Add Subscriber", onClick: () => setShowAdd(true) } : undefined}
+              />
+            )
           ) : (
-            <Table>
+            <Table className="md:[&_td]:px-1.5 md:[&_th]:px-1.5">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>MAC Address</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  {canRemind && (
+                    <TableHead className="w-10">
+                      <Checkbox checked={pageAllPicked} onCheckedChange={togglePage} aria-label="Select everyone on this page" />
+                    </TableHead>
+                  )}
+                  <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
+                  {shows("plan") && <SortableHead column="plan" sort={sort} dir={dir} onSort={changeSort}>Plan</SortableHead>}
+                  {shows("email") && <TableHead>Email</TableHead>}
+                  {shows("mobile") && <TableHead>Mobile</TableHead>}
+                  {shows("address") && <TableHead>Address</TableHead>}
+                  {shows("mac") && <TableHead>MAC Address</TableHead>}
+                  {shows("installed") && <SortableHead column="installed" sort={sort} dir={dir} onSort={changeSort}>Installed</SortableHead>}
+                  {shows("status") && <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Service status</SortableHead>}
+                  {shows("balance") && <TableHead>Balance</TableHead>}
+                  <TableHead className="md:sticky md:right-0 md:z-10 md:bg-white dark:md:bg-gray-800 md:shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscribers.map((sub) => (
                   <TableRow key={sub.subscriber_id}>
+                    {canRemind && (
+                      <TableCell className="w-10">
+                        <Checkbox
+                          checked={picked.has(sub.subscriber_id)}
+                          onCheckedChange={() => togglePick(sub.subscriber_id)}
+                          aria-label={`Select ${sub.name}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       <button
                         data-tour="subs-name"
@@ -394,49 +731,109 @@ export default function SubscribersPage() {
                         {sub.name}
                         <ChevronRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                       </button>
+                      {sub.deletion && (
+                        <span className="mt-0.5 block text-xs font-normal text-amber-700 dark:text-amber-300">
+                          Deleted their account on {new Date(sub.deletion.created_at).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })}
+                        </span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.plan?.plan_name ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {sub.email || "—"}
-                    </TableCell>
+                    {shows("plan") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {sub.plan?.plan_name ?? "—"}
+                      </TableCell>
+                    )}
+                    {shows("email") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        <span className="block max-w-52 truncate" title={sub.email || undefined}>{sub.email || "—"}</span>
+                      </TableCell>
+                    )}
+                    {shows("mobile") && (
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       <div>
                                               {sub.contact || sub.contact_number || "—"}
                                               <div><VerifiedBadge verified={sub.contact_verified} /></div>
                                             </div>
                     </TableCell>
-                    <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
-                      {sub.mac_address || "—"}
+                    )}
+                    {shows("address") && (
+                      <TableCell className="min-w-40 text-gray-600 dark:text-gray-400">
+                        {sub.address || "—"}
+                      </TableCell>
+                    )}
+                    {shows("mac") && (
+                      <TableCell className="text-gray-500 dark:text-gray-400 font-mono text-xs">
+                        {sub.mac_address || "—"}
+                      </TableCell>
+                    )}
+                    {shows("installed") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                        {sub.connection_date ? spelledDate(String(sub.connection_date).slice(0, 10), true) : "—"}
+                      </TableCell>
+                    )}
+                    {shows("status") && (
+                      <TableCell>
+                        <StatusBadge status={sub.status} />
+                      </TableCell>
+                    )}
+                    {shows("balance") && (
+                    <TableCell className="whitespace-nowrap">
+                      {sub.balance > 0 ? (
+                        <span className="font-semibold text-red-700 dark:text-red-400">
+                          {peso(sub.balance)}
+                          <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">
+                            {sub.months_behind} {sub.months_behind === 1 ? "month" : "months"} behind
+                          </span>
+                        </span>
+                      ) : !sub.plan || !sub.connection_date ? (
+                        <span className="text-gray-500 dark:text-gray-400">Not set up yet</span>
+                      ) : sub.advance_credit > 0 ? (
+                        <span className="text-green-700 dark:text-green-400">
+                          {peso(sub.advance_credit)} credit
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 dark:text-gray-400">Paid up</span>
+                      )}
                     </TableCell>
-                    <TableCell>
-                      <StatusBadge status={sub.status} />
-                    </TableCell>
-                    <TableCell>
-                      <div data-tour="subs-actions" className="flex flex-wrap gap-2">
+                    )}
+                    <TableCell className="md:sticky md:right-0 md:z-10 md:bg-white dark:md:bg-gray-800 md:shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]">
+                      <div data-tour="subs-actions" className="flex flex-wrap gap-1.5 md:flex-nowrap">
                         {can("subscribers.manage") && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setEditTarget(sub)}
                           aria-label={`Edit ${sub.name}`}
+                          title="Edit"
                           className="gap-1.5"
                         >
                           <Pencil className="size-3.5" aria-hidden="true" />
-                          Edit
+                          <span className="hidden max-md:inline 2xl:inline">Edit</span>
+                        </Button>
+                        )}
+                        {can("subscribers.change_plan") && sub.status !== "Disconnected" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPlanTarget(sub)}
+                          aria-label={`Change plan for ${sub.name}`}
+                          title={sub.pending_plan_change ? "Plan change pending" : "Change plan"}
+                          className="gap-1.5"
+                        >
+                          <ArrowLeftRight className="size-3.5" aria-hidden="true" />
+                          <span className="hidden max-md:inline 2xl:inline">{sub.pending_plan_change ? "Plan change pending" : "Change plan"}</span>
                         </Button>
                         )}
                         {can("subscribers.archive") && (
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => setDeleteTarget(sub)}
+                          onClick={() => setArchiveTarget(sub)}
                           aria-label={`Archive ${sub.name}`}
+                          title="Archive"
                           className="gap-1.5"
                         >
                           <Archive className="size-3.5" aria-hidden="true" />
-                          Archive
+                          <span className="hidden max-md:inline 2xl:inline">Archive</span>
                         </Button>
                         )}
                         {can("payments.view", "payments.record") && (
@@ -444,6 +841,7 @@ export default function SubscribersPage() {
                           variant="outline"
                           size="sm"
                           aria-label={`Payments for ${sub.name}`}
+                          title="Payments"
                           onClick={() =>
                             navigate("/payments", {
                               state: { subscriber: sub },
@@ -452,7 +850,7 @@ export default function SubscribersPage() {
                           className="gap-1.5 border-green-700/40 text-green-700 hover:bg-green-50 dark:border-green-400/40 dark:text-green-400 dark:hover:bg-green-950"
                         >
                           <CreditCard className="size-3.5" aria-hidden="true" />
-                          Payments
+                          <span className="hidden max-md:inline 2xl:inline">Payments</span>
                         </Button>
                         )}
                       </div>
@@ -464,36 +862,56 @@ export default function SubscribersPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {meta && meta.last_page > 1 && (
-          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-            <span>
-              Showing {meta.from}–{meta.to} of {meta.total} subscribers
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="px-3 py-1">
-                Page {page} of {meta.last_page}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))}
-                disabled={page === meta.last_page}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pager
+          meta={meta}
+          page={page}
+          onPage={setPage}
+          perPage={perPage}
+          onPerPage={(n) => setView({ per: n, page: 1 })}
+          noun="subscribers"
+        />
       </div>
+
+      <ConfirmAction
+        open={!!archiveTarget}
+        onOpenChange={(open) => { if (!open) setArchiveTarget(null); }}
+        title="Archive this subscriber?"
+        description={
+          archiveTarget && (
+            <>
+              <strong>{archiveTarget.name}</strong> will be removed from the subscriber list and can no longer sign in. Nothing is deleted: their
+              payments and history are kept, and you can restore them from the Archive page (or press Undo straight after).
+            </>
+          )
+        }
+        confirmLabel="Archive subscriber"
+        busyLabel="Archiving..."
+        destructive
+        busy={archiving}
+        onConfirm={async () => {
+          setArchiving(true);
+          await archiveSubscriber(archiveTarget);
+          setArchiving(false);
+          setArchiveTarget(null);
+        }}
+      />
+
+      <ReviewDialog
+        open={remindOpen}
+        sensitive
+        onOpenChange={setRemindOpen}
+        title={`Send a payment reminder to ${picked.size} ${picked.size === 1 ? "person" : "people"}?`}
+        description="Each person gets a text with the amount they owe."
+        rows={[
+          { label: "People selected", value: picked.size, emphasis: true },
+          { label: "Message", value: "Reminder with their balance" },
+        ]}
+        warning="Texts cannot be recalled and each one uses SMS credit. Anyone selected who owes nothing is skipped."
+        confirmLabel="Send reminders"
+        busyLabel="Sending..."
+        busy={reminding}
+        onConfirm={sendReminders}
+      />
 
       <Modal
         isOpen={showPreview}
@@ -519,8 +937,9 @@ export default function SubscribersPage() {
               </Button>
               <Button
                 onClick={handleExportReport}
-                className="bg-green-700 text-white hover:bg-green-800"
+                className="gap-2 bg-green-700 text-white hover:bg-green-800"
               >
+                <Download className="size-4" aria-hidden="true" />
                 Download CSV
               </Button>
             </div>
@@ -543,7 +962,7 @@ export default function SubscribersPage() {
         title="Add Subscriber"
         description="Fill in the subscriber's details below."
         size="lg"
-        confirmClose
+        confirmClose={addDirty}
         footer={(requestClose) => (
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={requestClose}>
@@ -553,7 +972,9 @@ export default function SubscribersPage() {
               type="submit"
               form="add-subscriber-form"
               disabled={formLoading}
+              className="gap-2"
             >
+              <Save className="size-4" aria-hidden="true" />
               {formLoading ? "Saving..." : "Save Subscriber"}
             </Button>
           </div>
@@ -561,11 +982,25 @@ export default function SubscribersPage() {
       >
         <SubscriberForm
           formId="add-subscriber-form"
+          onDirtyChange={setAddDirty}
           onSubmit={handleAdd}
           onCancel={() => setShowAdd(false)}
           loading={formLoading}
         />
       </Modal>
+
+      {planTarget && (
+        <ChangePlanDialog
+          subscriber={planTarget}
+          plans={plans}
+          onClose={() => setPlanTarget(null)}
+          onDone={(message) => {
+            setPlanTarget(null);
+            showToast(message || "Done.");
+            refetch();
+          }}
+        />
+      )}
 
       <SubscriberDetailsModal
         subscriber={detailsTarget}
@@ -576,7 +1011,7 @@ export default function SubscribersPage() {
         }}
         onArchive={(s) => {
           setDetailsTarget(null);
-          setDeleteTarget(s);
+          setArchiveTarget(s);
         }}
         onPayments={(s) => navigate("/payments", { state: { subscriber: s } })}
       />
@@ -587,7 +1022,7 @@ export default function SubscribersPage() {
         title="Edit Subscriber"
         description="Update the subscriber's details below."
         size="lg"
-        confirmClose
+        confirmClose={editDirty}
         footer={(requestClose) => (
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={requestClose}>
@@ -597,7 +1032,9 @@ export default function SubscribersPage() {
               type="submit"
               form="edit-subscriber-form"
               disabled={formLoading}
+              className="gap-2"
             >
+              <Save className="size-4" aria-hidden="true" />
               {formLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -606,10 +1043,13 @@ export default function SubscribersPage() {
         {editTarget && (
           <SubscriberForm
             formId="edit-subscriber-form"
+            onDirtyChange={setEditDirty}
             initial={{
               plan_id: editTarget.plan_id ?? "",
               name: editTarget.name ?? "",
               address: editTarget.address ?? "",
+              barangay: editTarget.barangay ?? "",
+              street: editTarget.street ?? "",
               contact_number:
                 editTarget.contact ?? editTarget.contact_number ?? "",
               email: editTarget.email ?? "",
@@ -628,33 +1068,6 @@ export default function SubscribersPage() {
         )}
       </Modal>
 
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Archive Subscriber</AlertDialogTitle>
-            <AlertDialogDescription>
-              Archive "{deleteTarget?.name}"? They will be removed from the
-              subscriber list and can no longer log in, but you can restore
-              them anytime from the Archive page.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteLoading}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteLoading ? "Archiving..." : "Archive Subscriber"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

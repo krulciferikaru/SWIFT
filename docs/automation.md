@@ -7,8 +7,8 @@ Three jobs are registered in `Backend/routes/console.php`. All run **daily**.
 | Job | Command | What it does |
 |---|---|---|
 | Status recalculation | `subscribers:recalculate-status` | For every **active** subscriber, recomputes Active / Unpaid / Disconnected from their payment history (rules in [Billing and payments](billing-and-payments.md)). It does **not** send SMS. It never moves anyone out of Disconnected. |
-| Due-date reminder | `subscribers:send-due-reminders` | Sends an SMS to every active, non-disconnected subscriber whose monthly bill is **due tomorrow** and not already fully paid. |
-| Clean-up of old sign-ins | `sanctum:prune-expired --hours=24` | Deletes sign-in tokens that expired more than a day ago (a sign-in lasts 12 hours, or 30 days if "Keep me signed in" was ticked). It sends no SMS. |
+| Due-date reminder | `subscribers:send-due-reminders` | Sends an SMS to every active, non-disconnected subscriber whose next bill is **due tomorrow** (the day before the last day of the month) and not already fully paid. |
+| Clean-up of old sign-ins | `sanctum:prune-expired --hours=24` | Deletes sign-in tokens that expired more than a day ago (a normal sign-in lasts an hour after its last use, or 7 days if "Keep me signed in" was ticked). It sends no SMS. |
 
 ### When they run
 
@@ -33,15 +33,17 @@ All SMS go through PhilSMS. If no token is configured (as on evaluation), nothin
 | A payment is recorded | Amount received, OR number, date and the remaining balance | Payments, Record Payment |
 | A staff member changes the status by hand to Active, Unpaid or Disconnected | A message matching the new status | Subscribers, status change |
 | The due date is tomorrow | Reminder that the monthly bill is due tomorrow | Daily job |
-| Staff send reminders | Reminder with the outstanding balance, to **every Unpaid subscriber** | Settings, Payment Reminders |
+| Staff send reminders | Reminder with the outstanding balance, to **every Unpaid subscriber** who owes something | Settings, Payment Reminders |
+| Staff send reminders to picked people | The same reminder, only to the subscribers ticked on the Subscribers page (anyone who owes nothing is skipped) | Subscribers, tick people, Send payment reminder |
 | Staff send a one-off message | Any text (up to 300 characters) to any Philippine mobile number | Settings, Send SMS |
+| Someone asks for a password reset code | A 6-digit code that works for 10 minutes, only to a verified number; later a "password was changed" notice | Sign-in page, Forgot password? |
 | Someone asks to verify their mobile number | A 6-digit code that works for 10 minutes. It is the only message that goes to a number that has not been verified yet | My Account or Settings, Verify |
 
 Notes:
 
 - The automatic status job changes a status **silently**. A subscriber only receives a status SMS when staff change the status manually.
-- Account claims (someone registering with the contact number of an existing subscriber) do not send an SMS when approved or rejected.
-- SMS to subscribers are only sent to accounts that have a contact number. Unverified numbers still receive notices; verification only proves the number belongs to the person.
+- Account claims (someone registering with the mobile number of an existing subscriber) do not send an SMS when approved or rejected.
+- SMS to subscribers are only sent to accounts that have a mobile number. Unverified numbers still receive notices; verification only proves the number belongs to the person.
 - Verification codes are limited (one a minute, three every 10 minutes per person) because each one costs a message, and a code stops working after 5 wrong tries.
 
 ## Known limits

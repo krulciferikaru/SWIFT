@@ -30,12 +30,19 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "../hooks/useToast";
-import { Search, CheckCircle2, Check, ChevronRight } from "lucide-react";
+import { Search, CheckCircle2, Check, ChevronRight, Wallet } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import TourButton from "../components/TourButton.jsx";
 import { useTourActive } from "../tour/tourState";
 import { PaymentSample } from "../components/TourSamples.jsx";
 import Toast from "../components/Toast.jsx";
+import ReviewDialog from "../components/ReviewDialog.jsx";
+import FormField, { RequiredNote } from "../components/FormField.jsx";
+import { required, positiveAmount, firstError } from "../utils/validators";
+import { spelledDate } from "../utils/text";
+import { Clock } from "lucide-react";
+import EmptyState from "../components/EmptyState.jsx";
+import VoidPaymentDialog from "../components/VoidPaymentDialog.jsx";
 
 const STATUS_BADGE_STYLES = {
   Active:
@@ -53,6 +60,59 @@ const EMPTY_FORM = {
   payment_method: "Cash",
   notes: "",
 };
+
+// A collector goes from house to house, so the page remembers, on this device only:
+//  - the last few people they opened, to pick again with one tap
+//  - the payment method they used last
+const RECENT_KEY = "swift.recentSubscribers";
+const METHOD_KEY = "swift.lastPaymentMethod";
+const RECENT_MAX = 5;
+
+const readRecent = () => {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+    return Array.isArray(list) ? list.slice(0, RECENT_MAX) : [];
+  } catch {
+    return [];
+  }
+};
+const rememberRecent = (subscriber) => {
+  try {
+    const entry = {
+      subscriber_id: subscriber.subscriber_id,
+      name: subscriber.name,
+      address: subscriber.address,
+      contact_number: subscriber.contact_number,
+      status: subscriber.status,
+      plan: subscriber.plan ? { plan_name: subscriber.plan.plan_name } : null,
+    };
+    const next = [entry, ...readRecent().filter((r) => r.subscriber_id !== entry.subscriber_id)].slice(0, RECENT_MAX);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return readRecent();
+  }
+};
+// A person who has since been removed (or an old entry on this device) is dropped from the list.
+const forgetRecent = (id) => {
+  try {
+    const next = readRecent().filter((r) => r.subscriber_id !== id);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return readRecent();
+  }
+};
+const lastMethod = () => {
+  try {
+    return localStorage.getItem(METHOD_KEY) || "";
+  } catch {
+    return "";
+  }
+};
+
+const peso = (value) =>
+  `₱${Number(value ?? 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
 const currentMonthLabel = () =>
   new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -89,7 +149,10 @@ function describeCoverage(months, amount) {
 }
 
 export default function Payments() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
+  const canCancelPayments = user?.role === "admin" || user?.role === "secretary";
+  // The payment being cancelled (administrators and the secretary).
+  const [voiding, setVoiding] = useState(null);
   const { methods: paymentMethods } = usePaymentMethods();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
@@ -102,7 +165,25 @@ export default function Payments() {
   const [history, setHistory] = useState([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const [form, setForm] = useState(EMPTY_FORM);
+  // Today by the clock on this device (not UTC, which is still yesterday before 8 AM in the Philippines).
+  const todayHere = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+  const freshForm = () => ({ ...EMPTY_FORM, payment_date: todayHere(), payment_method: lastMethod() || EMPTY_FORM.payment_method });
+  const [form, setForm] = useState(freshForm);
+  const [recent, setRecent] = useState(readRecent);
+  // The OR number that probably comes next in this person's receipt book.
+  const [orSuggestion, setOrSuggestion] = useState(null);
+  const loadOrSuggestion = useCallback(() => {
+    if (!can("payments.record")) return;
+    paymentsApi
+      .nextOrNumber()
+      .then((res) => setOrSuggestion(res.data?.data?.suggestion ?? null))
+      .catch(() => setOrSuggestion(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // If the chosen method was renamed or switched off, fall back to the first one on offer.
   useEffect(() => {
@@ -162,7 +243,14 @@ export default function Payments() {
         setBilling(billingRes.data.data);
         setHistory(historyRes.data.data);
       } catch (err) {
-        showToast(errorMessage(err, "Failed to load billing details."), "error");
+        if (err.response?.status === 404) {
+          // They are no longer in the system (removed since this device last opened them).
+          setRecent(forgetRecent(subscriber.subscriber_id));
+          setSelected(null);
+          showToast("That subscriber is no longer in the system. They may have been removed.", "error");
+        } else {
+          showToast(errorMessage(err, "Failed to load billing details."), "error");
+        }
       } finally {
         setLoadingDetail(false);
       }
@@ -172,13 +260,27 @@ export default function Payments() {
 
   const selectSubscriber = (subscriber) => {
     setSelected(subscriber);
-    setForm(EMPTY_FORM);
+    setForm(freshForm());
     setErrors({});
+    setTouched({});
+    setRecent(rememberRecent(subscriber));
+    loadOrSuggestion();
     loadDetail(subscriber);
   };
 
+  // A field is only checked once the person has left it, or tried to save.
+  const [touched, setTouched] = useState({});
+  const localErrors = {
+    amount: firstError(form.amount, required("Amount"), positiveAmount),
+    or_number: required("OR number")(form.or_number),
+    payment_date: required("Payment date")(form.payment_date),
+  };
+  const fieldError = (name) => errors[name]?.[0] ?? (touched[name] ? localErrors[name] : "");
+  const handleBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }));
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) setErrors(({ [e.target.name]: _gone, ...rest }) => rest);
   };
 
   const coveragePreview = useMemo(
@@ -186,14 +288,39 @@ export default function Payments() {
     [billing, form.amount],
   );
 
-  const handleSubmit = async (e) => {
+  // Pressing Record Payment opens a review first; the payment is only saved on Confirm.
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const handleSubmit = (e) => {
     e.preventDefault();
+    const firstBad = Object.keys(localErrors).find((name) => localErrors[name]);
+    if (firstBad) {
+      setTouched({ amount: true, or_number: true, payment_date: true });
+      document.getElementById(firstBad)?.focus();
+      return;
+    }
     setErrors({});
+    setReviewOpen(true);
+  };
+
+  const reviewWarning = (() => {
+    const amount = Number(form.amount);
+    const balance = Number(billing?.balance ?? 0);
+    const rate = Number(billing?.monthly_rate ?? 0);
+    // More than two months beyond what is owed is more likely a typing slip than an advance payment.
+    if (amount > 0 && rate > 0 && amount - balance > rate * 2) {
+      return `This is ${peso(amount - balance)} more than the amount owed (${peso(balance)}) and would be kept as advance credit. Check for an extra digit before confirming.`;
+    }
+    return "";
+  })();
+
+  const recordPayment = async () => {
     setSaving(true);
     try {
       const res = await paymentsApi.create(selected.subscriber_id, form);
       setBilling(res.data.data.billing);
-      setForm(EMPTY_FORM);
+      setForm(freshForm());
+      setTouched({});
+      loadOrSuggestion(); // the book moves on by one
       showToast("Payment recorded.");
       const historyRes = await paymentsApi.getHistory(selected.subscriber_id);
       setHistory(historyRes.data.data);
@@ -210,6 +337,34 @@ export default function Payments() {
       }
     } finally {
       setSaving(false);
+      setReviewOpen(false);
+    }
+  };
+
+  // The payment was cancelled: show the new balance, and optionally put its details back in the form.
+  const handleVoided = async ({ billing }, { prefill, original }) => {
+    setVoiding(null);
+    if (billing) setBilling(billing);
+    showToast("Payment cancelled. It stays in the history, marked as cancelled.");
+    try {
+      const historyRes = await paymentsApi.getHistory(selected.subscriber_id);
+      setHistory(historyRes.data.data);
+      const fresh = await subscriberApi.getOne(selected.subscriber_id);
+      if (fresh.data.data) setSelected(fresh.data.data);
+    } catch {
+      // The numbers will refresh the next time the page loads.
+    }
+    if (prefill && original) {
+      setForm({
+        ...freshForm(),
+        amount: String(Number(original.amount)),
+        payment_date: String(original.payment_date).slice(0, 10),
+        or_number: original.or_number,
+        payment_method: original.payment_method,
+        notes: original.notes ?? "",
+      });
+      setTouched({});
+      setTimeout(() => document.getElementById("amount")?.focus(), 150);
     }
   };
 
@@ -272,12 +427,30 @@ export default function Payments() {
                 <Input
                   data-tour="payments-search"
                   aria-label="Search subscribers"
-                  placeholder="Search by name, contact number, or MAC address…"
+                  placeholder="Search by name, mobile number, or MAC address…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
                 />
               </div>
+
+              {!search && recent.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <Clock className="size-3.5" aria-hidden="true" />
+                    Recently opened
+                  </p>
+                  <ul className="flex flex-wrap gap-2">
+                    {recent.map((r) => (
+                      <li key={r.subscriber_id}>
+                        <Button type="button" variant="outline" size="sm" onClick={() => selectSubscriber(r)}>
+                          {r.name}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {search && (
                 <div className="mt-3 border border-gray-200 dark:border-gray-700 rounded-md divide-y divide-gray-100 dark:divide-gray-800 max-h-64 overflow-y-auto">
@@ -287,9 +460,11 @@ export default function Payments() {
                       <Skeleton className="h-4 w-32" />
                     </div>
                   ) : results.length === 0 ? (
-                    <p className="p-3 text-sm text-gray-500 dark:text-gray-400">
-                      No subscribers found.
-                    </p>
+                    <EmptyState
+                      compact
+                      title={`No subscriber matches "${search}"`}
+                      description="Check the spelling, or search by mobile number or address."
+                    />
                   ) : (
                     results.map((s) => (
                       <button
@@ -379,7 +554,7 @@ export default function Payments() {
           </Card>
 
           {loadingDetail ? (
-            <LoadingStatus className="space-y-6">
+            <LoadingStatus contentClassName="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <CardListSkeleton rows={4} />
                 <CardListSkeleton rows={4} />
@@ -452,6 +627,7 @@ export default function Payments() {
                     <PaymentHistory
                       maxHeightClass="max-h-80"
                       payments={history}
+                      onCancelPayment={canCancelPayments ? setVoiding : undefined}
                       subscriber={{
                         name: selected.name,
                         address: selected.address,
@@ -470,48 +646,52 @@ export default function Payments() {
                   <CardTitle className="text-base">Record Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+                  <form onSubmit={handleSubmit} noValidate className="space-y-4 max-w-md">
+                    <RequiredNote />
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="amount">
-                          Amount<span className="text-red-500 ml-0.5">*</span>
-                        </Label>
+                      <FormField id="amount" label="Amount" required hint="In pesos" error={fieldError("amount")}>
                         <Input
-                          id="amount"
                           name="amount"
                           type="number"
+                          inputMode="decimal"
                           step="0.01"
+                          min="0"
                           value={form.amount}
                           onChange={handleChange}
-                          required
-                          className={errors.amount ? "border-red-400" : ""}
+                          onBlur={handleBlur}
                         />
-                        {errors.amount && (
-                          <p className="text-red-500 text-xs">
-                            {errors.amount[0]}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="or_number">
-                          OR Number
-                          <span className="text-red-500 ml-0.5">*</span>
-                        </Label>
+                      </FormField>
+                      <FormField
+                        id="or_number"
+                        label="OR Number"
+                        required
+                        hint={
+                          <>
+                            From the paper receipt.
+                            {orSuggestion && form.or_number !== orSuggestion && (
+                              <>
+                                {" "}
+                                <button
+                                  type="button"
+                                  onClick={() => setForm((f) => ({ ...f, or_number: orSuggestion }))}
+                                  className="font-medium text-primary underline underline-offset-2 dark:text-blue-300"
+                                >
+                                  Use next in your book: {orSuggestion}
+                                </button>
+                              </>
+                            )}
+                          </>
+                        }
+                        error={fieldError("or_number")}
+                      >
                         <Input
-                          id="or_number"
                           name="or_number"
                           value={form.or_number}
                           onChange={handleChange}
-                          required
+                          onBlur={handleBlur}
                           placeholder="e.g. 41001"
-                          className={errors.or_number ? "border-red-400" : ""}
                         />
-                        {errors.or_number && (
-                          <p className="text-red-500 text-xs">
-                            {errors.or_number[0]}
-                          </p>
-                        )}
-                      </div>
+                      </FormField>
                     </div>
 
                     {coveragePreview && (
@@ -522,27 +702,21 @@ export default function Payments() {
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="payment_date">
-                          Payment Date
-                          <span className="text-red-500 ml-0.5">*</span>
-                        </Label>
-                        <Input
-                          id="payment_date"
-                          name="payment_date"
-                          type="date"
-                          value={form.payment_date}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
+                      <FormField id="payment_date" label="Payment Date" required hint={spelledDate(form.payment_date)} error={fieldError("payment_date")}>
+                        <Input name="payment_date" type="date" value={form.payment_date} onChange={handleChange} onBlur={handleBlur} />
+                      </FormField>
                       <div className="space-y-1.5">
                         <Label>Payment Method</Label>
                         <Select
                           value={form.payment_method}
-                          onValueChange={(v) =>
-                            setForm({ ...form, payment_method: v })
-                          }
+                          onValueChange={(v) => {
+                            setForm({ ...form, payment_method: v });
+                            try {
+                              localStorage.setItem(METHOD_KEY, v);
+                            } catch {
+                              // not remembered, that is all
+                            }
+                          }}
                         >
                           <SelectTrigger className="w-full" aria-label="Payment method">
                             <SelectValue />
@@ -567,7 +741,8 @@ export default function Payments() {
                       />
                     </div>
 
-                    <Button type="submit" disabled={saving} className="w-full">
+                    <Button type="submit" disabled={saving} className="w-full gap-2">
+                      <Wallet className="size-4" aria-hidden="true" />
                       {saving ? "Recording..." : "Record Payment"}
                     </Button>
                   </form>
@@ -578,6 +753,33 @@ export default function Payments() {
           )}
         </>
       )}
+
+      <VoidPaymentDialog payment={voiding} onClose={() => setVoiding(null)} onDone={handleVoided} />
+
+      <ReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        title="Check this payment before recording it"
+        description="Payments cannot be edited or deleted afterwards, so make sure everything below is right."
+        rows={[
+          { label: "Subscriber", value: selected?.name },
+          { label: "Amount", value: peso(form.amount), emphasis: true },
+          {
+            label: "Payment date",
+            value: form.payment_date
+              ? new Date(`${form.payment_date}T00:00:00`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+              : "",
+          },
+          { label: "OR number", value: form.or_number },
+          { label: "Method", value: form.payment_method },
+          ...(form.notes ? [{ label: "Notes", value: form.notes }] : []),
+        ]}
+        warning={reviewWarning}
+        confirmLabel="Record payment"
+        busyLabel="Recording..."
+        busy={saving}
+        onConfirm={recordPayment}
+      />
 
       <AlertDialog
         open={showReconnectConfirm}

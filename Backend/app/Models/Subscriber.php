@@ -22,6 +22,8 @@ class Subscriber extends Model
         'plan_id',
         'name',
         'address',
+        'barangay',
+        'street',
         'contact_number',
         'email',
         'password',
@@ -29,6 +31,8 @@ class Subscriber extends Model
         'mac_address',
         'connection_date',
         'status',
+        'terms_accepted_at',
+        'terms_version',
     ];
 
     protected $hidden = [
@@ -51,9 +55,74 @@ class Subscriber extends Model
         ];
     }
 
+    /**
+     * Keeps the service-status history. A line is added when a subscriber becomes a subscriber
+     * (added by staff, or approved) and every time the status really changes after that.
+     * Applicants waiting for approval have no history yet: their status means nothing until then.
+     */
+    /**
+     * Set by the code that changes a subscriber's plan when staff choose the month the change
+     * starts from (a date in that month). Left empty, the company's default applies.
+     */
+    public ?string $planEffectiveFrom = null;
+
+    protected static function booted(): void
+    {
+        // The full address text follows the barangay and street whenever those are set (an older free-text address,
+        // with no barangay, is left exactly as it is).
+        static::saving(function (Subscriber $subscriber) {
+            if ($subscriber->barangay && ($subscriber->isDirty('barangay') || $subscriber->isDirty('street') || ! $subscriber->address)) {
+                $subscriber->address = \App\Models\Barangay::compose($subscriber->street, $subscriber->barangay);
+            }
+        });
+
+        // Which plan they are on, month by month (see RateHistoryService).
+        static::created(function (Subscriber $subscriber) {
+            if ($subscriber->plan_id) {
+                app(\App\Services\RateHistoryService::class)->recordSubscriberPlan($subscriber);
+            }
+        });
+        static::updated(function (Subscriber $subscriber) {
+            if ($subscriber->wasChanged('plan_id') && $subscriber->plan_id) {
+                app(\App\Services\RateHistoryService::class)->recordSubscriberPlan(
+                    $subscriber,
+                    $subscriber->planEffectiveFrom ? \Carbon\Carbon::parse($subscriber->planEffectiveFrom)->startOfMonth() : null,
+                );
+            }
+        });
+
+        static::created(function (Subscriber $subscriber) {
+            if ($subscriber->account_status === 'active') {
+                \App\Services\StatusHistoryService::record($subscriber, null, 'created');
+            }
+        });
+
+        static::updated(function (Subscriber $subscriber) {
+            if ($subscriber->account_status !== 'active') {
+                return;
+            }
+
+            if ($subscriber->wasChanged('account_status') && $subscriber->getOriginal('account_status') !== 'active') {
+                \App\Services\StatusHistoryService::record($subscriber, null, 'approved');
+            } elseif ($subscriber->wasChanged('status')) {
+                \App\Services\StatusHistoryService::record(
+                    $subscriber,
+                    $subscriber->getOriginal('status'),
+                    \App\Services\StatusHistoryService::currentSource(),
+                );
+            }
+        });
+    }
+
     // -----------------------------------------------------------------------
     // Relationships
     // -----------------------------------------------------------------------
+
+    /** A plan change that has been requested and is waiting to be confirmed (at most one). */
+    public function pendingPlanChange(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\PlanChangeRequest::class, 'subscriber_id', 'subscriber_id')->where('status', 'pending');
+    }
 
     public function plan(): BelongsTo
     {
@@ -75,6 +144,12 @@ class Subscriber extends Model
         return $user !== null
             && $user->contact_verified_at !== null
             && $user->contact_number === $this->contact_number;
+    }
+
+    /** Set when the subscriber deleted their own account; says why it was archived. */
+    public function deletion(): HasOne
+    {
+        return $this->hasOne(AccountDeletion::class, 'subscriber_id', 'subscriber_id')->latestOfMany();
     }
 
     public function payments(): HasMany
@@ -101,14 +176,25 @@ class Subscriber extends Model
         return $query->where('status', 'Disconnected');
     }
 
-    public function scopeSearch($query, string $term)
+    /** Subscribers installed between two dates (either end may be left open). */
+    public function scopeInstalledBetween($query, ?string $from, ?string $to)
     {
-        return $query->where(function ($q) use ($term) {
+        return $query
+            ->when($from, fn ($q) => $q->whereDate('connection_date', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('connection_date', '<=', $to));
+    }
+
+    /** @param bool $includePrivate Also match email and MAC address (not for people who can't see them). */
+    public function scopeSearch($query, string $term, bool $includePrivate = true)
+    {
+        return $query->where(function ($q) use ($term, $includePrivate) {
             $q->where('name', 'like', "%{$term}%")
-              ->orWhere('email', 'like', "%{$term}%")
               ->orWhere('address', 'like', "%{$term}%")
-              ->orWhere('mac_address', 'like', "%{$term}%")
               ->orWhere('contact_number', 'like', "%{$term}%");
+            if ($includePrivate) {
+                $q->orWhere('email', 'like', "%{$term}%")
+                  ->orWhere('mac_address', 'like', "%{$term}%");
+            }
         });
     }
 }

@@ -16,7 +16,7 @@ export const TOURS = {
         selector: t('nav'),
         title: 'Navigation',
         description:
-          'Everything in SWIFT is reached from this menu, grouped into sections: Overview, Customers, Billing and Administration, with Settings and the Guide at the bottom. You only see the pages your role allows. Hover the menu when it is collapsed to see the labels.',
+          'Everything in SWIFT is reached from this menu, grouped into sections: Overview, Customers, Billing and Administration, with Settings at the bottom. You only see the pages your role allows. Hover the menu when it is collapsed to see the labels.',
         side: 'right',
       },
       {
@@ -52,10 +52,10 @@ export const TOURS = {
         side: 'right',
       },
       {
-        selector: t('nav-guide'),
-        title: 'Need help later?',
+        selector: t('nav-settings'),
+        title: 'Settings and help',
         description:
-          'The Guide explains every screen, and each section has a "Show me" button that starts a tour of that page.',
+          'Your preferences are here, and so are the Guide and, for admins, Manage Roles. The Guide explains every screen, and each section has a "Show me" button that starts a tour of that page.',
         side: 'right',
       },
       {
@@ -75,7 +75,7 @@ export const TOURS = {
         selector: t('dash-activity'),
         title: 'Activity by period',
         description:
-          'Pick Today, This month, This quarter, This year or All time to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. Your choice is remembered.',
+          'Pick Today, This month, This quarter, This year or All time, or choose Custom range and enter your own From and To dates, to see the money collected, the payments recorded and the new subscribers in that period, compared with the one before it. The ready-made periods are remembered; a custom range is not.',
         side: 'bottom',
       },
       {
@@ -96,7 +96,7 @@ export const TOURS = {
         selector: t('dash-counts'),
         title: 'Subscriber counts',
         description:
-          'Total subscribers, pending applications, account claims, and how many are Active or Unpaid, as of right now. These are current numbers, so they do not follow the period filter above. Each card opens the matching page.',
+          'Total subscribers, pending applications, account claims, and how many are Active, Unpaid or Disconnected, as of right now. These are current numbers, so they do not follow the period filter above. Every card you can click ends with a line saying where it goes (for example "View unpaid subscribers"). The Active, Unpaid and Disconnected cards open the Subscribers list already filtered to that status.',
         side: 'bottom',
       },
       {
@@ -158,6 +158,13 @@ export const TOURS = {
         side: 'top',
       },
       {
+        selector: t('me-history'),
+        title: 'Your service history',
+        description: 'When your service was installed and every time its status changed (Active, Unpaid or Disconnected), newest first. You have a right to see this.',
+        side: 'top',
+        roles: ['subscriber'],
+      },
+      {
         selector: t('me-payments'),
         title: 'Payment history',
         description:
@@ -180,20 +187,39 @@ export const TOURS = {
       {
         selector: t('subs-summary'),
         title: 'At a glance',
-        description: 'Totals for every status: Pending, Active, Unpaid and Disconnected.',
+        description: 'Totals for every status: Pending, Active, Unpaid and Disconnected. Click Total, Active, Unpaid or Disconnected to filter the table to it; the card you picked gets a blue outline and a tick, and Total shows everyone again. Pending opens the Approvals page.',
         side: 'bottom',
       },
       {
         selector: t('subs-search'),
         title: 'Search',
-        description: 'Type a name, contact number, address or MAC address. The list filters as you type.',
+        description: 'Type a name, mobile number, address or MAC address. The list filters as you type.',
         side: 'bottom',
       },
       {
         selector: t('subs-status'),
         title: 'Filter by status',
-        description: 'Show only Active, Unpaid or Disconnected subscribers.',
+        description: 'Show only Active, Unpaid or Disconnected subscribers. The same filter is reached by clicking a status card above.',
         side: 'bottom',
+      },
+      {
+        selector: t('subs-filters'),
+        title: 'More filters',
+        description: 'Narrow the list by service plan or by installation date, then use Clear filters to start over. The CSV export follows the same filters.',
+        side: 'bottom',
+      },
+      {
+        selector: t('subs-table'),
+        title: 'Sorting and balances',
+        description: 'Click Name, Plan, Installed or Status to sort; click again to reverse, and a third time to go back to the usual order. The Balance column shows what each person owes and how many months behind they are. At the bottom you can pick how many rows to show and move between pages. The search, filters, sort and page are kept in the web address, so refreshing or pressing Back brings you to the same view.',
+        side: 'top',
+      },
+      {
+        selector: t('subs-remind'),
+        title: 'Remind several people at once',
+        description: 'If you may send texts, tick the people to remind, or press Select everyone who owes on this page, then Send payment reminder. You see how many will be texted before anything is sent. Anyone who owes nothing is skipped.',
+        side: 'bottom',
+        roles: STAFF,
       },
       {
         selector: t('subs-export'),
@@ -211,7 +237,7 @@ export const TOURS = {
         selector: t('subs-table'),
         title: 'Subscriber list',
         description:
-          'One row per subscriber. A green Verified tag beside a contact number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
+          'One row per subscriber. A green Verified tag beside a mobile number means the subscriber confirmed it with a texted code. On a phone, each subscriber appears as a card.',
         side: 'top',
       },
       {
@@ -239,13 +265,13 @@ export const TOURS = {
         selector: t('approvals-tabs'),
         title: 'Three lists',
         description:
-          'Pending is new sign-ups, Rejected holds ones you turned down, and Account Claims is someone registering with the contact number of an existing subscriber. This tour visits each one.',
+          'Pending is new sign-ups, Rejected holds ones you turned down, and Account Claims is someone registering with the mobile number of an existing subscriber. This tour visits each one.',
         side: 'bottom',
       },
       {
         selector: t('approvals-search'),
         title: 'Search',
-        description: 'Filter any of these lists by name, contact number or email.',
+        description: 'Filter any of these lists by name, mobile number or email.',
         side: 'bottom',
       },
       {
@@ -253,7 +279,7 @@ export const TOURS = {
         selector: t('approvals-row-actions'),
         title: 'Pending: approve or reject',
         description:
-          'Approve activates the subscriber so they can log in. Reject asks you to confirm first, and you can undo it later from the Rejected tab. If nothing is waiting, the dashed sample row shows what a real one looks like.',
+          'Approve opens a window where you choose the service plan and the installation date (billing needs both), then activates the subscriber so they can log in. Reject asks you to confirm first, and you can undo it later from the Rejected tab. If nothing is waiting, the dashed sample row shows what a real one looks like.',
         side: 'left',
       },
       {
@@ -269,7 +295,7 @@ export const TOURS = {
         selector: t('approvals-claims-subtabs'),
         title: 'Account Claims',
         description:
-          'This list has two sub-tabs: Pending Claims and Rejected Claims. A claim happens when someone registers with the contact number of a subscriber who is already on file.',
+          'This list has two sub-tabs: Pending Claims and Rejected Claims. A claim happens when someone registers with the mobile number of a subscriber who is already on file.',
         side: 'bottom',
       },
       {
@@ -277,7 +303,7 @@ export const TOURS = {
         selector: t('approvals-row-actions'),
         title: 'Pending Claims',
         description:
-          'Compare the requested name with the "Existing Subscriber on File" column (name, address, contact number) before you approve. Approving links this login to that subscriber\'s billing history. Reject if the details do not match.',
+          'Compare the requested name with the "Existing Subscriber on File" column (name, address, mobile number) before you approve. Approving links this login to that subscriber\'s billing history. Reject if the details do not match.',
         side: 'left',
       },
       {
@@ -304,7 +330,7 @@ export const TOURS = {
         selector: t('plans-table'),
         title: 'Your plans',
         description:
-          'Name, monthly rate, speed and whether the plan is Active. Every subscriber is assigned one of these.',
+          'Name, monthly rate, speed and whether the plan is currently offered. Every subscriber is assigned one of these.',
         side: 'top',
       },
       {
@@ -330,7 +356,7 @@ export const TOURS = {
       {
         selector: t('payments-search'),
         title: 'Find the subscriber',
-        description: 'Search by name, contact number or MAC address, then click the subscriber in the results.',
+        description: 'Search by name, mobile number or MAC address, then click the subscriber in the results. Under the search box, Recently opened lists the last few subscribers you worked with, to open again with one tap.',
         side: 'bottom',
       },
       {
@@ -344,14 +370,14 @@ export const TOURS = {
         selector: t('payments-form'),
         title: 'Record a payment',
         description:
-          'Enter the amount, OR number, date and method. A live preview shows which months the payment covers. Click Record Payment to save.',
+          'Enter the amount, OR number, date and method. A live preview shows which months the payment covers. Click Record Payment and a window repeats what you typed, with the amount in large type. Check it, then confirm; payments cannot be changed afterwards.',
         side: 'left',
       },
       {
         selector: t('payments-history'),
         title: 'Payment history and receipts',
         description:
-          'Every payment for this subscriber, newest first, with the total paid and a year filter. Click Receipt beside a payment to see a receipt you can print and hand to the subscriber.',
+          'Every payment for this subscriber, newest first, with the total paid and a year filter. Click Receipt beside a payment to see a receipt you can print and hand to the subscriber. If a payment was entered wrongly, an administrator sees a Cancel button: it asks for a reason and their password, keeps the payment in the history marked Cancelled, and stops it counting.',
         side: 'top',
       },
     ],
@@ -423,14 +449,7 @@ export const TOURS = {
         selector: t('users-status'),
         title: 'Account status',
         description:
-          'Set an account to Pending, Active or Inactive. An Inactive account cannot log in. You cannot change your own status.',
-        side: 'left',
-      },
-      {
-        selector: t('users-reset'),
-        title: 'Reset Password',
-        description:
-          'There is no self-service "forgot password" in SWIFT. If someone forgets theirs, set a new one for them here. You will be asked to type your own password first, as a safety step.',
+          'Set an account to Pending, Active or Inactive. An Inactive account cannot log in. You cannot change your own status. Nobody here can reset another person\'s password: everyone uses Forgot password on the sign-in page.',
         side: 'left',
       },
     ],
@@ -439,6 +458,12 @@ export const TOURS = {
   settings: {
     title: 'Settings tour',
     steps: [
+      {
+        selector: t('settings-pages'),
+        title: 'Guide and Manage Roles',
+        description: 'The Guide and, for admins, Manage Roles are opened from here.',
+        side: 'bottom',
+      },
       {
         selector: t('settings-appearance'),
         title: 'Appearance',
@@ -477,6 +502,13 @@ export const TOURS = {
         title: 'Company contact information',
         description:
           'Admins enter the company\'s phone, email, address, office hours and how to pay. Subscribers see it on their dashboard, and the sign-in page shows it too. Anything left empty is not shown.',
+        side: 'top',
+        roles: ['admin'],
+      },
+      {
+        selector: t('settings-security'),
+        title: 'Two-step sign-in',
+        description: 'Administrators sign in with a code from an authenticator app as well as the password. Here you can see that it is on and replace your recovery codes. Keep those codes safe: they are how you get back in if you lose your phone.',
         side: 'top',
         roles: ['admin'],
       },
@@ -522,9 +554,9 @@ TOURS.subscriberForm = {
     },
     {
       selector: d('sub-status'),
-      title: 'Status',
+      title: 'Service status',
       description:
-        'Leave this on Active for a new subscriber. SWIFT keeps it up to date from payments: Active, Unpaid or Disconnected.',
+        'Leave this on Active for a new subscriber. SWIFT keeps it up to date from payments: Active, Unpaid or Disconnected. (This is the service status. It is not the same as an account being approved or deactivated.)',
       side: 'bottom',
     },
     {
@@ -536,7 +568,7 @@ TOURS.subscriberForm = {
     },
     {
       selector: dlg('#contact_number'),
-      title: 'Contact Number',
+      title: 'Mobile Number',
       description:
         'Required. Used for SMS reminders, and it is how a subscriber can later claim their own login: if someone registers with this number, it appears under Account Claims for you to verify. Use the format 09XX-XXX-XXXX.',
       side: 'bottom',
@@ -561,7 +593,7 @@ TOURS.subscriberForm = {
     },
     {
       selector: dlg('#connection_date'),
-      title: 'Connection Date',
+      title: 'Installation Date',
       description:
         'Required. The date service started. Billing is counted from this date, so a date in the past means the earlier months count as due.',
       side: 'top',
@@ -606,8 +638,8 @@ TOURS.planForm = {
     },
     {
       selector: d('plan-status'),
-      title: 'Status',
-      description: 'Active plans can be given to subscribers. Mark a plan Inactive to stop offering it without deleting it.',
+      title: 'Availability',
+      description: 'A plan that is Offered can be given to subscribers. Mark it Not offered to stop offering it without deleting it.',
       side: 'top',
     },
     {
@@ -677,7 +709,7 @@ TOURS.archive = {
       click: t('archive-tab-subscribers'),
       selector: t('archive-search'),
       title: 'Search archived subscribers',
-      description: 'Find one by name, contact number, address or MAC address.',
+      description: 'Find one by name, mobile number, address or MAC address.',
       side: 'bottom',
     },
     {

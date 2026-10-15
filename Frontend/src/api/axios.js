@@ -65,6 +65,11 @@ api.interceptors.response.use(
           : NETWORK_MESSAGE
       asNetworkError(error, message)
     }
+    // An administrator who has not set up the authenticator app is sent to do it.
+    if (error.response?.status === 403 && error.response.data?.mfa_setup_required && window.location.pathname !== '/security/mfa') {
+      window.location.href = '/security/mfa'
+    }
+
     // A wrong password is also a 401. That belongs on the sign-in page as a message; redirecting
     // there would reload the page and wipe what the person typed.
     const isSignInAttempt = error.config?.url === '/login'

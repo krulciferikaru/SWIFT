@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import auditLogsApi from '../api/auditLogs'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import TourButton from '../components/TourButton.jsx'
 import { TableSkeleton } from '../components/Skeletons.jsx'
+import DateHint from '../components/DateHint.jsx'
+import { useQueryState } from '../hooks/useQueryState'
+import Pager from '../components/Pager.jsx'
+import EmptyState from '../components/EmptyState.jsx'
+import { ScrollText } from 'lucide-react'
 import { errorMessage } from '../utils/errors'
 import { useOnReconnect } from '../hooks/useOnline'
 
@@ -23,14 +28,28 @@ const ACTION_LABELS = {
   'claim.approved': 'Approved an account claim',
   'claim.rejected': 'Rejected an account claim',
   'payment.recorded': 'Recorded a payment',
+  'payment.voided': 'Cancelled a payment',
   'plan.created': 'Added a service plan',
   'plan.updated': 'Edited a service plan',
   'plan.archived': 'Archived a service plan',
   'plan.restored': 'Restored a service plan',
   'plan.deleted_permanently': 'Permanently deleted a service plan',
   'user.created': 'Created a staff account',
+  'auth.mfa_enabled': 'Turned on two-step sign-in',
+  'auth.mfa_failed': 'Wrong two-step code',
+  'auth.mfa_recovery_used': 'Signed in with a recovery code',
+  'auth.mfa_codes_renewed': 'Replaced their recovery codes',
+  'auth.mfa_replaced': 'Moved two-step sign-in to a new phone',
+  'auth.sessions_ended': 'Signed out of all other devices',
+  'auth.session_ended': 'Signed out of one device',
+  'auth.mfa_disabled': 'Turned off two-step sign-in',
+  'auth.mfa_reset': 'Two-step sign-in was reset',
+  'account.deleted_by_owner': 'Deleted their own account',
   'user.status_changed': 'Changed an account’s status',
-  'user.password_reset': 'Reset a password',
+  'user.password_reset': 'Reset a password (an old action; it is no longer possible)',
+  'user.mobile_changed': 'Changed their mobile number',
+  'auth.password_reset_requested': 'Asked for a password reset code',
+  'auth.password_reset': 'Reset their own password',
   'company.updated': 'Updated the company contact information',
   'user.permissions_changed': 'Changed a secretary’s permissions',
   'sms.sent': 'Sent a text message',
@@ -46,6 +65,7 @@ const CATEGORIES = [
   ['payment', 'Payments'],
   ['plan', 'Service plans'],
   ['user', 'Staff accounts'],
+  ['account', 'Account deletions'],
   ['sms', 'Text messages'],
 ]
 
@@ -68,9 +88,9 @@ const FIELD_LABELS = {
   plan_name: 'Plan name',
   monthly_rate: 'Monthly rate',
   speed_mbps: 'Speed (Mbps)',
-  contact_number: 'Contact number',
+  contact_number: 'Mobile number',
   mac_address: 'MAC address',
-  connection_date: 'Connection date',
+  connection_date: 'Installation date',
   account_status: 'Account status',
   amount: 'Amount',
   or_number: 'OR number',
@@ -120,25 +140,38 @@ function Changes({ changes }) {
   )
 }
 
+// What the address holds, so a filtered view survives a refresh.
+const VIEW_DEFAULTS = { q: '', cat: '', from: '', to: '', page: 1, per: 25 }
+
 export default function AuditTrail() {
-  const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [category, setCategory] = useState('')
-  const [from, setFrom] = useState('')
-  const [to, setTo] = useState('')
-  const [page, setPage] = useState(1)
+  const [view, setView] = useQueryState(VIEW_DEFAULTS)
+  const debouncedSearch = view.q
+  const category = view.cat
+  const from = view.from
+  const to = view.to
+  const page = view.page
+  const perPage = view.per
+  const setCategory = (value) => setView({ cat: value, page: 1 })
+  const setFrom = (value) => setView({ from: value, page: 1 })
+  const setTo = (value) => setView({ to: value, page: 1 })
+  const setPage = (value) => setView({ page: Math.max(value, 1) })
+  // What is typed in the search box; it reaches the address after a short pause.
+  const [search, setSearch] = useState(view.q)
   const [logs, setLogs] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Skeletons only for the first load; later refreshes dim the table so it does not flash.
+  const [initialLoad, setInitialLoad] = useState(true)
   const [error, setError] = useState('')
 
+  const latestQuery = useRef(debouncedSearch)
+  latestQuery.current = debouncedSearch
   useEffect(() => {
     const t = setTimeout(() => {
-      setDebouncedSearch(search)
-      setPage(1)
+      if (search !== latestQuery.current) setView({ q: search, page: 1 })
     }, 350)
     return () => clearTimeout(t)
-  }, [search])
+  }, [search, setView])
 
   const fetchLogs = useCallback(async () => {
     setLoading(true)
@@ -146,7 +179,7 @@ export default function AuditTrail() {
     try {
       const res = await auditLogsApi.getAll({
         page,
-        per_page: 25,
+        per_page: perPage,
         search: debouncedSearch || undefined,
         action: category || undefined,
         from: from || undefined,
@@ -158,8 +191,9 @@ export default function AuditTrail() {
       setError(err.response?.status === 429 ? 'Too many requests. Please wait a moment and try again.' : errorMessage(err, 'Failed to load the audit trail.'))
     } finally {
       setLoading(false)
+      setInitialLoad(false)
     }
-  }, [page, debouncedSearch, category, from, to])
+  }, [page, perPage, debouncedSearch, category, from, to])
 
   useEffect(() => {
     fetchLogs()
@@ -167,10 +201,7 @@ export default function AuditTrail() {
 
   useOnReconnect(fetchLogs)
 
-  const resetPage = (setter) => (e) => {
-    setter(e.target.value)
-    setPage(1)
-  }
+  const resetPage = (setter) => (e) => setter(e.target.value)
 
   const selectClass =
     'h-9 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-sm text-gray-900 dark:text-gray-100'
@@ -209,10 +240,12 @@ export default function AuditTrail() {
         <div className="space-y-1">
           <Label htmlFor="audit-from">From</Label>
           <Input id="audit-from" type="date" value={from} onChange={resetPage(setFrom)} max={to || undefined} />
+          <DateHint value={from} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="audit-to">To</Label>
           <Input id="audit-to" type="date" value={to} onChange={resetPage(setTo)} min={from || undefined} />
+          <DateHint value={to} />
         </div>
       </div>
 
@@ -220,13 +253,22 @@ export default function AuditTrail() {
         <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div data-tour="audit-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
-        {loading ? (
+      <div
+        data-tour="audit-table"
+        aria-busy={loading}
+        className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-4 transition-opacity ${loading && !initialLoad ? 'opacity-60' : ''}`}
+      >
+        {initialLoad ? (
           <TableSkeleton rows={8} columns={[
             { label: 'When' }, { label: 'Who' }, { label: 'Action' }, { label: 'Record' }, { label: 'Details' },
           ]} />
         ) : logs.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">No activity matches these filters.</p>
+          <EmptyState
+            icon={ScrollText}
+            title={search || category || from || to ? 'No activity matches these filters' : 'No activity recorded yet'}
+            description={search || category || from || to ? 'Try a wider date range or a different search.' : 'Sign-ins, edits, payments and other actions will be listed here as they happen.'}
+            onClearFilters={search || category || from || to ? () => { setSearch(''); setView({ q: '', cat: '', from: '', to: '', page: 1 }) } : undefined}
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -256,20 +298,15 @@ export default function AuditTrail() {
         )}
       </div>
 
-      {meta && meta.last_page > 1 && (
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>Showing {meta.from}–{meta.to} of {meta.total}</span>
-          <div className="flex gap-2 items-center">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1}>
-              Previous
-            </Button>
-            <span className="px-3">Page {page} of {meta.last_page}</span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))} disabled={page === meta.last_page}>
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pager
+        meta={meta}
+        page={page}
+        onPage={setPage}
+        perPage={perPage}
+        onPerPage={(n) => setView({ per: n, page: 1 })}
+        noun="entries"
+        sizes={[25, 50, 100]}
+      />
     </div>
   )
 }

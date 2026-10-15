@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import ThemeSwitch from "./ThemeSwitch.jsx";
 import { useApprovals } from "../context/ApprovalContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -21,9 +22,7 @@ import {
   ClipboardCheck,
   FileText,
   Wifi,
-  ShieldCheck,
   Settings as SettingsIcon,
-  HelpCircle,
   LogOut,
   Sun,
   Moon,
@@ -40,8 +39,13 @@ import { Button } from "@/components/ui/button";
 
 // The menu is split into labelled sections. Each section only appears for people who have at
 // least one page in it. "bottom" sections sit at the foot of the menu, away from the work pages.
-const STAFF = ["admin", "secretary"];
-const EVERYONE = ["admin", "secretary", "subscriber"];
+const STAFF = ["admin", "secretary", "collector"];
+// Kept for the pages that are never offered by role alone (Audit Trail).
+const OFFICE = ["admin", "secretary"];
+const EVERYONE = ["admin", "secretary", "collector", "subscriber"];
+
+// Pages that are opened from the Settings page; Settings stays highlighted while on them.
+const SETTINGS_PAGES = ["/settings", "/users", "/guide"];
 
 const NAV_GROUPS = [
   {
@@ -67,16 +71,14 @@ const NAV_GROUPS = [
     label: "Administration",
     items: [
       { label: "Archive", path: "/archive", icon: Archive, roles: STAFF },
-      { label: "Manage Roles", path: "/users", icon: ShieldCheck, roles: ["admin"] },
       { label: "Audit Trail", path: "/audit", icon: ScrollText, roles: ["admin"] },
     ],
   },
   {
-    label: "Support",
+    label: "Settings",
     bottom: true,
     items: [
       { label: "Settings", path: "/settings", icon: SettingsIcon, roles: EVERYONE },
-      { label: "Guide", path: "/guide", icon: HelpCircle, roles: EVERYONE },
     ],
   },
 ];
@@ -126,9 +128,14 @@ export default function Sidebar({ open: pinned, onToggle }) {
     items: group.items.filter(
       (item) =>
         item.roles.includes(user?.role) &&
-        (!PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path]))),
+        (!PATH_PERMISSION[item.path] || can(...[].concat(PATH_PERMISSION[item.path]))) &&
+        // Service Plans is open to a secretary even without managing them; a field collector only sees it once an
+        // admin has given them that task.
+        !(item.path === "/plans" && user?.role === "collector" && !can("plans.manage")),
     ),
   })).filter((group) => group.items.length > 0);
+  const isActivePath = (path) =>
+    path === "/settings" ? SETTINGS_PAGES.includes(location.pathname) : location.pathname === path;
   const canSeeApprovals = can("approvals.manage");
   const totalApprovalsCount = pendingCount + claimsCount;
 
@@ -253,7 +260,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
             )}
             {group.items.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = isActivePath(item.path);
           return (
             <Link
               key={item.path}
@@ -311,26 +318,34 @@ export default function Sidebar({ open: pinned, onToggle }) {
       <div
         className={`${!open ? "px-2 py-3" : "p-4"} space-y-3 flex flex-col ${!open ? "items-center" : ""}`}
       >
-        <Button
-          variant="outline"
-          size="icon"
-          data-tour="theme-toggle"
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          onClick={toggleTheme}
-          onMouseEnter={(e) =>
-            showTooltip(
-              e,
-              theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
-            )
-          }
-          onMouseLeave={hideTooltip}
-        >
-          {theme === "dark" ? (
-            <Sun className="size-4" />
-          ) : (
-            <Moon className="size-4" />
-          )}
-        </Button>
+        {open ? (
+          <div data-tour="theme-toggle" className="w-full space-y-1.5">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Theme</p>
+            <ThemeSwitch />
+          </div>
+        ) : (
+          // Collapsed: no room for both options, so one icon that switches to the other theme.
+          <Button
+            variant="outline"
+            size="icon"
+            data-tour="theme-toggle"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={toggleTheme}
+            onMouseEnter={(e) =>
+              showTooltip(
+                e,
+                theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+              )
+            }
+            onMouseLeave={hideTooltip}
+          >
+            {theme === "dark" ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
+          </Button>
+        )}
 
         <div className="border-t border-gray-200 dark:border-gray-800 w-full" />
 
@@ -465,7 +480,7 @@ export default function Sidebar({ open: pinned, onToggle }) {
               )}
               {group.items.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = isActivePath(item.path);
             return (
               <Link
                 key={item.path}
@@ -501,18 +516,10 @@ export default function Sidebar({ open: pinned, onToggle }) {
 
           <div className="my-2 border-t border-gray-200 dark:border-gray-800" />
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-          >
-            {theme === "dark" ? (
-              <Sun className="size-4" />
-            ) : (
-              <Moon className="size-4" />
-            )}
-            {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          </button>
+          <div className="space-y-1.5 px-3 py-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Theme</p>
+            <ThemeSwitch />
+          </div>
 
           {user && (
             <div className="px-3 py-2 text-xs">

@@ -21,14 +21,20 @@ class User extends Authenticatable
         'account_status',
         'permissions',
         'subscriber_id',
+        'terms_accepted_at',
+        'terms_version',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'mfa_secret',
+        'mfa_recovery_codes',
+        'mfa_last_step',
+        'mfa_reenrol_required',
     ];
 
-    protected $appends = ['effective_permissions', 'contact_verified'];
+    protected $appends = ['effective_permissions', 'contact_verified', 'mfa_enabled', 'mfa_setup_required'];
 
     public function setNameAttribute(?string $value): void
     {
@@ -42,7 +48,30 @@ class User extends Authenticatable
             'password' => 'hashed',
             'permissions' => 'array',
             'contact_verified_at' => 'datetime',
+            'mfa_secret' => 'encrypted',
+            'mfa_enabled_at' => 'datetime',
+            'mfa_recovery_codes' => 'array',
+            'mfa_reenrol_required' => 'boolean',
         ];
+    }
+
+    /** Whether the authenticator-app second step is on for this account. */
+    public function getMfaEnabledAttribute(): bool
+    {
+        return $this->mfa_enabled_at !== null;
+    }
+
+    /**
+     * Someone who must set up the authenticator app before doing anything else: an administrator, and a
+     * secretary or field collector whose two-step sign-in an administrator reset.
+     */
+    public function getMfaSetupRequiredAttribute(): bool
+    {
+        if ($this->mfa_enabled_at !== null) {
+            return false;
+        }
+
+        return ($this->role === 'admin' && config('mfa.enforce_for_admins')) || (bool) $this->mfa_reenrol_required;
     }
 
     /** Every permission key this user holds right now. */
@@ -54,6 +83,9 @@ class User extends Authenticatable
             'admin' => [...$grantable, ...config('permissions.admin_only')],
             // null means "never customised": a secretary gets everything grantable.
             'secretary' => array_values(array_intersect($this->permissions ?? $grantable, $grantable)),
+            // A field collector starts with the short default list; an admin can switch individual tasks on or off
+            // for them, the same way as for a secretary.
+            'collector' => array_values(array_intersect($this->permissions ?? config('permissions.collector'), $grantable)),
             default => [],
         };
     }
@@ -107,6 +139,11 @@ class User extends Authenticatable
     public function isSecretary(): bool
     {
         return $this->role === 'secretary';
+    }
+
+    public function isCollector(): bool
+    {
+        return $this->role === 'collector';
     }
 
     public function isSubscriber(): bool

@@ -5,6 +5,7 @@ import { ApprovalsProvider } from "./context/ApprovalContext";
 import SubscribersPage from "./pages/Subscribers/SubscribersPage";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 import PasswordConfirmHost from "./components/PasswordConfirmHost.jsx";
 import Approvals from "./pages/Approvals.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -18,6 +19,9 @@ import Settings from "./pages/Settings.jsx";
 import Guide from "./pages/Guide.jsx";
 import ArchivePage from "./pages/Archive.jsx";
 import AuditTrail from "./pages/AuditTrail.jsx";
+import MfaSetup from "./pages/MfaSetup.jsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.jsx";
+import Terms from "./pages/Terms.jsx";
 
 export default function App() {
   return (
@@ -28,8 +32,19 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/security/mfa"
+                element={
+                  <ProtectedRoute allowMfaSetup>
+                    <MfaSetup />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               <Route
                 path="/dashboard"
@@ -67,7 +82,7 @@ export default function App() {
               <Route
                 path="/plans"
                 element={
-                  <ProtectedRoute allowedRoles={["admin", "secretary"]}>
+                  <ProtectedRoute allowedRoles={["admin", "secretary", "collector"]}>
                     <Layout>
                       <Plans />
                     </Layout>

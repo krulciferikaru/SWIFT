@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import PhoneVerification from "../components/PhoneVerification.jsx";
 import PaymentHistory from "../components/PaymentHistory.jsx";
 import DashboardActivity from "../components/DashboardActivity.jsx";
+import StatusTimeline from "../components/StatusTimeline.jsx";
 import AccountStatusBanner from "../components/AccountStatusBanner.jsx";
 import { CardListSkeleton, LoadingStatus, StatCardsSkeleton } from "../components/Skeletons.jsx";
 import CompanyContact from "../components/CompanyContact.jsx";
@@ -12,7 +13,8 @@ import subscriberApi from "../api/subscribers";
 import paymentsApi from "../api/payments";
 import api from "../api/axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import Modal from "../components/Modal.jsx";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,7 @@ import {
   Users2,
   ClipboardCheck,
   Wifi,
+  WifiOff,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -44,6 +47,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import TourButton from "../components/TourButton.jsx";
+import CardAction from "../components/CardAction.jsx";
 
 const STATUS_COLORS = {
   Active: "#305CDE",
@@ -66,6 +70,32 @@ function collectionRateColor(rate) {
   return "text-red-600 dark:text-red-400";
 }
 
+const RECENT = 6;
+
+/** One row per month with its paid / partial / unpaid badge. */
+function MonthRows({ months }) {
+  return months.map((m) => (
+    <div
+      key={m.label}
+      className={`flex items-center justify-between px-3 py-2 rounded-md ${m.status !== "paid" ? "bg-red-50 dark:bg-red-950/30" : ""}`}
+    >
+      <span className="text-sm text-gray-900 dark:text-gray-100">{m.label}</span>
+      <Badge
+        variant="outline"
+        className={
+          m.status === "paid"
+            ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900 capitalize"
+            : m.status === "partial"
+              ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900 capitalize"
+              : "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900 capitalize"
+        }
+      >
+        {m.status}
+      </Badge>
+    </div>
+  ));
+}
+
 export default function Dashboard() {
   const { user, can } = useAuth();
   const [summary, setSummary] = useState(null);
@@ -81,7 +111,10 @@ export default function Dashboard() {
   const [mySubscriber, setMySubscriber] = useState(null);
   const [myLoading, setMyLoading] = useState(true);
 
-  const isStaff = user?.role === "admin" || user?.role === "secretary";
+  const isStaff = ["admin", "secretary", "collector"].includes(user?.role);
+  // The subscriber view shows the latest few months and payments, with "View all" for the rest.
+  const [showAllMonths, setShowAllMonths] = useState(false);
+  const [showAllPayments, setShowAllPayments] = useState(false);
 
   // ---------------------------------------------------------------------
   // Data fetching
@@ -142,7 +175,14 @@ export default function Dashboard() {
     ? Math.max(...claimsList.map((c) => daysAgo(c.created_at)))
     : 0;
 
-  const needsAttention = summary?.pending > 0 || claimsList.length > 0;
+  // Applications and claims are for whoever can approve them; a field collector never sees them.
+  const needsAttention = can("approvals.manage") && (summary?.pending > 0 || claimsList.length > 0);
+  const canViewSubscribers = can("subscribers.view");
+  const canViewPayments = can("payments.view", "payments.record");
+  const canApprove = can("approvals.manage");
+  // Whatever is left after permissions are applied shares the full row, with no empty space.
+  const quickActionCount = [can("payments.view", "payments.record"), can("subscribers.view"), can("reports.view"), can("plans.manage"), user?.role === "admin"].filter(Boolean).length;
+  const quickColumns = quickActionCount <= 3 ? Math.max(quickActionCount, 1) : quickActionCount === 4 ? 2 : 3;
 
   // Revenue trend delta: compare the last two months in the trend array
   const trendDelta = (() => {
@@ -162,7 +202,7 @@ export default function Dashboard() {
   if (!isStaff) {
     if (myLoading) {
       return (
-        <LoadingStatus className="space-y-6" heading="My Account">
+        <LoadingStatus contentClassName="space-y-6" heading="My Account">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
               <Skeleton className="h-8 w-44" />
@@ -170,10 +210,13 @@ export default function Dashboard() {
             </div>
             <Skeleton className="h-9 w-40" />
           </div>
-          <Skeleton className="h-28 w-full rounded-lg" />
-          <StatCardsSkeleton />
-          <CardListSkeleton rows={4} />
-          <CardListSkeleton rows={3} />
+          <Skeleton className="h-[156px] w-full rounded-lg" />
+          <StatCardsSkeleton cardClassName="h-[112px]" />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <CardListSkeleton rows={6} className="min-h-[461px]" />
+            <CardListSkeleton rows={6} className="min-h-[461px]" />
+          </div>
+          <CardListSkeleton rows={3} className="min-h-[204px]" />
         </LoadingStatus>
       );
     }
@@ -251,40 +294,65 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <Card data-tour="me-breakdown">
-          <CardHeader>
-            <CardTitle className="text-base">Monthly Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 max-h-72 overflow-y-auto">
-            {myBilling.months.map((m) => (
-              <div
-                key={m.label}
-                className={`flex items-center justify-between px-3 py-2 rounded-md ${m.status !== "paid" ? "bg-red-50 dark:bg-red-950/30" : ""}`}
-              >
-                <span className="text-sm text-gray-900 dark:text-gray-100">{m.label}</span>
-                <Badge
-                  variant="outline"
-                  className={
-                    m.status === "paid"
-                      ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900 capitalize"
-                      : m.status === "partial"
-                        ? "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900 capitalize"
-                        : "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900 capitalize"
-                  }
-                >
-                  {m.status}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Latest months and latest payments side by side; "View all" opens the full list. */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card data-tour="me-breakdown">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Monthly Breakdown</CardTitle>
+              {myBilling.months.length > RECENT && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowAllMonths(true)}>
+                  View all ({myBilling.months.length})
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <MonthRows months={[...myBilling.months].reverse().slice(0, RECENT)} />
+            </CardContent>
+          </Card>
 
-        <Card data-tour="me-payments">
+          <Card data-tour="me-payments">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Payment History</CardTitle>
+              {myPayments.length > RECENT && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowAllPayments(true)}>
+                  View all ({myPayments.length})
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              <PaymentHistory payments={myPayments} subscriber={mySubscriber} limit={RECENT} />
+            </CardContent>
+          </Card>
+        </div>
+
+        <Modal
+          isOpen={showAllMonths}
+          onClose={() => setShowAllMonths(false)}
+          title="Monthly Breakdown"
+          description="Every month billed, newest first."
+          size="md"
+        >
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+            <MonthRows months={[...myBilling.months].reverse()} />
+          </div>
+        </Modal>
+
+        <Modal
+          isOpen={showAllPayments}
+          onClose={() => setShowAllPayments(false)}
+          title="Payment History"
+          description="Every payment, newest first."
+          size="lg"
+        >
+          <PaymentHistory payments={myPayments} subscriber={mySubscriber} maxHeightClass="max-h-[60vh]" />
+        </Modal>
+
+        <Card data-tour="me-history">
           <CardHeader>
-            <CardTitle className="text-base">Payment History</CardTitle>
+            <CardTitle className="text-base">Service History</CardTitle>
           </CardHeader>
           <CardContent>
-            <PaymentHistory payments={myPayments} subscriber={mySubscriber} />
+            <StatusTimeline />
           </CardContent>
         </Card>
 
@@ -298,8 +366,10 @@ export default function Dashboard() {
   // ---------------------------------------------------------------------
 
   if (loading) {
+    // The placeholders follow the same permissions as the loaded page, so nothing jumps when it arrives.
+    const showMoneyCards = can("reports.view");
     return (
-      <LoadingStatus className="space-y-6" heading="Dashboard">
+      <LoadingStatus contentClassName="space-y-6" heading="Dashboard">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2">
             <Skeleton className="h-8 w-40" />
@@ -308,33 +378,41 @@ export default function Dashboard() {
           <Skeleton className="h-9 w-32" />
         </div>
 
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-20" />
-              <Skeleton className="h-3 w-28" />
+        {user?.role !== "collector" && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <Skeleton className="h-8 w-full sm:w-96" />
             </div>
-            <Skeleton className="h-10 w-full sm:w-96" />
+            <StatCardsSkeleton cardClassName="h-[112px]" />
           </div>
-          <StatCardsSkeleton />
-        </div>
+        )}
 
-        <StatCardsSkeleton />
+        {showMoneyCards && <StatCardsSkeleton cardClassName="min-h-[125px]" />}
 
         <div className="space-y-3">
           <div className="space-y-2">
             <Skeleton className="h-5 w-24" />
             <Skeleton className="h-3 w-72 max-w-full" />
           </div>
-          <StatCardsSkeleton count={5} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-5" />
+          <StatCardsSkeleton
+            count={canApprove ? 6 : 4}
+            cardClassName="min-h-[157px]"
+            className={canApprove ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}
+          />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
-            <CardContent><Skeleton className="h-55 w-full rounded-md" /></CardContent>
-          </Card>
-          <Card>
+        <div className={`grid grid-cols-1 gap-4 ${showMoneyCards ? "lg:grid-cols-2" : ""}`}>
+          {showMoneyCards && (
+            <Card className="min-h-[292px]">
+              <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+              <CardContent><Skeleton className="h-55 w-full rounded-md" /></CardContent>
+            </Card>
+          )}
+          <Card className="min-h-[292px]">
             <CardHeader><Skeleton className="h-5 w-36" /></CardHeader>
             <CardContent><Skeleton className="mx-auto h-55 w-55 max-w-full rounded-full" /></CardContent>
           </Card>
@@ -342,9 +420,9 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
-          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-md" />
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": quickColumns }}>
+            {Array.from({ length: Math.max(quickActionCount, 1) }).map((_, i) => (
+              <Skeleton key={i} className="h-[72px] w-full rounded-md" />
             ))}
           </CardContent>
         </Card>
@@ -397,7 +475,7 @@ export default function Dashboard() {
               Needs Attention
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <CardContent className="grid grid-cols-1 gap-3 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]" style={{ "--cols": Math.max(1, (summary.pending > 0 ? 1 : 0) + (claimsList.length > 0 ? 1 : 0)) }}>
             {summary.pending > 0 && (
               <Link
                 to="/approvals"
@@ -413,7 +491,10 @@ export default function Dashboard() {
                       : "Submitted today"}
                   </p>
                 </div>
-                <ArrowRight className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+                  Review
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </span>
               </Link>
             )}
 
@@ -433,7 +514,10 @@ export default function Dashboard() {
                       : "Submitted today"}
                   </p>
                 </div>
-                <ArrowRight className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+                  Review
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </span>
               </Link>
             )}
           </CardContent>
@@ -441,40 +525,36 @@ export default function Dashboard() {
       )}
 
       {/* Activity in a chosen period (today / month / quarter / year / all time) */}
-      <DashboardActivity />
+      {user?.role !== "collector" && <DashboardActivity />}
 
       {/* 2. Financial Snapshot */}
       {financials && (
         <div data-tour="dash-financials" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link to="/payments">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collected This Month</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">
-                    {formatCurrency(financials.collected_this_month)}
-                  </p>
-                </div>
-                <PiggyBank className="size-8 text-green-500/40" />
-              </CardContent>
-            </Card>
-          </Link>
+          <CardAction to={canViewPayments ? "/payments" : undefined} hint="View payments">
+            <CardContent className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collected This Month</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">
+                  {formatCurrency(financials.collected_this_month)}
+                </p>
+              </div>
+              <PiggyBank className="size-8 text-green-500/40" />
+            </CardContent>
+          </CardAction>
 
-          <Link to="/subscribers">
-            <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-              <CardContent className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Outstanding</p>
-                  <p className={`text-2xl font-bold mt-1 ${financials.total_outstanding > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
-                    {formatCurrency(financials.total_outstanding)}
-                  </p>
-                </div>
-                <CircleDollarSign className="size-8 text-red-500/40" />
-              </CardContent>
-            </Card>
-          </Link>
+          <CardAction to={canViewSubscribers ? "/subscribers?status=Unpaid" : undefined} hint="View who has not paid">
+            <CardContent className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Outstanding</p>
+                <p className={`text-2xl font-bold mt-1 ${financials.total_outstanding > 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
+                  {formatCurrency(financials.total_outstanding)}
+                </p>
+              </div>
+              <CircleDollarSign className="size-8 text-red-500/40" />
+            </CardContent>
+          </CardAction>
 
-          <Card>
+          <CardAction>
             <CardContent className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Collection Rate</p>
@@ -484,7 +564,7 @@ export default function Dashboard() {
               </div>
               <TrendingUp className={`size-8 opacity-40 ${collectionRateColor(financials.collection_rate)}`} />
             </CardContent>
-          </Card>
+          </CardAction>
         </div>
       )}
 
@@ -492,47 +572,45 @@ export default function Dashboard() {
       <div style={{ marginBottom: "0.75rem" }}>
         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Right now</h2>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Current numbers, as of today. They cannot be filtered by period.
+          Current numbers, as of today. They cannot be filtered by period. Click a card to see the people behind the number.
         </p>
       </div>
-      <div data-tour="dash-counts" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Link to="/subscribers">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <Users2 className="size-5 text-primary" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Subscribers</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.total}</p>
-            </CardContent>
-          </Card>
-        </Link>
+      <div data-tour="dash-counts" className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${canApprove ? "lg:grid-cols-3 2xl:grid-cols-6" : "lg:grid-cols-4"}`}>
+        <CardAction to={canViewSubscribers ? "/subscribers" : undefined} hint="View all subscribers">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <Users2 className="size-5 text-primary" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Subscribers</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.total}</p>
+          </CardContent>
+        </CardAction>
 
-        <Link to="/approvals">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <ClipboardCheck className="size-5 text-amber-500" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pending Applications</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.pending}</p>
-            </CardContent>
-          </Card>
-        </Link>
+        {canApprove && (
+        <CardAction to="/approvals" hint="Review applications">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <ClipboardCheck className="size-5 text-amber-500" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pending Applications</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.pending}</p>
+          </CardContent>
+        </CardAction>
+        )}
 
-        <Link to="/approvals" state={{ tab: "claims" }}>
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <ShieldCheck className="size-5 text-blue-500" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Claims</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{claimsList.length}</p>
-            </CardContent>
-          </Card>
-        </Link>
+        {canApprove && (
+        <CardAction to="/approvals" state={{ tab: "claims" }} hint="Review claims">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <ShieldCheck className="size-5 text-blue-500" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Account Claims</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{claimsList.length}</p>
+          </CardContent>
+        </CardAction>
+        )}
 
-        <Card>
+        <CardAction to={canViewSubscribers ? "/subscribers?status=Active" : undefined} hint="View active subscribers">
           <CardContent>
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className="size-5 text-green-700 dark:text-green-400" />
@@ -540,23 +618,31 @@ export default function Dashboard() {
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active</p>
             <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.active}</p>
           </CardContent>
-        </Card>
+        </CardAction>
 
-        <Link to="/subscribers">
-          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
-            <CardContent>
-              <div className="flex items-center justify-between mb-2">
-                <Wifi className="size-5 text-gray-400" />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unpaid</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.unpaid}</p>
-            </CardContent>
-          </Card>
-        </Link>
+        <CardAction to={canViewSubscribers ? "/subscribers?status=Unpaid" : undefined} hint="View unpaid subscribers">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <Wifi className="size-5 text-amber-500" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unpaid</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.unpaid}</p>
+          </CardContent>
+        </CardAction>
+
+        <CardAction to={canViewSubscribers ? "/subscribers?status=Disconnected" : undefined} hint="View disconnected subscribers">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <WifiOff className="size-5 text-gray-400" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Disconnected</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-1">{summary.disconnected}</p>
+          </CardContent>
+        </CardAction>
       </div>
 
       {/* 4. Deeper analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${financials?.trend ? "lg:grid-cols-2" : ""}`}>
         {financials?.trend && (
           <Card data-tour="dash-trend">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -607,7 +693,7 @@ export default function Dashboard() {
         <CardHeader>
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <CardContent className={`grid grid-cols-1 sm:grid-cols-2 gap-3 lg:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]`} style={{ "--cols": quickColumns }}>
           {can("payments.view", "payments.record") && (
           <Link to="/payments" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
@@ -632,12 +718,14 @@ export default function Dashboard() {
               </div>
             </Link>
           )}
+          {can("plans.manage") && (
           <Link to="/plans" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
               <div className="text-left">
                 <p className="font-medium">Service Plans</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 font-normal">Manage available plans and pricing</p>
               </div>
             </Link>
+          )}
           {user?.role === "admin" && (
             <Link to="/users" className={cn(buttonVariants({ variant: "outline" }), "justify-start h-auto py-4")}>
                 <div className="text-left">

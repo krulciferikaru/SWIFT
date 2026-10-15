@@ -10,7 +10,10 @@ SWIFT is the subscription, billing and notification system for Jubal Brothers Ca
 | [Roles and permissions](roles-and-permissions.md) | What an admin, a secretary and a subscriber can do, per-secretary permissions, password confirmation, signing in |
 | [Offline behaviour and errors](offline-and-errors.md) | What happens without a connection, the sign-in pause, and how errors and limits are shown |
 | [Features added after the first evaluation](features.md) | Everything built in response to the evaluators and the chair panel: sign-in security, the subscriber's account page, the dashboard filter, report filters, payment methods, the audit trail, receipts and more |
-| [Future improvements](future-improvements.md) | What was held back on purpose (forgot password, privacy policy, secure cookies, multi-factor) and ideas not started |
+| [Future improvements](future-improvements.md) | What was held back on purpose (secure cookies, company-approved privacy wording) and ideas not started |
+| [Privacy Policy and Terms](privacy-and-terms.md) | The draft wording, what the company must fill in before launch, and how agreement at registration is recorded |
+| [Glossary](glossary.md) | What each word on the screens means, and which one to use (service status, account status, availability, mobile number, balance...) |
+| [Interface principles](ui-principles.md) | How clickable cards and buttons are made obvious, and the habits new screens should follow |
 | [Flowcharts](flowcharts.md) | Registration and activation, recording a payment, status lifecycle, overdue accounts, advance payment and refund, release flow, signing in, confirming a password, verifying a mobile number |
 
 ## The system in one picture

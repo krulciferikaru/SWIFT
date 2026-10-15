@@ -27,7 +27,6 @@ class CompanyInfoController extends Controller
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone' => ['nullable', 'string', 'max:60'],
             'mobile' => ['nullable', 'string', 'max:60'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],

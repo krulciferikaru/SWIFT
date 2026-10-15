@@ -46,6 +46,8 @@ class ReportController extends Controller
             $query->where('plan_id', $request->plan_id);
         }
 
+        $query->installedBetween($request->input('installed_from'), $request->input('installed_to'));
+
         $subscribers = $query->orderBy('name')->get();
 
         return $this->exports->downloadCsv(
@@ -82,6 +84,8 @@ class ReportController extends Controller
         if ($request->filled('plan_id')) {
             $query->where('plan_id', $request->plan_id);
         }
+
+        $query->installedBetween($request->input('installed_from'), $request->input('installed_to'));
 
         $subscribers = $query->orderBy('name')->get();
 
@@ -342,7 +346,7 @@ class ReportController extends Controller
     private function buildSubscribersXlsxRows($subscribers): array
     {
         $rows = [
-            ['Subscriber ID', 'Name', 'Plan', 'Address', 'Contact Number', 'Email', 'MAC Address', 'Connection Date', 'Status', 'Created At'],
+            ['Subscriber ID', 'Name', 'Plan', 'Address', 'Mobile Number', 'Email', 'MAC Address', 'Installation Date', 'Status', 'Created At'],
         ];
 
         foreach ($subscribers as $subscriber) {

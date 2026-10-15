@@ -5,6 +5,7 @@ import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
 import AuthLayout from '../components/AuthLayout.jsx'
+import MfaStep from '../components/MfaStep.jsx'
 import PasswordField from '../components/PasswordField.jsx'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,8 +32,26 @@ export default function Login() {
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [loading, setLoading] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  // Set when the password was right but the account needs a code from an authenticator app too.
+  const [challenge, setChallenge] = useState(null)
   const passwordRef = useRef(null)
   const navigate = useNavigate()
+  // A message left for this page by whatever signed the person out (for example deleting their
+  // account). It is shown once. Router state would be lost in the redirect that signing out causes.
+  const [notice] = useState(() => {
+    try {
+      return sessionStorage.getItem('swift.notice')
+    } catch {
+      return null
+    }
+  })
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('swift.notice')
+    } catch {
+      // nothing to clear
+    }
+  }, [])
   const { login, isAuthenticated, loading: authLoading } = useAuth()
 
   useEffect(() => {
@@ -75,6 +94,11 @@ export default function Login() {
       const response = await api.post('/login', payload, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
+      if (response.data.mfa_required) {
+        setChallenge(response.data.mfa_token)
+        setPassword('')
+        return
+      }
       login(response.data.token, response.data.user, remember)
       navigate('/dashboard', { replace: true })
     } catch (err) {
@@ -104,6 +128,24 @@ export default function Login() {
     }
   }
 
+  if (challenge) {
+    return (
+      <AuthLayout>
+        <MfaStep
+          challenge={challenge}
+          onDone={(data) => {
+            login(data.token, data.user, remember)
+            navigate('/dashboard', { replace: true })
+          }}
+          onBack={(message) => {
+            setChallenge(null)
+            if (message) setError(message)
+          }}
+        />
+      </AuthLayout>
+    )
+  }
+
   return (
     <AuthLayout>
       <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Sign in</h1>
@@ -129,9 +171,15 @@ export default function Login() {
         )}
       </div>
 
+      {notice && (
+        <p role="status" className="mt-6 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+          {notice}
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="login">Contact number or email</Label>
+          <Label htmlFor="login">Mobile number or email</Label>
           <Input
             id="login"
             type="text"
@@ -146,7 +194,12 @@ export default function Login() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <PasswordField
             id="password"
             ref={passwordRef}
@@ -183,7 +236,7 @@ export default function Login() {
         </div>
         {remember && (
           <p id="remember-hint" className="-mt-2 text-xs text-gray-600 dark:text-gray-400">
-            Stays signed in for 30 days on this device. Don't use this on a shared computer.
+            Stays signed in for 7 days on this device, even after you close the browser. Don't use this on a shared computer.
           </p>
         )}
 
@@ -196,7 +249,7 @@ export default function Login() {
             <ul className="list-disc space-y-1.5 pl-5">
               <li>Use the mobile number or email you registered with.</li>
               <li>Passwords are case-sensitive. Tap <strong>Show</strong> to check what you typed.</li>
-              <li>Forgot your password? Contact the office to have it reset. Staff can ask an administrator.</li>
+              <li>Forgot your password? Use <strong>Forgot password?</strong> to get a code by text message. Your mobile number must be verified first (in Settings). Nobody at the office can see or reset your password for you.</li>
               <li>After 5 wrong passwords, sign-in for that account pauses for 15 minutes.</li>
               <li>"Awaiting approval" means staff have not approved your registration yet.</li>
             </ul>

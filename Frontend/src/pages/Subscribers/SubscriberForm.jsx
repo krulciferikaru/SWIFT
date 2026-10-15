@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import planApi from "../../api/plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,11 +13,19 @@ import {
 } from "@/components/ui/select";
 import TourButton from "../../components/TourButton.jsx";
 import { errorMessage } from "../../utils/errors";
-import { capitalizeWords, BARANGAYS } from "../../utils/text";
+import { capitalizeWords, spelledDate } from "../../utils/text";
+import { useBarangays } from "../../hooks/useBarangays";
+import BarangayPicker from "../../components/BarangayPicker.jsx";
+import FormField, { RequiredNote } from "../../components/FormField.jsx";
+
+import { required, emailAddress } from "../../utils/validators";
 
 const EMPTY_FORM = {
   plan_id: "",
   name: "",
+  barangay: "",
+  street: "",
+  // An older address typed in free text (no barangay yet): kept as it is until a barangay is chosen.
   address: "",
   contact_number: "",
   email: "",
@@ -38,8 +46,18 @@ export default function SubscriberForm({
   onCancel,
   loading,
   formId = "subscriber-form",
+  // Called with true when something has been typed or changed, false when it matches how the form opened.
+  onDirtyChange,
 }) {
+  const { barangays: BARANGAYS } = useBarangays();
   const [form, setForm] = useState(initial ?? EMPTY_FORM);
+  const openedAs = useRef(initial ?? EMPTY_FORM);
+  const dirty = JSON.stringify(form) !== JSON.stringify(openedAs.current);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty]);
   const [plans, setPlans] = useState([]);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
@@ -81,14 +99,42 @@ export default function SubscriberForm({
   const setValue = (field) => (value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  // A field is only checked once the person has left it, or tried to save.
+  const [touched, setTouched] = useState({});
+
+  const localErrors = {
+    name: required("Name")(form.name),
+    contact_number: required("Mobile number")(form.contact_number),
+    email: emailAddress(form.email),
+    barangay: !form.barangay && !form.address ? "Choose a barangay from the list." : "",
+    mac_address:
+      form.mac_address && form.mac_address.length !== 17
+        ? "A MAC address has six pairs of letters or digits, like AA:BB:CC:DD:EE:FF."
+        : "",
+    connection_date: required("Installation date")(form.connection_date),
+  };
+  const fieldError = (key) => errors[key]?.[0] ?? (touched[key] ? localErrors[key] : "");
+  const handleBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const firstBad = Object.keys(localErrors).find((key) => localErrors[key]);
+    if (firstBad) {
+      setTouched(Object.fromEntries(Object.keys(localErrors).map((key) => [key, true])));
+      document.getElementById(firstBad)?.focus();
+      return;
+    }
     setErrors({});
     setFormError("");
     try {
+      // The full address text is rebuilt on the server from the barangay and street; the older loose text is
+      // only sent when no barangay was chosen (so it stays as it is).
+      const { address, ...rest } = form;
       await onSubmit({
-        ...form,
-        plan_id: form.plan_id ? Number(form.plan_id) : "",
+        ...rest,
+        ...(form.barangay ? {} : address ? { address } : {}),
+        // A plan is never edited on an existing subscriber: use Change plan.
+        ...(initial ? {} : { plan_id: form.plan_id ? Number(form.plan_id) : "" }),
       });
     } catch (err) {
       if (err.response?.status === 422) {
@@ -104,54 +150,45 @@ export default function SubscriberForm({
     (p) => String(p.plan_id) === String(form.plan_id),
   );
 
-  const field = (label, key, type = "text", extra = {}, required = false) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={key}>
-        {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
-      </Label>
-      <Input
+  const field = (label, key, type = "text", extra = {}, isRequired = false) => {
+    const { hint, ...inputProps } = extra;
+    return (
+      <FormField
         id={key}
-        type={type}
-        value={form[key]}
-        onChange={set(key)}
-        aria-required={required || undefined}
-        aria-invalid={errors[key] ? true : undefined}
-        aria-describedby={errors[key] ? `${key}-error` : undefined}
-        className={errors[key] ? "border-red-400" : ""}
-        {...extra}
-      />
-      {errors[key] && (
-        <p id={`${key}-error`} role="alert" className="text-red-700 dark:text-red-400 text-xs">
-          {errors[key][0]}
-        </p>
-      )}
-    </div>
-  );
+        label={label}
+        required={isRequired}
+        hint={type === "date" ? spelledDate(form[key]) : hint}
+        error={fieldError(key)}
+      >
+        <Input name={key} type={type} value={form[key]} onChange={set(key)} onBlur={handleBlur} {...inputProps} />
+      </FormField>
+    );
+  };
 
   return (
-    <form id={formId} onSubmit={handleSubmit} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit} noValidate className="space-y-6">
       {formError && (
         <div role="alert" className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">
           {formError}
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <RequiredNote />
         <TourButton tour="subscriberForm" />
       </div>
 
       {/* Section: Plan & Status */}
       <div className="space-y-4">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          Service Plan & Status
+          Service Plan and Service Status
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div data-tour="sub-plan" className="space-y-1.5">
             <Label>
               Service Plan<span className="text-red-500 ml-0.5">*</span>
             </Label>
-            <Select value={form.plan_id} onValueChange={setValue("plan_id")}>
+            <Select value={form.plan_id} onValueChange={setValue("plan_id")} disabled={Boolean(initial)}>
               <SelectTrigger
                 aria-label="Service plan"
                 aria-invalid={errors.plan_id ? true : undefined}
@@ -174,15 +211,18 @@ export default function SubscriberForm({
                 ))}
               </SelectContent>
             </Select>
+            {initial && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">A plan cannot be edited here. Use Change plan on the subscriber, so the change is requested and confirmed.</p>
+            )}
             {errors.plan_id && (
               <p className="text-red-500 text-xs">{errors.plan_id[0]}</p>
             )}
           </div>
 
           <div data-tour="sub-status" className="space-y-1.5">
-            <Label>Status</Label>
+            <Label>Service status</Label>
             <Select value={form.status} onValueChange={setValue("status")}>
-              <SelectTrigger className="w-full" aria-label="Status">
+              <SelectTrigger className="w-full" aria-label="Service status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -227,7 +267,7 @@ export default function SubscriberForm({
             </div>
           )}
           {field(
-            "Contact Number",
+            "Mobile Number",
             "contact_number",
             "text",
             { placeholder: "09XX-XXX-XXXX" },
@@ -235,36 +275,20 @@ export default function SubscriberForm({
           )}
         </div>
         {field("Email Address (optional)", "email", "email")}
-        <div className="space-y-1.5">
-          <Label htmlFor="address">
-            Address<span className="text-red-500 ml-0.5">*</span>
-          </Label>
-          <select
-            id="address"
-            value={form.address}
-            onChange={set("address")}
-            aria-required="true"
-            aria-invalid={errors.address ? true : undefined}
-            aria-describedby={errors.address ? "address-error" : undefined}
-            className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? "border-red-400" : "border-input"}`}
-          >
-            <option value="">Select a barangay</option>
-            {/* Keep an older free-text address selectable when editing. */}
-            {form.address && !BARANGAYS.includes(form.address) && (
-              <option value={form.address}>{form.address}</option>
-            )}
-            {BARANGAYS.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-          {errors.address && (
-            <p id="address-error" role="alert" className="text-red-700 dark:text-red-400 text-xs">
-              {errors.address[0]}
-            </p>
-          )}
-        </div>
+        <FormField id="barangay" label="Barangay" required hint="Type to search. The city is always Palayan City." error={fieldError("barangay")}>
+          <BarangayPicker
+            value={form.barangay}
+            options={BARANGAYS}
+            onChange={(name) => setForm((prev) => ({ ...prev, barangay: name }))}
+            onBlur={() => setTouched((t) => ({ ...t, barangay: true }))}
+          />
+        </FormField>
+        {!form.barangay && form.address && (
+          <p className="rounded-md bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            Current address: <strong>{form.address}</strong>. It was typed in before the barangay list existed. Choose a barangay to replace it.
+          </p>
+        )}
+        {field("Street, purok or house number (optional)", "street", "text", { maxLength: 120, placeholder: "For example: 12 Rizal St" })}
       </div>
 
       {/* Section: Connection Details */}
@@ -283,7 +307,7 @@ export default function SubscriberForm({
               setForm((prev) => ({ ...prev, mac_address: next }));
             },
           })}
-          {field("Connection Date", "connection_date", "date", {}, true)}
+          {field("Installation Date", "connection_date", "date", {}, true)}
         </div>
       </div>
     </form>

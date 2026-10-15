@@ -3,16 +3,21 @@ import { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { errorMessage } from '../utils/errors'
 import { useNavigate, Link } from 'react-router-dom'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, CircleAlert } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import PasswordField from '../components/PasswordField.jsx'
 import api from '../api/axios'
-import { capitalizeWords, BARANGAYS } from '../utils/text'
+import { capitalizeWords } from '../utils/text'
+import { useBarangays } from '../hooks/useBarangays'
+import BarangayPicker from '../components/BarangayPicker.jsx'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import FormField, { RequiredNote } from '../components/FormField.jsx'
+import { required, mobileNumber, emailAddress, minLength, matches, firstError } from '../utils/validators'
 import { Button } from '@/components/ui/button'
 import AuthLayout from '../components/AuthLayout.jsx'
 
 export default function Register() {
+  const { barangays: BARANGAYS } = useBarangays()
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -20,7 +25,9 @@ export default function Register() {
     password: '',
     password_confirmation: '',
     contact_number: '',
-    address: '',
+    barangay: '',
+    street: '',
+    accept_terms: false,
   })
   const [errors, setErrors] = useState({})
   const [message, setMessage] = useState('')
@@ -35,14 +42,43 @@ export default function Register() {
     }
   }, [authLoading, isAuthenticated, navigate])
 
+  // Fields the person has already been in. A field is only checked once they leave it, so nobody
+  // is told off for a box they have not reached yet.
+  const [touched, setTouched] = useState({})
+
+  const localErrors = {
+    first_name: required('First name')(form.first_name),
+    last_name: required('Last name')(form.last_name),
+    contact_number: firstError(form.contact_number, required('Mobile number'), mobileNumber),
+    email: emailAddress(form.email),
+    barangay: required('Barangay')(form.barangay),
+    password: firstError(form.password, required('Password'), minLength('Password', 8)),
+    password_confirmation: firstError(
+      form.password_confirmation,
+      required('Password confirmation'),
+      matches(() => form.password, 'The two passwords do not match.'),
+    ),
+    accept_terms: form.accept_terms ? '' : 'You need to agree to the Terms of Service and Privacy Policy to register.',
+  }
+  // A message from the server wins until the field is edited; otherwise show our own check.
+  const fieldError = (name) => errors[name]?.[0] ?? (touched[name] ? localErrors[name] : '')
+  const handleBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }))
+
   const handleChange = (e) => {
     const { name, value } = e.target
     const nameFields = ['first_name', 'last_name']
     setForm({ ...form, [name]: nameFields.includes(name) ? capitalizeWords(value) : value })
+    if (errors[name]) setErrors(({ [name]: _gone, ...rest }) => rest)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const firstBad = Object.keys(localErrors).find((name) => localErrors[name])
+    if (firstBad) {
+      setTouched(Object.fromEntries(Object.keys(localErrors).map((name) => [name, true])))
+      document.getElementById(firstBad)?.focus()
+      return
+    }
     setErrors({})
     setMessage('')
     setLoading(true)
@@ -97,106 +133,99 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <RequiredNote />
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                  id="first_name"
-                  name="first_name"
-                  value={form.first_name}
-                  onChange={handleChange}
-                  required
-                  className={errors.first_name ? 'border-red-400' : ''}
-                />
-                {errors.first_name && <p className="text-red-500 text-xs">{errors.first_name[0]}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                  id="last_name"
-                  name="last_name"
-                  value={form.last_name}
-                  onChange={handleChange}
-                  required
-                  className={errors.last_name ? 'border-red-400' : ''}
-                />
-                {errors.last_name && <p className="text-red-500 text-xs">{errors.last_name[0]}</p>}
-              </div>
+              <FormField id="first_name" label="First Name" required error={fieldError('first_name')}>
+                <Input name="first_name" value={form.first_name} onChange={handleChange} onBlur={handleBlur} autoComplete="given-name" />
+              </FormField>
+              <FormField id="last_name" label="Last Name" required error={fieldError('last_name')}>
+                <Input name="last_name" value={form.last_name} onChange={handleChange} onBlur={handleBlur} autoComplete="family-name" />
+              </FormField>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="contact_number">Contact Number</Label>
+            <FormField
+              id="contact_number"
+              label="Mobile Number"
+              required
+              hint="You will use this number to log in."
+              error={fieldError('contact_number')}
+            >
               <Input
-                id="contact_number"
                 name="contact_number"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 value={form.contact_number}
                 onChange={handleChange}
-                placeholder="09XX-XXX-XXXX"
-                required
-                className={errors.contact_number ? 'border-red-400' : ''}
+                onBlur={handleBlur}
+                placeholder="0917 123 4567"
               />
-              {errors.contact_number && <p className="text-red-500 text-xs">{errors.contact_number[0]}</p>}
-              <p className="text-xs text-gray-500 dark:text-gray-400">You will use this number to log in.</p>
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email <span className="text-gray-500 dark:text-gray-400 font-normal">(optional)</span></Label>
-              <Input
-                id="email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className={errors.email ? 'border-red-400' : ''}
+            <FormField id="email" label="Email" optional error={fieldError('email')}>
+              <Input type="email" name="email" value={form.email} onChange={handleChange} onBlur={handleBlur} autoComplete="email" />
+            </FormField>
+
+            <FormField id="barangay" label="Barangay" required hint="Type to search. Your city is Palayan City." error={fieldError('barangay')}>
+              <BarangayPicker
+                value={form.barangay}
+                options={BARANGAYS}
+                onChange={(name) => {
+                  setForm((f) => ({ ...f, barangay: name }))
+                  setErrors(({ barangay: _gone, ...rest }) => rest)
+                }}
+                onBlur={() => setTouched((t) => ({ ...t, barangay: true }))}
               />
-              {errors.email && <p className="text-red-500 text-xs">{errors.email[0]}</p>}
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="address">Address</Label>
-              <select
-                id="address"
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                required
-                className={`h-9 w-full rounded-md border bg-transparent px-3 text-sm dark:bg-gray-950 ${errors.address ? 'border-red-400' : 'border-input'}`}
-              >
-                <option value="">Select your barangay</option>
-                {BARANGAYS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-              {errors.address && <p className="text-red-500 text-xs">{errors.address[0]}</p>}
-            </div>
+            <FormField id="street" label="Street, purok or house number" optional error={fieldError('street')}>
+              <Input name="street" value={form.street} onChange={handleChange} maxLength={120} autoComplete="street-address" placeholder="For example: 12 Rizal St" />
+            </FormField>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
+            <FormField id="password" label="Password" required hint="At least 8 characters." error={fieldError('password')}>
+              <PasswordField name="password" value={form.password} onChange={handleChange} onBlur={handleBlur} autoComplete="new-password" />
+            </FormField>
+
+            <FormField id="password_confirmation" label="Confirm Password" required error={fieldError('password_confirmation')}>
               <PasswordField
-                id="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                autoComplete="new-password"
-                className={errors.password ? 'border-red-400' : ''}
-              />
-              {errors.password && <p className="text-red-500 text-xs">{errors.password[0]}</p>}
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password_confirmation">Confirm Password</Label>
-              <PasswordField
-                id="password_confirmation"
                 name="password_confirmation"
                 value={form.password_confirmation}
                 onChange={handleChange}
-                required
+                onBlur={handleBlur}
                 autoComplete="new-password"
               />
+            </FormField>
+
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2.5">
+                <Checkbox
+                  id="accept_terms"
+                  checked={form.accept_terms}
+                  onCheckedChange={(checked) => {
+                    setForm((f) => ({ ...f, accept_terms: !!checked }))
+                    setTouched((t) => ({ ...t, accept_terms: true }))
+                    if (errors.accept_terms) setErrors(({ accept_terms: _gone, ...rest }) => rest)
+                  }}
+                  aria-invalid={fieldError('accept_terms') ? true : undefined}
+                  aria-describedby={fieldError('accept_terms') ? 'accept_terms-error' : undefined}
+                  className="mt-0.5"
+                />
+                <label htmlFor="accept_terms" className="text-sm leading-snug text-gray-700 dark:text-gray-300">
+                  I have read and agree to the{' '}
+                  <Link to="/terms" target="_blank" rel="noopener" className="font-medium text-primary underline underline-offset-2 dark:text-blue-300">Terms of Service</Link>{' '}
+                  and the{' '}
+                  <Link to="/privacy" target="_blank" rel="noopener" className="font-medium text-primary underline underline-offset-2 dark:text-blue-300">Privacy Policy</Link>
+                  <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+                  <span className="sr-only"> (required)</span>
+                </label>
+              </div>
+              {fieldError('accept_terms') && (
+                <p id="accept_terms-error" aria-live="polite" className="flex items-start gap-1 text-xs text-red-600 dark:text-red-400">
+                  <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                  <span><span className="font-semibold">Error: </span>{fieldError('accept_terms')}</span>
+                </p>
+              )}
             </div>
 
             <Button type="submit" disabled={loading} className="h-11 w-full text-base">

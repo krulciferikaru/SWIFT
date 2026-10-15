@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import Modal from './Modal'
 import { LoadingStatus } from './Skeletons.jsx'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -21,6 +22,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+
+const RECENT = 5
 
 /** Admin: add, rename, switch on or off, and delete the payment methods staff can choose from. */
 export default function PaymentMethodsManager({ showToast }) {
@@ -117,29 +120,14 @@ export default function PaymentMethodsManager({ showToast }) {
     }
   }
 
-  return (
-    <Card data-tour="settings-payment-methods">
-      <CardHeader>
-        <CardTitle className="text-base">Payment methods</CardTitle>
-        <CardDescription>
-          The choices staff see when recording a payment, and in the report filters. A method that has been used
-          can't be deleted, but you can switch it off so it is no longer offered.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">{error}</div>
-        )}
+  // The card shows the first few; "View all" opens the whole list (with a search) in a window.
+  const [showAll, setShowAll] = useState(false)
+  const [filter, setFilter] = useState('')
+  const matching = methods.filter((m) => m.name.toLowerCase().includes(filter.trim().toLowerCase()))
 
-        {loading ? (
-          <LoadingStatus className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </LoadingStatus>
-        ) : (
-          <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-            {methods.map((m) => (
+  const renderList = (rows) => (
+    <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+      {rows.map((m) => (
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                 {editing?.id === m.id ? (
                   <form onSubmit={saveName} className="flex flex-1 flex-wrap items-start gap-2">
@@ -204,8 +192,39 @@ export default function PaymentMethodsManager({ showToast }) {
                   </>
                 )}
               </li>
+      ))}
+    </ul>
+  )
+
+  return (
+    <Card data-tour="settings-payment-methods">
+      <CardHeader>
+        <CardTitle className="text-base">Payment methods</CardTitle>
+        <CardDescription>
+          The choices staff see when recording a payment, and in the report filters. A method that has been used
+          can't be deleted, but you can switch it off so it is no longer offered.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <div role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">{error}</div>
+        )}
+
+        {loading ? (
+          <LoadingStatus contentClassName="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
             ))}
-          </ul>
+          </LoadingStatus>
+        ) : (
+          <>
+            {renderList(methods.slice(0, RECENT))}
+            {methods.length > 0 && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowAll(true)}>
+                View all ({methods.length})
+              </Button>
+            )}
+          </>
         )}
 
         <form onSubmit={add} className="flex flex-wrap items-start gap-2">
@@ -237,11 +256,40 @@ export default function PaymentMethodsManager({ showToast }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction variant="outline" onClick={confirmDelete} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">Delete</AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Modal
+        isOpen={showAll}
+        onClose={() => { setShowAll(false); setFilter('') }}
+        title="Payment methods"
+        description="Everything on the list. Rename, switch on or off, or delete from here."
+        size="lg"
+      >
+        <div className="space-y-3">
+          {methods.length > 8 && (
+            <div className="space-y-1">
+              <Label htmlFor="methods-filter" className="sr-only">Search payment methods</Label>
+              <Input
+                id="methods-filter"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Search payment methods"
+                aria-label="Search payment methods"
+              />
+            </div>
+          )}
+          <div className="max-h-[55vh] overflow-y-auto">
+            {matching.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-600 dark:text-gray-400">Nothing matches "{filter}".</p>
+            ) : (
+              renderList(matching)
+            )}
+          </div>
+        </div>
+      </Modal>
     </Card>
   )
 }

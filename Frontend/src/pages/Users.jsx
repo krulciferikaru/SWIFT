@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import usersApi from '../api/users'
 import { capitalizeWords } from '../utils/text'
 import { TableSkeleton } from '../components/Skeletons.jsx'
@@ -15,6 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -29,12 +30,24 @@ import { Skeleton } from '@/components/ui/skeleton'
 import Modal from '../components/Modal'
 import { useToast } from '../hooks/useToast'
 import { useOnReconnect } from '../hooks/useOnline'
-import { UserPlus, KeyRound, SlidersHorizontal } from 'lucide-react'
+import { UserPlus, SlidersHorizontal, ShieldCheck, ShieldOff, Info } from 'lucide-react'
+import StepUpDialog from '../components/StepUpDialog.jsx'
 import PermissionsModal from '../components/PermissionsModal.jsx'
 import TourButton from "../components/TourButton.jsx";
 import Toast from "../components/Toast.jsx";
+import BackToSettings from '../components/BackToSettings.jsx'
+import { useQueryState } from '../hooks/useQueryState'
+import SortableHead, { nextSort } from '../components/SortableHead.jsx'
+import Pager from '../components/Pager.jsx'
+import FormField, { RequiredNote } from '../components/FormField.jsx'
+import { required, emailAddress, mobileNumber, minLength, matches, firstError } from '../utils/validators'
+import EmptyState from '../components/EmptyState.jsx'
 
-const ROLE_FILTERS = ['All', 'admin', 'secretary', 'subscriber']
+// What the address holds. Newest accounts first until a column is chosen.
+const VIEW_DEFAULTS = { q: '', role: 'All', page: 1, per: 15, sort: '', dir: 'asc' }
+const USER_SORT_DEFAULT = { sort: '', dir: 'asc' }
+
+const ROLE_FILTERS = ['All', 'admin', 'secretary', 'collector', 'subscriber']
 const STATUS_STYLES = {
   active: 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900',
   pending: 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900',
@@ -43,12 +56,14 @@ const STATUS_STYLES = {
 const ROLE_STYLES = {
   admin: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900',
   secretary: 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900',
+  collector: 'bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-900',
   subscriber: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700',
 }
 
 const EMPTY_STAFF_FORM = {
   name: '',
   email: '',
+  contact_number: '',
   password: '',
   password_confirmation: '',
   role: 'secretary',
@@ -60,11 +75,33 @@ export default function Users() {
   const [users, setUsers] = useState([])
   const [meta, setMeta] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Only the very first load swaps the page for skeletons. Later fetches (typing in
+  // the search box, changing the role filter) keep the controls mounted; otherwise
+  // the search box is replaced on every keystroke and loses focus.
+  const [initialLoad, setInitialLoad] = useState(true)
+  const requestId = useRef(0)
   const [error, setError] = useState('')
 
-  const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState('All')
-  const [page, setPage] = useState(1)
+  const [view, setView] = useQueryState(VIEW_DEFAULTS)
+  const search = view.q
+  const roleFilter = ROLE_FILTERS.includes(view.role) ? view.role : 'All'
+  const page = view.page
+  const perPage = view.per
+  const sort = view.sort
+  const dir = view.dir
+  const setRoleFilter = (value) => setView({ role: value, page: 1 })
+  const setPage = (value) => setView({ page: Math.max(value, 1) })
+  const changeSort = (column) => setView(nextSort({ sort, dir }, column, USER_SORT_DEFAULT))
+  // What is typed in the box; it reaches the address after a short pause.
+  const [searchText, setSearchText] = useState(view.q)
+  const latestSearch = useRef(search)
+  latestSearch.current = search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (searchText !== latestSearch.current) setView({ q: searchText, page: 1 })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchText, setView])
 
   const [actionLoading, setActionLoading] = useState(null)
 
@@ -72,44 +109,49 @@ export default function Users() {
   const [staffForm, setStaffForm] = useState(EMPTY_STAFF_FORM)
   const [staffErrors, setStaffErrors] = useState({})
   const [creating, setCreating] = useState(false)
+  const [touched, setTouched] = useState({})
   const [pendingCreate, setPendingCreate] = useState(null) // holds form data while confirming admin creation
 
-  const [permTarget, setPermTarget] = useState(null) // secretary whose permissions are being edited
-  const [resetTarget, setResetTarget] = useState(null) // user being reset
-  const [resetForm, setResetForm] = useState({ password: '', password_confirmation: '' })
-  const [resetErrors, setResetErrors] = useState({})
-  const [resetting, setResetting] = useState(false)
+  const [statusTarget, setStatusTarget] = useState(null) // { user, to } while confirming an Active/Inactive switch
+  const [permTarget, setPermTarget] = useState(null) // secretary or collector whose permissions are being edited
+  const [mfaResetTarget, setMfaResetTarget] = useState(null) // someone whose two-step sign-in is being reset
 
   const { toast, showToast } = useToast()
 
   const fetchUsers = useCallback(async () => {
+    const thisRequest = ++requestId.current
     setLoading(true)
     setError('')
     try {
-      const params = { page, per_page: 15 }
+      const params = { page, per_page: perPage }
+      if (sort) {
+        params.sort = sort
+        params.direction = dir
+      }
       if (search) params.search = search
       if (roleFilter !== 'All') params.role = roleFilter
 
       const res = await usersApi.getAll(params)
+      if (thisRequest !== requestId.current) return // a newer search replaced this one
       const responseData = res.data.data
       setUsers(responseData.data ?? [])
       setMeta(responseData)
     } catch (err) {
+      if (thisRequest !== requestId.current) return
       setError(err.response?.data?.message || 'Failed to load users.')
     } finally {
-      setLoading(false)
+      if (thisRequest === requestId.current) {
+        setLoading(false)
+        setInitialLoad(false)
+      }
     }
-  }, [search, roleFilter, page])
+  }, [search, roleFilter, page, perPage, sort, dir])
 
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
 
   useOnReconnect(fetchUsers)
-
-  useEffect(() => {
-    setPage(1)
-  }, [search, roleFilter])
 
   const handleStatusChange = async (user, newStatus) => {
     if (newStatus === user.account_status) return
@@ -128,6 +170,7 @@ export default function Users() {
   const openCreateModal = () => {
     setStaffForm(EMPTY_STAFF_FORM)
     setStaffErrors({})
+    setTouched({})
     setShowCreate(true)
   }
 
@@ -136,8 +179,28 @@ export default function Users() {
     setStaffForm({ ...staffForm, [name]: name === 'name' ? capitalizeWords(value) : value })
   }
 
+  const staffChecks = {
+    name: required('Full name')(staffForm.name),
+    email: firstError(staffForm.email, required('Email'), emailAddress),
+    contact_number: mobileNumber(staffForm.contact_number),
+    password: firstError(staffForm.password, required('Password'), minLength('Password', 8)),
+    password_confirmation: firstError(
+      staffForm.password_confirmation,
+      required('Password confirmation'),
+      matches(() => staffForm.password, 'The two passwords do not match.'),
+    ),
+  }
+  const staffError = (name) => staffErrors[name]?.[0] ?? (touched[name] ? staffChecks[name] : '')
+  const staffBlur = (e) => setTouched((t) => ({ ...t, [e.target.name]: true }))
+
   const submitCreate = async (e) => {
     e.preventDefault()
+    const firstBad = Object.keys(staffChecks).find((name) => staffChecks[name])
+    if (firstBad) {
+      setTouched({ name: true, email: true, contact_number: true, password: true, password_confirmation: true })
+      document.getElementById({ name: 'staff-name', email: 'staff-email', contact_number: 'staff-mobile', password: 'staff-password', password_confirmation: 'staff-password-confirm' }[firstBad])?.focus()
+      return
+    }
     setStaffErrors({})
 
     // Admin creation is high-privilege — require an extra confirmation step.
@@ -153,7 +216,7 @@ export default function Users() {
     setCreating(true)
     try {
       await usersApi.create(data)
-      showToast(`${data.name}'s ${data.role} account was created.`)
+      showToast(`${data.name}'s ${data.role === 'collector' ? 'field collector' : data.role} account was created.`)
       setShowCreate(false)
       setPendingCreate(null)
       fetchUsers()
@@ -169,37 +232,14 @@ export default function Users() {
     }
   }
 
-  const openResetModal = (user) => {
-    setResetTarget(user)
-    setResetForm({ password: '', password_confirmation: '' })
-    setResetErrors({})
-  }
-
-  const submitReset = async (e) => {
-    e.preventDefault()
-    setResetErrors({})
-    setResetting(true)
-    try {
-      await usersApi.resetPassword(resetTarget.id, resetForm)
-      showToast(`${resetTarget.name}'s password was reset.`)
-      setResetTarget(null)
-    } catch (err) {
-      if (err.response?.status === 422) {
-        setResetErrors(err.response.data.errors ?? {})
-      } else {
-        showToast(err.response?.data?.message || 'Failed to reset password.', 'error')
-      }
-    } finally {
-      setResetting(false)
-    }
-  }
-
   return (
     <div>
       <Toast toast={toast} />
 
+      <BackToSettings className="mb-3" />
+
       <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-        {loading ? (
+        {initialLoad ? (
           <div className="space-y-2">
             <h1 className="sr-only">Manage Roles</h1>
             <Skeleton className="h-8 w-40" />
@@ -222,10 +262,18 @@ export default function Users() {
         </div>
       </div>
 
-      {loading ? (
+      <p className="mb-4 flex items-start gap-2 rounded-md bg-blue-50 p-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+        <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span>
+          Nobody here can see or reset another person's password. Everyone recovers their own with <strong>Forgot password</strong> on the
+          sign-in page, using a code texted to their verified mobile number. Staff add and verify theirs in Settings.
+        </span>
+      </p>
+
+      {initialLoad ? (
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <Skeleton className="h-9 flex-1" />
-          <Skeleton className="h-9 w-full sm:w-40" />
+          <Skeleton className="h-8 flex-1" />
+          <Skeleton className="h-8 w-full sm:w-40" />
         </div>
       ) : (
         <div data-tour="users-filters" className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -233,8 +281,8 @@ export default function Users() {
             type="text"
             placeholder="Search by name or email…"
             aria-label="Search accounts"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
             className="flex-1"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -254,22 +302,31 @@ export default function Users() {
         <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 rounded text-sm">{error}</div>
       )}
 
-      <div data-tour="users-table" className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {loading ? (
+      <div
+        data-tour="users-table"
+        aria-busy={loading}
+        className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-opacity ${loading && !initialLoad ? 'opacity-60' : ''}`}
+      >
+        {initialLoad ? (
           <TableSkeleton rows={6} columns={[
             { label: 'Name' }, { label: 'Email' }, { label: 'Role', kind: 'badge' },
             { label: 'Account Status' }, { label: 'Actions', kind: 'actions' },
           ]} />
         ) : users.length === 0 ? (
-          <div className="text-center py-16 text-sm text-gray-500 dark:text-gray-400">No users found.</div>
+          <EmptyState
+            icon={ShieldCheck}
+            title="No accounts match"
+            description="Try a different name or email, or another role."
+            onClearFilters={search || roleFilter !== 'All' ? () => { setSearchText(''); setView({ q: '', role: 'All', page: 1 }) } : undefined}
+          />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <SortableHead column="name" sort={sort} dir={dir} onSort={changeSort}>Name</SortableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Account Status</TableHead>
+                <SortableHead column="role" sort={sort} dir={dir} onSort={changeSort}>Role</SortableHead>
+                <SortableHead column="status" sort={sort} dir={dir} onSort={changeSort}>Account Status</SortableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
@@ -294,25 +351,22 @@ export default function Users() {
                           {user.account_status}
                         </Badge>
                       ) : (
-                        <Select
-                          value={user.account_status}
-                          onValueChange={(newStatus) => handleStatusChange(user, newStatus)}
-                          disabled={actionLoading === user.id}
-                        >
-                          <SelectTrigger data-tour="users-status" aria-label={`Account status for ${user.name}`} className="w-32 capitalize">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div data-tour="users-status" className="flex items-center gap-2">
+                          <Switch
+                            checked={user.account_status === 'active'}
+                            onCheckedChange={(on) => setStatusTarget({ user, to: on ? 'active' : 'inactive' })}
+                            disabled={actionLoading === user.id}
+                            aria-label={`Account status for ${user.name}`}
+                          />
+                          <span className={`text-sm capitalize ${user.account_status === 'active' ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                            {user.account_status}
+                          </span>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
-                      {user.role === 'secretary' && (
+                      {(user.role === 'secretary' || user.role === 'collector') && (
                         <Button
                           data-tour="users-permissions"
                           variant="outline"
@@ -325,17 +379,16 @@ export default function Users() {
                           Permissions
                         </Button>
                       )}
-                      {!isSelf && (
+                      {user.mfa_enabled && user.id !== currentUser?.id && (
                         <Button
-                          data-tour="users-reset"
                           variant="outline"
                           size="sm"
                           className="gap-1.5"
-                          onClick={() => openResetModal(user)}
-                          aria-label={`Reset password for ${user.name}`}
+                          onClick={() => setMfaResetTarget(user)}
+                          aria-label={`Reset two-step sign-in for ${user.name}`}
                         >
-                          <KeyRound className="size-3.5" />
-                          Reset Password
+                          <ShieldOff className="size-3.5" aria-hidden="true" />
+                          Reset two-step
                         </Button>
                       )}
                       </div>
@@ -348,20 +401,14 @@ export default function Users() {
         )}
       </div>
 
-      {meta && meta.last_page > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
-          <span>Showing {meta.from}–{meta.to} of {meta.total} users</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1}>
-              Previous
-            </Button>
-            <span className="px-3 py-1">Page {page} of {meta.last_page}</span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(p + 1, meta.last_page))} disabled={page === meta.last_page}>
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pager
+        meta={meta}
+        page={page}
+        onPage={setPage}
+        perPage={perPage}
+        onPerPage={(n) => setView({ per: n, page: 1 })}
+        noun="accounts"
+      />
 
       <Modal
         isOpen={showCreate}
@@ -369,135 +416,94 @@ export default function Users() {
         title="Add Staff Account"
         description="Creates a dedicated Secretary account. The role cannot be changed after creation."
         size="md"
-        confirmClose
+        confirmClose={JSON.stringify(staffForm) !== JSON.stringify(EMPTY_STAFF_FORM)}
         footer={(requestClose) => (
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={requestClose}>
               Cancel
             </Button>
-            <Button type="submit" form="staff-create-form" disabled={creating}>
+            <Button type="submit" form="staff-create-form" disabled={creating} className="gap-2">
+              <UserPlus className="size-4" aria-hidden="true" />
               {creating ? 'Creating...' : 'Create Account'}
             </Button>
           </div>
         )}
       >
-        <form id="staff-create-form" onSubmit={submitCreate} className="space-y-4">
-          <div className="flex justify-end">
+        <form id="staff-create-form" onSubmit={submitCreate} noValidate className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <RequiredNote />
             <TourButton tour="staffForm" />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-name">Full Name<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-name"
-              name="name"
-              value={staffForm.name}
-              onChange={handleStaffFormChange}
-              required
-              className={staffErrors.name ? 'border-red-400' : ''}
-            />
-            {staffErrors.name && <p className="text-red-500 text-xs">{staffErrors.name[0]}</p>}
-          </div>
+          <FormField id="staff-name" label="Full Name" required error={staffError('name')}>
+            <Input name="name" value={staffForm.name} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="off" />
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-email">Email<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-email"
-              type="email"
-              name="email"
-              value={staffForm.email}
-              onChange={handleStaffFormChange}
-              required
-              className={staffErrors.email ? 'border-red-400' : ''}
-            />
-            {staffErrors.email && <p className="text-red-500 text-xs">{staffErrors.email[0]}</p>}
-          </div>
+          <FormField id="staff-email" label="Email" required error={staffError('email')}>
+            <Input type="email" name="email" value={staffForm.email} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="off" />
+          </FormField>
+
+          <FormField
+            id="staff-mobile"
+            label="Mobile number"
+            optional
+            hint="Lets this person reset their own password by text. They can also add it later in Settings."
+            error={staffError('contact_number')}
+          >
+            <Input type="tel" name="contact_number" value={staffForm.contact_number} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="off" placeholder="0917 123 4567" />
+          </FormField>
 
           <div data-tour="staff-role" className="space-y-1.5">
             <Label>Role<span className="text-red-500 ml-0.5">*</span></Label>
-            <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })} disabled>
+            <Select value={staffForm.role} onValueChange={(v) => setStaffForm({ ...staffForm, role: v })}>
               <SelectTrigger className="w-full" aria-label="Role">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="secretary">Secretary</SelectItem>
+                <SelectItem value="collector">Field Collector</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500 dark:text-gray-400">This cannot be changed once the account is created.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {staffForm.role === 'collector'
+                ? 'A field collector can look up subscribers (without their email or MAC address) and record payments, nothing else.'
+                : 'A secretary can do everything except manage accounts; an admin can switch individual tasks off.'}
+              {' '}This cannot be changed once the account is created.
+            </p>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-password">Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-password"
-              type="password"
-              name="password"
-              value={staffForm.password}
-              onChange={handleStaffFormChange}
-              required
-              className={staffErrors.password ? 'border-red-400' : ''}
-            />
-            {staffErrors.password && <p className="text-red-500 text-xs">{staffErrors.password[0]}</p>}
-          </div>
+          <FormField id="staff-password" label="Password" required hint="At least 8 characters." error={staffError('password')}>
+            <Input type="password" name="password" value={staffForm.password} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="new-password" />
+          </FormField>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="staff-password-confirm">Confirm Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="staff-password-confirm"
-              type="password"
-              name="password_confirmation"
-              value={staffForm.password_confirmation}
-              onChange={handleStaffFormChange}
-              required
-            />
-          </div>
+          <FormField id="staff-password-confirm" label="Confirm Password" required error={staffError('password_confirmation')}>
+            <Input type="password" name="password_confirmation" value={staffForm.password_confirmation} onChange={handleStaffFormChange} onBlur={staffBlur} autoComplete="new-password" />
+          </FormField>
         </form>
       </Modal>
 
-      <Modal
-        isOpen={!!resetTarget}
-        onClose={() => setResetTarget(null)}
-        title="Reset Password"
-        description={resetTarget ? `Set a new password for ${resetTarget.name} (${resetTarget.email}). They will need to use it on their next login.` : ''}
-        size="md"
-        confirmClose
-        footer={(requestClose) => (
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={requestClose}>
-              Cancel
-            </Button>
-            <Button type="submit" form="reset-password-form" disabled={resetting}>
-              {resetting ? 'Resetting...' : 'Reset Password'}
-            </Button>
-          </div>
-        )}
-      >
-        <form id="reset-password-form" onSubmit={submitReset} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="reset-password">New Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="reset-password"
-              type="password"
-              value={resetForm.password}
-              onChange={(e) => setResetForm({ ...resetForm, password: e.target.value })}
-              required
-              className={resetErrors.password ? 'border-red-400' : ''}
-            />
-            {resetErrors.password && <p className="text-red-500 text-xs">{resetErrors.password[0]}</p>}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="reset-password-confirm">Confirm New Password<span className="text-red-500 ml-0.5">*</span></Label>
-            <Input
-              id="reset-password-confirm"
-              type="password"
-              value={resetForm.password_confirmation}
-              onChange={(e) => setResetForm({ ...resetForm, password_confirmation: e.target.value })}
-              required
-            />
-          </div>
-        </form>
-      </Modal>
+      <StepUpDialog
+        open={!!mfaResetTarget}
+        onClose={() => setMfaResetTarget(null)}
+        needCode={Boolean(currentUser?.mfa_enabled)}
+        title="Reset two-step sign-in?"
+        description={
+          mfaResetTarget && (
+            <>
+              <strong>{mfaResetTarget.name}</strong> lost their phone or their recovery codes. Their two-step sign-in is switched off and they are signed out
+              everywhere. {mfaResetTarget.role === 'subscriber' ? 'They can switch it on again from Settings if they want to.' : 'They have to set it up again the next time they sign in, so it is never left off without them knowing.'}
+            </>
+          )
+        }
+        confirmLabel="Reset"
+        risky
+        onConfirm={async (code) => {
+          const res = await usersApi.resetMfa(mfaResetTarget.id, code)
+          showToast(res.data.message)
+          setMfaResetTarget(null)
+          fetchUsers()
+        }}
+      />
 
       <PermissionsModal
         user={permTarget}
@@ -508,6 +514,31 @@ export default function Users() {
           showToast(message)
         }}
       />
+
+      <AlertDialog open={!!statusTarget} onOpenChange={(open) => { if (!open) setStatusTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{statusTarget?.to === 'active' ? 'Activate this account?' : 'Deactivate this account?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {statusTarget && (statusTarget.to === 'active' ? (
+                <><strong>{statusTarget.user.name}</strong> will be able to sign in again.</>
+              ) : (
+                <><strong>{statusTarget.user.name}</strong> will be signed out and will not be able to sign in until the account is activated again.</>
+              ))}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              variant="outline"
+              onClick={() => { const t = statusTarget; setStatusTarget(null); handleStatusChange(t.user, t.to) }}
+              className={statusTarget?.to === 'inactive' ? 'border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950' : undefined}
+            >
+              {statusTarget?.to === 'active' ? 'Confirm Activate' : 'Confirm Deactivate'}
+            </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!pendingCreate} onOpenChange={(open) => { if (!open) setPendingCreate(null) }}>
         <AlertDialogContent>
@@ -523,10 +554,10 @@ export default function Users() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => createStaffAccount(pendingCreate)} disabled={creating}>
-              {creating ? 'Creating...' : 'Confirm Create Secretary'}
+            <AlertDialogAction variant="outline" onClick={() => createStaffAccount(pendingCreate)} disabled={creating} className="border-red-300 bg-transparent text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950">
+              {creating ? 'Creating...' : 'Confirm Create Account'}
             </AlertDialogAction>
+            <AlertDialogCancel variant="default">Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

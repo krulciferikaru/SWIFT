@@ -76,15 +76,13 @@ class AuditTrailTest extends TestCase
     public function test_passwords_never_appear_in_the_log(): void
     {
         Sanctum::actingAs($admin = $this->makeUser('admin'));
-        $this->passwordConfirmed($admin);
-        $staff = $this->makeUser('secretary');
 
-        $this->patchJson("/api/users/{$staff->id}/password", [
-            'password' => 'brand-new-secret-1',
-            'password_confirmation' => 'brand-new-secret-1',
-        ])->assertOk();
+        $this->postJson('/api/users', [
+            'name' => 'New Staff', 'email' => 'new.staff@audit.test', 'role' => 'secretary',
+            'password' => 'brand-new-secret-1', 'password_confirmation' => 'brand-new-secret-1',
+        ])->assertCreated();
 
-        $log = AuditLog::where('action', 'user.password_reset')->firstOrFail();
+        $log = AuditLog::where('action', 'user.created')->firstOrFail();
         $this->assertSame($admin->id, $log->user_id);
         $this->assertStringNotContainsString('brand-new-secret-1', json_encode($log->toArray()));
     }

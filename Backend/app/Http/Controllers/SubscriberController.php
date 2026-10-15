@@ -6,6 +6,7 @@ use App\Services\Audit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Subscriber\StoreSubscriberRequest;
 use App\Http\Requests\Subscriber\UpdateSubscriberRequest;
+use App\Models\Plan;
 use App\Models\Subscriber;
 use App\Models\User;
 use App\Services\BillingService;
@@ -33,19 +34,23 @@ class SubscriberController extends Controller
      *   ?search=john          → search by name / email / address / MAC
      *   ?status=Active        → filter by status (Active | Unpaid | Disconnected)
      *   ?plan_id=2            → filter by plan
-     *   ?per_page=15          → results per page (default 15)
+     *   ?per_page=15          → results per page (default 15, at most 100)
+     *   ?sort=name|status|plan|installed|created&direction=asc|desc
+     *   ?with_balance=1       → also return each person's balance and months behind
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Subscriber::with(['plan', 'user:id,subscriber_id,contact_number,contact_verified_at'])
+        // A field collector doesn't get email or MAC addresses: not in the list, and not through search.
+        $private = ! $request->user()->isCollector();
+
+        $query = Subscriber::with(['plan', 'deletion', 'pendingPlanChange.fromPlan', 'pendingPlanChange.toPlan', 'user:id,subscriber_id,contact_number,contact_verified_at'])
             ->select([
                 'subscriber_id',
                 'plan_id',
                 'name',
                 'address',
                 'contact_number',
-                'email',
-                'mac_address',
+                ...($private ? ['email', 'mac_address'] : []),
                 'connection_date',
                 'status',
                 'created_at',
@@ -60,7 +65,7 @@ class SubscriberController extends Controller
 
         // Search filter
         if ($request->filled('search')) {
-            $query->search($request->search);
+            $query->search($request->search, $private);
         }
 
         // Status filter
@@ -73,8 +78,45 @@ class SubscriberController extends Controller
             $query->where('plan_id', $request->plan_id);
         }
 
-        $perPage = $request->integer('per_page', 15);
-        $subscribers = $query->orderBy('name')->paginate($perPage);
+        // Installation date range
+        $request->validate([
+            'installed_from' => ['nullable', 'date_format:Y-m-d'],
+            'installed_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:installed_from'],
+        ]);
+        $query->installedBetween($request->input('installed_from'), $request->input('installed_to'));
+
+        // Sorting: only these columns, so nothing else can be asked for.
+        $direction = $request->input('direction') === 'desc' ? 'desc' : 'asc';
+        $sort = (string) $request->input('sort');
+        $sortColumns = ['name' => 'name', 'status' => 'status', 'installed' => 'connection_date', 'created' => 'created_at'];
+        if ($sort === 'plan') {
+            $query->orderBy(
+                Plan::query()->select('plan_name')->whereColumn('plan.plan_id', 'subscriber.plan_id')->limit(1),
+                $direction,
+            );
+        } elseif (isset($sortColumns[$sort])) {
+            $query->orderBy($sortColumns[$sort], $direction);
+        }
+        if ($sort !== 'name') {
+            $query->orderBy('name'); // keeps the order steady between equal values
+        }
+
+        $perPage = min(max($request->integer('per_page', 15), 1), 100);
+        $subscribers = $query->paginate($perPage);
+
+        // What each person owes, for the people on this page only.
+        if ($request->boolean('with_balance')) {
+            $subscribers->getCollection()->transform(function (Subscriber $subscriber) {
+                $owes = $subscriber->connection_date
+                    ? $this->billing->getBreakdown($subscriber)
+                    : ['balance' => 0, 'months_behind' => 0, 'advance_credit' => 0];
+                $subscriber->setAttribute('balance', $owes['balance']);
+                $subscriber->setAttribute('months_behind', $owes['months_behind']);
+                $subscriber->setAttribute('advance_credit', $owes['advance_credit']);
+
+                return $subscriber;
+            });
+        }
 
         return response()->json([
             'success' => true,
@@ -113,13 +155,20 @@ class SubscriberController extends Controller
      *
      * Returns a single subscriber with their plan and recent payment history.
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $subscriber = Subscriber::with([
             'plan',
+            'deletion',
+            'pendingPlanChange.fromPlan',
+            'pendingPlanChange.toPlan',
             'user:id,subscriber_id,contact_number,contact_verified_at',
             'payments' => fn($q) => $q->latest('payment_date')->limit(12),
         ])->findOrFail($id);
+
+        if ($request->user()->isCollector()) {
+            $subscriber->makeHidden(['email', 'mac_address']);
+        }
 
         return response()->json([
             'success' => true,
@@ -139,7 +188,12 @@ class SubscriberController extends Controller
         $previousStatus = $subscriber->status;
         $before = $subscriber->getOriginal();
 
-        $subscriber->update($request->validated());
+        // The plan is never changed here (the request refuses a different one): moving to another plan is a
+        // request that staff confirm, see PlanChangeController.
+        $data = $request->validated();
+        unset($data['plan_id']);
+
+        $subscriber->update($data);
         $subscriber->load('plan');
 
         Audit::log('subscriber.updated', $subscriber, null, Audit::diff($before, $subscriber));
@@ -223,8 +277,16 @@ class SubscriberController extends Controller
      * Sends a balance-reminder SMS to every currently Unpaid subscriber.
      * Manual, on-demand alternative to the daily due-date reminder job.
      */
-    public function sendReminders(): JsonResponse
+    public function sendReminders(Request $request): JsonResponse
     {
+        // Optionally only to the people picked on the Subscribers page. Anyone picked who owes
+        // nothing is skipped, so a reminder never goes to someone who is paid up.
+        $request->validate([
+            'subscriber_ids' => ['nullable', 'array', 'max:200'],
+            'subscriber_ids.*' => ['integer'],
+        ]);
+        $pickedIds = $request->input('subscriber_ids');
+
         // Each SMS attempt is capped at ~10s by PhilSmsService, but sends run
         // sequentially — give the whole batch room to finish on hosts with a
         // stricter default execution limit than this box's unlimited one.
@@ -232,12 +294,18 @@ class SubscriberController extends Controller
 
         $sent = 0;
         $failed = 0;
+        $skipped = 0;
 
         Subscriber::where('account_status', 'active')
-            ->where('status', 'Unpaid')
-            ->chunk(100, function ($subscribers) use (&$sent, &$failed) {
+            ->when($pickedIds === null, fn ($q) => $q->where('status', 'Unpaid'))
+            ->when($pickedIds !== null, fn ($q) => $q->whereIn('subscriber_id', $pickedIds))
+            ->chunk(100, function ($subscribers) use (&$sent, &$failed, &$skipped) {
                 foreach ($subscribers as $subscriber) {
                     $balance = $this->billing->getBreakdown($subscriber)['balance'];
+                    if ($balance <= 0) {
+                        $skipped++;
+                        continue;
+                    }
 
                     $result = $this->sms->sendToSubscriber($subscriber, sprintf(
                         'Hi %s, this is a reminder that you have an outstanding balance of PHP %s. Please settle it as soon as possible to avoid service interruption. - Jubal Brothers Cable TV Corp - Palayan Branch',
@@ -249,18 +317,39 @@ class SubscriberController extends Controller
                 }
             });
 
-        Audit::log('sms.reminders_sent', null, 'Unpaid subscribers', ['sent' => $sent, 'failed' => $failed]);
+        Audit::log(
+            'sms.reminders_sent',
+            null,
+            $pickedIds === null ? 'Unpaid subscribers' : 'Selected subscribers',
+            ['sent' => $sent, 'failed' => $failed, 'skipped' => $skipped],
+        );
 
         $message = "Sent payment reminders to {$sent} subscriber(s).";
         if ($failed > 0) {
             $message .= " {$failed} failed to send.";
         }
+        if ($skipped > 0) {
+            $message .= " {$skipped} owe nothing, so they were skipped.";
+        }
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => ['sent' => $sent, 'failed' => $failed],
+            'data' => ['sent' => $sent, 'failed' => $failed, 'skipped' => $skipped],
         ]);
+    }
+
+    /**
+     * GET /api/subscribers/{id}/status-history
+     *
+     * When the installation was and every time the service status changed, newest first, with who
+     * or what changed it. For staff who may view subscribers.
+     */
+    public function statusHistory(int $id): JsonResponse
+    {
+        $subscriber = Subscriber::withTrashed()->findOrFail($id);
+
+        return response()->json(['success' => true, 'data' => app(\App\Services\StatusHistoryService::class)->timeline($subscriber, forStaff: true)]);
     }
 
     /**
